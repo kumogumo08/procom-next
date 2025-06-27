@@ -1,0 +1,129 @@
+.header {
+  text-align: center;
+  padding: 60px 20px;
+}
+
+.title {
+  font-family: 'Segoe UI', 'Helvetica Neue', sans-serif;
+  font-size: 3rem;
+  letter-spacing: 10px;
+  margin: 0 0 15px 0;
+  animation: fadeInDown 1s ease-out;
+}
+
+.link {
+  color: inherit;
+  text-decoration: none;
+}
+
+.tagline {
+  font-size: 1.3rem;
+  font-style: italic;
+  color: #ffdede;
+  margin-bottom: 10px;
+  animation: fadeInUp 1.2s ease-out;
+}
+
+.description {
+  font-size: 1rem;
+  max-width: 600px;
+  margin: 0 auto;
+  color: #e0e0e0;
+  line-height: 1.6;
+  animation: fadeInUp 1.5s ease-out;
+}
+
+.authLink {
+  text-align: center;
+  margin-top: 20px;
+  font-size: 1.3rem;
+}
+
+.authLink a {
+  color: #007bff;
+  text-decoration: underline;
+}
+
+.authLink a:hover {
+  text-decoration: none;
+}
+
+.searchWrapper {
+  display: flex;
+  justify-content: center;
+  margin: 40px auto;
+}
+
+.searchForm {
+  display: flex;
+  gap: 10px;
+  background: white;
+  padding: 12px 20px;
+  border-radius: 8px;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+  max-width: 600px;
+  width: 90%;
+}
+
+.searchInput {
+  flex: 1;
+  padding: 10px;
+  font-size: 1rem;
+  border: 1px solid #ccc;
+  border-radius: 6px;
+}
+
+.searchButton {
+  background-color: #4e73df;
+  color: white;
+  padding: 10px 16px;
+  font-size: 1rem;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+}
+
+.searchButton:hover {
+  background-color: #2e59d9;
+}
+
+/* アニメーション */
+@keyframes fadeInDown {
+  from { opacity: 0; transform: translateY(-20px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes fadeInUp {
+  from { opacity: 0; transform: translateY(20px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+/* Header.module.css に追記してOK */
+
+.username {
+  font-size: 1.5rem;
+  font-weight: bold;
+  margin: 10px 0;
+  color: #fff; /* 必要なら明るめの色に */
+}
+
+.authUI {
+  margin-top: 20px;
+  background: (135deg, #1f1f2e, #38385a);
+  border-radius: 8px;
+  padding: 10px;
+  text-align: center;
+}
+
+.authButtons {
+  display: flex;
+  justify-content: center;
+  gap: 10px;
+  margin-bottom: 10px;
+  flex-wrap: wrap;
+}
+.authGreeting {
+  font-weight: bold;
+  margin-bottom: 8px;
+  color: white;
+}

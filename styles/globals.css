@@ -1,0 +1,1376 @@
+
+@import url('https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --background: #ffffff;
+  --foreground: #171717;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --background: #0a0a0a;
+    --foreground: #ededed;
+  }
+}
+
+/* 全体共通設定 */
+body {
+    font-family: 'Noto Sans JP', sans-serif;
+    margin: 0;
+    padding: 0;
+    background: #f7f7f7;
+    color: #333;
+  }
+  
+ header {
+  background: linear-gradient(135deg, #1f1f2e, #38385a);
+  padding: 60px 20px;
+  text-align: center;
+  color: #fff;
+  border-bottom: 4px solid #ff4f81;
+  box-shadow: 0 8px 15px rgba(0, 0, 0, 0.2);
+  position: relative; /* ← この1行を統合 */
+}
+  
+  header h1 {
+    font-family: 'Segoe UI', 'Helvetica Neue', sans-serif;
+    font-size: 3rem;
+    font-weight: 700;
+    letter-spacing: 10px;
+    margin: 0 0 15px 0;
+    animation: fadeInDown 1s ease-out;
+  }
+  
+.auth-forms {
+  color: #333; /* ← 黒文字 */
+  display: none; /* 初期は非表示 */
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  flex-direction: column;
+  gap: 8px;
+  background: white;
+  padding: 10px;
+  border-radius: 8px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+  z-index: 999;
+}
+  
+  .auth-forms form {
+    display: block;
+    gap: 5px;
+    align-items: center;
+  }
+
+  .auth-forms.show {
+  display: block;
+}
+  
+  .auth-forms input {
+    padding: 4px;
+  }
+  
+  .auth-forms button {
+  background-color: #ff4f81;   /* 明るいピンク */
+  color: rgb(255, 255, 255);                /* 白文字 */
+  border: none;
+  padding: 8px 16px;
+  font-size: 0.8rem;
+  border-radius: 6px;
+  cursor: pointer;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
+  transition: background-color 0.3s ease;
+}
+
+.auth-forms button:hover {
+  background-color: #e03e6f;
+}
+
+.auth-forms form button {
+  color: white;
+  background-color: #3b3b5c;
+  border: 1px solid #fff;
+  padding: 6px 12px;
+  border-radius: 6px;
+  font-weight: bold;
+  cursor: pointer;
+}
+
+.mypage-btn.account-setting {
+  color: white !important;
+}
+
+@media screen and (max-width: 768px) {
+  .auth-forms {
+    display: none !important;
+  }
+}
+  
+  .tagline {
+    font-size: 1.3rem;
+    font-style: italic;
+    color: #ffdede;
+    margin-bottom: 10px;
+    animation: fadeInUp 1.2s ease-out;
+  }
+  
+  .description {
+    font-size: 1rem;
+    max-width: 600px;
+    margin: 0 auto;
+    color: #e0e0e0;
+    line-height: 1.6;
+    animation: fadeInUp 1.5s ease-out;
+  }
+  
+  /* アニメーション */
+  @keyframes fadeInDown {
+    from { opacity: 0; transform: translateY(-20px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+  @keyframes fadeInUp {
+    from { opacity: 0; transform: translateY(20px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+  
+  /* レスポンシブ対応 */
+
+  .carousel {
+    transition: all 0.3s ease;
+  }
+
+  @media screen and (max-width: 768px) {
+    .tagline {
+      font-size: 1.1rem;
+    }
+    .description {
+      font-size: 0.95rem;
+    }
+
+    .sns-bottom-links {
+      flex: 1 1 100%;
+    }
+  }
+  
+  /* スライドショー */
+  .photo-upload {
+    text-align: center;
+    padding: 20px;
+    background: #fff;
+  }
+    
+    .slide {
+      position: absolute;
+      transform: rotateY(calc(var(--i) * 45deg)) translateZ(400px); /* ← 45deg → 15deg に */
+      transition: transform 0.5s ease, opacity 0.5s ease;
+      opacity: 0.6;
+      border-radius: 12px;
+      box-shadow: 0 6px 15px rgba(0, 0, 0, 0.15);
+      overflow: hidden;
+      width: 280px;
+      height: 180px;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      transform-origin: center center;
+    }
+  
+  .slide.active {
+    transform: rotateY(0deg) translateZ(500px);
+    opacity: 1;
+    z-index: 10;
+    box-shadow: 0 8px 25px rgba(0, 0, 0, 0.3);
+  }
+  
+  .slide img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover; /* ← アップになりすぎを防ぐ */
+  border-radius: 12px;
+  display: block;
+  border: none;
+  max-height: 300px;
+}
+
+.carousel-wrapper {
+  position: relative;
+  z-index: 100; /* ヘッダーより上に表示 */
+}
+
+  .carousel {
+    perspective: 1000px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    position: relative;
+    height: 320px;
+    transform-style: preserve-3d; 
+  }
+
+.carousel img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover; /* 必要に応じて contain または cover を使う */
+  border: none;
+  padding: 0;
+  background: none;
+  display: block;
+  max-width: 100%;
+  border-radius: 12px;
+  box-shadow: none;
+}
+
+/* .carousel .slide {
+  /* transform: translateX(calc(var(--i) * 100%)); */
+  /* transition: transform 0.5s ease;
+  position: absolute;
+  top: 0;
+  left: 0;
+} */ 
+
+  .prev, .next {
+    position: absolute;
+    top: 50%;
+    transform: translateY(-50%);
+    font-size: 1.5rem;
+    background: #4e73df;
+    color: white;
+    border: none;
+    padding: 10px 15px;
+    border-radius: 50%;
+    cursor: pointer;
+    user-select: none;
+    z-index: 10;
+  }
+  .prev { left: 10px; }
+  .next { right: 10px; }
+  
+  /* プロフィール */
+  .profile {
+    background: #fdfdfd;
+    padding: 1.5em;
+    margin: 20px auto;
+    max-width: 1200px;
+    border-radius: 10px;
+    text-align: center;
+    box-shadow: 0 0 8px rgba(0,0,0,0.05);
+  }
+  .profile h2 {
+    font-size: 1.5rem;
+    margin-bottom: 10px;
+  }
+  .profile p {
+    font-size: 1rem;
+    margin-bottom: 15px;
+  }
+
+  #editBtn, #saveBtn {
+    padding: 6px 14px;
+    background-color: #3b82f6;
+    color: white;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+  }
+
+  #editForm {
+    width: 100%;
+    margin: 20px auto;
+    padding: 1.5em;
+    background-color: #f9f9f9;
+    border-radius: 10px;
+    box-shadow: 0 0 10px rgba(0,0,0,0.1);
+  }
+  .form-row {
+    display: flex;
+    align-items: center;
+    margin-bottom: 1em;
+  }
+  .form-row label {
+    width: 150px;
+    font-weight: bold;
+  }
+  .form-row input, .form-row textarea {
+    flex: 1;
+    padding: 0.5em;
+    border-radius: 4px;
+    border: 1px solid #ffffff;
+  }
+  #bioInput {
+    resize: vertical;
+    height: 100px;
+  }
+  #nameTitle {
+    font-size: 1.5em;
+    font-weight: bold;
+  }
+  #nameTitle #title {
+    margin-left: 0.5em;
+    color: gray;
+  }
+  .hidden {
+    display: none;
+  }
+  
+  /* イベントカレンダー */  
+.calendar {
+  border-radius: 10px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  background: white;
+  font-family: 'Noto Sans JP', sans-serif;
+  position: relative;
+}
+  
+.calendar-header {
+  background: linear-gradient(to right, #6a11cb, #2575fc);
+  color: white;
+  padding: 10px;
+  text-align: center;
+  font-weight: bold;
+  font-size: 1.2em;
+}
+  
+  .calendar-row {
+    display: flex;
+  }
+
+.calendar-cell {
+  position: relative;
+  overflow: visible;
+  flex: 1;
+  height: 40px;
+  line-height: 40px;
+  text-align: center;
+  margin: 2px;
+  border-radius: 6px;
+  transition: background 0.3s;
+  cursor: pointer;
+}
+
+.header-cell {
+  font-weight: bold;
+  background: #f1f3f5;
+  color: #333;
+}
+
+.empty {
+  background: transparent;
+  cursor: default;
+}
+
+.event-day {
+  background-color: #ffd54f;
+  font-weight: bold;
+}
+
+.delete-btn {
+  background: transparent;
+  border: none;
+  color: red;
+  margin-left: 8px;
+  cursor: pointer;
+}
+
+#event-form {
+  margin-top: 20px;
+  background: #f8f9fa;
+  border-radius: 8px;
+  padding: 1em;
+  box-shadow: 0 0 6px rgba(0,0,0,0.05);
+}
+
+#event-form input[type="date"],
+#event-form input[type="text"] {
+  width: 100%;
+  padding: 8px;
+  margin-top: 4px;
+  margin-bottom: 10px;
+  border-radius: 6px;
+  border: 1px solid #ccc;
+}
+
+#add-event-btn {
+  background: #2575fc;
+  color: white;
+  border: none;
+  padding: 8px 16px;
+  border-radius: 6px;
+  cursor: pointer;
+}
+
+#add-event-btn:hover {
+  background: #1e5ed0;
+}
+
+.calendar-cell:hover {
+  background: #e0f0ff;
+}
+
+  .calendar-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.calendar-table th {
+  padding: 8px;
+  background-color: #f3f3f3;
+  color: #666;
+}
+
+.calendar-table td {
+  text-align: center;
+  padding: 10px;
+  transition: background 0.3s;
+  cursor: pointer;
+}
+
+.calendar-table td:hover {
+  background-color: #e0f0ff;
+  border-radius: 6px;
+}
+
+.calendar-form input {
+  width: 100%;
+  padding: 8px;
+  border-radius: 6px;
+  border: 1px solid #ccc;
+  margin-bottom: 10px;
+}
+
+.calendar-form button {
+  background: #2575fc;
+  color: white;
+  border: none;
+  padding: 8px 16px;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.calendar-form button:hover {
+  background: #1e5ed0;
+}
+
+  .header-cell {
+    font-weight: bold;
+    background-color: #f0f0f0;
+  }
+
+.popup {
+  display: none;
+  position: absolute;
+  top: 100%;
+  left: 0;
+  background: #fff;
+  border: 1px solid #ccc;
+  box-shadow: 2px 2px 5px rgba(0,0,0,0.2);
+  padding: 6px 8px;
+  border-radius: 6px;
+  z-index: 9999;
+  white-space: nowrap;
+}
+
+  .event-day {
+    background-color: #ffeeba;
+    cursor: pointer;
+  }
+
+  .profile-wrapper {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 30px;
+  flex-wrap: wrap;
+}
+  
+  .profile-info {
+  flex: 1 1 300px;
+  min-width: 300px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+  
+  .calendar-day {
+    position: relative;
+    padding: 10px;
+    background: white;
+    border: 1px solid #ddd;
+    text-align: center;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 14px;
+  }
+  
+  .calendar-day:hover {
+    background-color: #e6f7ff;
+  }
+  
+  .tooltip {
+    display: none;
+    position: absolute;
+    top: -35px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: #333;
+    color: #fff;
+    padding: 5px 10px;
+    font-size: 12px;
+    border-radius: 4px;
+    white-space: nowrap;
+    z-index: 1000;
+  }
+  
+  .calendar-day:hover .tooltip {
+    display: block;
+  }
+
+  #event-form {
+    margin-top: 20px;
+    padding: 10px;
+    background-color: #f7f7f7;
+    border: 1px solid #ddd;
+    border-radius: 5px;
+  }
+  #event-form input {
+    margin: 5px 0;
+    padding: 5px;
+  }
+  #event-form button {
+    padding: 5px 10px;
+  }
+
+  .popup button {
+    background: transparent;
+    border: none;
+    cursor: pointer;
+    color: red;
+  }
+
+  /* SNS編集・表示フォーム */
+  .sns-edit, .sns-links {
+    background: #fff;
+    padding: 20px;
+    margin: 20px auto;
+    border-radius: 12px;
+    box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+    max-width: 1200px;
+  }
+  .sns-edit {
+    max-width: 700px;
+  }
+  .sns-links {
+    max-width: 1200px;
+  }
+  .sns-edit label {
+    display: block;
+    margin-bottom: 10px;
+  }
+  .sns-edit input, .sns-item input[type="text"] {
+    width: 100%;
+    padding: 8px;
+    margin: 5px 0 12px;
+    border-radius: 6px;
+    border: 1px solid #ccc;
+    box-sizing: border-box;
+  }
+  .sns-edit button, .sns-item button {
+    padding: 8px 16px;
+    background-color: #4e73df;
+    color: white;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+    margin-bottom: 12px;
+  }
+  button:hover {
+    background-color: #2e59d9;
+  }
+  .sns-item button:hover {
+    background-color: #0056b3;
+  }
+  
+  .sns-links h3 {
+    font-size: 1.3rem;
+    margin-bottom: 20px;
+  }
+
+  .sns-card p {
+    margin-top: 8px;
+    font-size: 14px;
+    color: #333;
+  }
+
+  /* YouTube動画を横並びにする */
+  /* YouTube動画コンテナ */
+#videoContainer {
+  justify-content: center;
+  gap: 20px;
+  margin-top: 20px;
+}
+
+/* YouTube動画用の専用カードクラス */
+.youtube-card {
+  flex: 1 1 400px;
+  min-width: 300px;
+  max-width: 500px;
+  background: white;
+  border-radius: 10px;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+  padding: 10px;
+  box-sizing: border-box;
+}
+
+ .sns-card iframe {
+    width: 100%;
+    height: 225px;
+    border: none;
+  }
+  
+  /* 埋め込み */
+  .sns-embeds {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 20px;
+    width: 100%;
+    box-sizing: border-box;
+    gap: 32px;
+  }
+
+  .sns-embeds-wrapper {
+  display: flex;
+  flex-direction: column;
+  gap: 32px;
+  padding: 0 1rem;
+  max-width: 1200px;
+  box-sizing: border-box;
+}
+
+  /* ✅ 上段 YouTube：2カラム */
+  .youtube-grid,
+  .sns-middle-row,
+  .sns-bottom-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 20px;
+    justify-content: center;
+    margin-bottom: 32px;
+  }
+
+  .sns-container {
+  display: flex;
+  flex-wrap: wrap;         /* ✅ スマホで折り返し */
+  gap: 20px;
+  justify-content: center;
+  margin-top: 30px;
+}
+
+.sns-box {
+  max-width: 600px;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.sns-container > * {
+  flex: 1 1 100%;
+  max-width: 600px; /* ✅ 幅制限ここ！ */
+}
+
+  /* ✅ TikTok：2カラム用に全体を囲う */
+    .tiktok-wrapper {
+      display: flex;
+      flex-direction: row;
+      flex-wrap: wrap;
+      gap: 20px;
+      justify-content: center;
+      margin-top: 32px;
+    }
+
+.video-container {
+  display: grid;
+  grid-template-columns: 1fr 1fr; /* デフォルトは2列 */
+  gap: 20px;
+  margin-top: 20px;
+}
+
+@media screen and (max-width: 768px) {
+  .video-container {
+    grid-template-columns: 1fr; /* スマホ時は1列に */
+    justify-items: center; /* 中央寄せ */
+  }
+
+  .video-container iframe {
+    width: 90%;
+    height: 200px;
+  }
+}
+
+  /* 各動画のスタイル */
+  .youtube-card iframe {
+    width: 100%;
+    height: 225px;
+    border: none;
+    border-radius: 10px;
+  }
+  
+  /* 横並びSNSエリア */
+  .sns-bottom-links {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 20px;
+    justify-content: center;
+    max-width: 1200px;    
+    margin: 0 auto; 
+  }
+
+    /* ✅ 下段 TikTok：2カラム */
+#tiktok-section {
+    flex: 1 1 500px;
+    max-width: 1200px;
+    background-color: #f9f9f9;
+    padding: 20px;
+    border-radius: 12px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    box-sizing: border-box;
+  }
+  
+  #tiktok-container {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 35px;
+  justify-content: center;
+  margin-top: 20px;
+}
+
+     .tiktok-input {
+      width: 100%;
+      max-width: 500px;
+}
+
+
+  .sns-item {
+    background-color: #f9f9f9;
+    padding: 20px;
+    border-radius: 12px;
+    flex: 1 1 400px;
+    box-sizing: border-box;
+    min-width: 280px;
+    max-width: 1200px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+  }
+
+  .wrapper {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 0 20px;
+  }
+  
+  .sns-item h2 {
+    font-size: 1.1rem;
+    margin-bottom: 10px;
+  }
+  #instagramPostContainer {
+    border: 1px solid #ddd;
+    border-radius: 8px;
+    padding: 10px;
+    background-color: #fafafa;
+    min-height: 150px;
+    box-sizing: border-box;
+    box-shadow: inset 0 0 5px rgba(0,0,0,0.05);
+    max-width: 100%;         /* ✅ 追加 */
+    width: 100%;             /* ✅ 追加 */
+    display: flex;           /* ✅ 中身を広げる */
+    justify-content: center; /* ✅ センター揃え */
+   }
+
+  .note {
+    color: gray;
+    font-size: 12px;
+    margin-top: 4px;
+  }
+  
+.x-profile-link {
+  display: inline-block;
+  text-align: center;
+  text-decoration: none;
+  color: #1da1f2;
+  font-weight: bold;
+  transition: opacity 0.3s;
+  max-width: 400px;
+  margin: 0 auto;
+}
+
+.x-profile-link:hover {
+  opacity: 0.85;
+}
+
+.x-profile-image {
+  width: 100%;
+  border-radius: 12px;
+  margin-bottom: 10px;
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
+}
+
+    /* TikTok動画の横並び */
+  .tiktok-grid {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 20px;
+    justify-content: center;
+  }
+  
+  .tiktok-grid iframe {
+  flex: 1 1 300px;
+  max-width: 400px;
+  height: 800px; /* TikTok動画に適した高さ */
+  border-radius: 12px;
+  box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+  border: none;
+}
+
+.tiktok-grid blockquote {
+  display: block;
+  width: 100%;
+  max-width: 300px;
+  margin: 20px auto;
+  min-height: 600px; /* ✅ これで枠だけの現象を防ぐ */
+}
+  /* アクセシビリティ */
+  .sr-only {
+    position: absolute !important;
+    width: 1px !important;
+    height: 1px !important;
+    padding: 0 !important;
+    margin: -1px !important;
+    overflow: hidden !important;
+    clip: rect(0, 0, 0, 0) !important;
+    border: 0 !important;
+  }
+  
+.user-card:hover {
+  transform: scale(1.01);
+}
+
+.user-card h3 {
+  margin-top: 0;
+  color: #333;
+}
+.user-card p {
+  color: #555;
+}
+.user-card a {
+  display: inline-block;
+  margin-top: 8px;
+  color: #4e73df;
+  text-decoration: none;
+  font-weight: bold;
+}
+.user-card a:hover {
+  text-decoration: underline;
+}
+
+.save-profile-button {
+  background-color: #ff4f81;
+  color: white;
+  padding: 12px 24px;
+  font-size: 1.1rem;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  margin: 10px auto;
+  display: inline-block;
+  box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+  transition: background-color 0.3s ease;
+}
+
+.save-profile-button:hover {
+  background-color: #e43e70;
+}
+
+#sns-section.show {
+  display: flex;
+  flex-direction: column;
+  gap: 32px;
+}
+
+.delete-btn {
+  margin-left: 8px;
+  background: #eee;
+  border: 1px solid #ccc;
+  color: #444;
+  cursor: pointer;
+  padding: 2px 8px;
+  border-radius: 4px;
+}
+
+#edit-section {
+  margin-top: 10px;
+  text-align: left;
+  align-self: center;
+  flex: 1 1 300px;
+}
+
+#calendar-container {
+  flex: 0 0 320px;      /* ← 500px から小さめに */
+  max-width: 380px;        /* ← 最大幅を制限 */
+  padding: 10px;
+  box-sizing: border-box;
+}
+
+.auth-link {
+  text-align: center;
+  margin-top: 20px;
+  font-size: 1.3rem;
+}
+.auth-link a {
+  color: #007bff;
+  text-decoration: underline;
+}
+.auth-link a:hover {
+  text-decoration: none;
+}
+
+#youtubeInputGroup {
+  display: none;
+}
+
+#youtube-section {
+  width: 100%;
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+.user-thumb {
+  width: 80px;
+  height: 80px;
+  object-fit: cover;
+  border-radius: 10px;
+  margin-right: 15px;
+}
+
+.search-wrapper {
+  display: flex;
+  justify-content: center;
+  margin: 40px auto;
+}
+
+.search-form {
+  display: flex;
+  gap: 10px;
+  background: white;
+  padding: 12px 20px;
+  border-radius: 8px;
+  box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+  max-width: 600px;
+  width: 90%;
+}
+
+.search-form input[type="text"] {
+  flex: 1;
+  padding: 10px;
+  font-size: 1rem;
+  border: 1px solid #000;
+  border-radius: 6px;
+}
+
+.search-form button {
+  background-color: #4e73df;
+  color: white;
+  padding: 10px 16px;
+  font-size: 1rem;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+}
+
+.search-form button:hover {
+  background-color: #2e59d9;
+}
+
+.site-footer {
+  background: linear-gradient(to right, #1f1f2e, #38385a);
+  color: #fff;
+  padding: 30px 20px;
+  text-align: center;
+  margin-top: 60px;
+  border-top: 4px solid #ff4f81;
+}
+
+/*フッター*/
+.site-footer a {
+  color: #fff;
+  text-decoration: none;
+  margin: 0 10px;
+  display: inline-block;
+}
+
+.site-footer a:hover {
+  text-decoration: underline;
+}
+
+.footer-content p {
+  margin: 6px 0;
+}
+
+.footer-content {
+  margin-bottom: 10px;
+}
+
+.copyright {
+  font-size: 0.9rem;
+  color: #ccc;
+}
+
+.favorite-button {
+  color: #000;
+  background-color: #ffde59;
+  border: none;
+  padding: 10px 20px;
+  font-size: 1rem;
+  border-radius: 8px;
+  cursor: pointer;
+  font-weight: bold;
+  box-shadow: 0 2px 4px rgba(245, 244, 244, 0.2);
+}
+
+.favorite-button:disabled {
+  background-color: #ccc;
+  cursor: default;
+}
+
+.mypage-btn {
+  color: white;
+  background-color: #3b3b5c;
+  border: 1px solid #fff;
+  padding: 6px 12px;
+  border-radius: 6px;
+  font-weight: bold;
+  cursor: pointer;
+}
+.mypage-btn:hover {
+   background-color: #e03e6f;
+}
+
+.user-list {
+  max-height: 600px;
+  overflow-y: auto;
+  border: 1px solid #ccc;
+  padding: 10px;
+  background-color: #fafafa;
+  border-radius: 8px;
+  flex-wrap: wrap;
+}
+.user-card {
+  margin: 15px auto;
+  border: 1px solid #ccc;
+  padding: 12px;
+  border-radius: 10px;
+  background-color: #fefefe;
+  width: 200px;
+  box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+  transition: transform 0.2s;
+  border-bottom: 1px solid #ddd;
+  padding: 10px 0;
+  max-width: 600px;
+  line-height: 1.5;
+}
+
+.user-card:hover {
+  transform: translateY(-2px);
+}
+.user-list  {
+  border-bottom: 1px solid #ddd;
+  padding: 10px 0;
+}
+
+.carousel-image {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: center center;
+  transition: object-position 0.3s ease;
+}
+.position-slider {
+  display: block;
+  width: 100%;
+  margin-top: 8px;
+}
+
+/* QRコードコンテナを中央揃え */
+#qrcode {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  margin-top: 20px;
+}
+
+/* QRコードのcanvas要素を中央に配置 */
+#qrcode canvas {
+  margin: 0 auto;
+  display: block;
+}
+
+#userList {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 20px;
+  justify-content: center;
+  padding: 20px;
+}
+
+/* 🔧 各ユーザーカードのスタイル */
+.user-card {
+  width: 260px;
+  max-height: 300px; /* ← 高さを揃える */
+  overflow-y: auto;  /* ← 長すぎる場合にスクロール */
+  background: white;
+  border-radius: 12px;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+  padding: 16px;
+  text-align: left;
+  font-size: 14px;
+  line-height: 1.5;
+}
+
+.user-card img {
+  max-width: 100%;
+  height: auto;
+  border-radius: 8px;
+}
+
+.password-wrapper {
+  position: relative;
+}
+
+.password-wrapper input {
+  width: 100%;
+}
+
+.password-wrapper i {
+  position: absolute;
+  right: 5px;
+  top: 50%;
+  transform: translateY(-50%);
+  cursor: pointer;
+  color: #555;
+}
+
+.nav-links {
+  position: absolute;
+  top: 60px;
+  right: 20px;
+  background: rgba(255, 255, 255, 0.75);
+  backdrop-filter: blur(10px);
+  border-radius: 12px;
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.2);
+  padding: 10px 15px;
+  z-index: 100;
+  display: none;
+  animation: fadeIn 0.3s ease-in-out;
+}
+
+.nav-links li {
+  list-style: none;
+  margin: 10px 0;
+}
+
+.nav-links a,
+.nav-links form button {
+  display: block;
+  text-align: left;
+  background-color: #f3f3f3;
+  border: none;
+  padding: 8px 12px;
+  border-radius: 6px;
+  font-size: 0.95rem;
+  color: #333;
+  text-decoration: none;
+  transition: background 0.2s;
+}
+
+.nav-links a:hover,
+.nav-links form button:hover {
+  background-color: #e0e0e0;
+  cursor: pointer;
+}
+
+/* ⚙ アカウント設定は色分けするなら */
+.nav-links a,
+.nav-links button {
+  text-decoration: none;
+  font-weight: bold;
+  font-size: 1rem;
+  color: #333;
+  background: none;
+  border: none;
+  cursor: pointer;
+  transition: all 0.2s;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+  .nav-links.show {
+  display: block;
+  flex-direction: column;
+  gap: 8px;
+  position: absolute;
+  top: 50px;
+  right: 10px;
+  background: white;
+  border: 1px solid #ccc;
+  padding: 10px;
+  border-radius: 8px;
+  z-index: 2000;
+}
+
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(-10px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+/* ✅ ハンバーガーアイコンのスタイル */
+#hamburgerBtn {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  font-size: 28px;
+  background: none;
+  border: none;
+  color: #fffdfd;
+  cursor: pointer;
+  z-index: 20;
+}
+
+.hamburger {
+  display: none; /* PCでは非表示 */
+  color: white;
+  font-size: 1.8rem;
+  background: none;
+  border: none;
+  cursor: pointer;
+  z-index: 10;
+}
+/* スマホなど小さい画面の時だけ表示 */
+@media screen and (max-width: 768px) {
+  #hamburgerBtn {
+    display: block !important; /* ← 上書き防止のため !important が必要 */
+  }
+}
+
+@media screen and (max-width: 768px) {
+  .hamburger {
+    display: block !important;
+  }
+}
+
+.auth-only {
+  display: block;
+}
+
+body.own-page .auth-only {
+  display: block;
+}
+
+    .account-container {
+      max-width: 500px;
+      margin: 40px auto;
+      background: white;
+      padding: 20px;
+      border-radius: 10px;
+      box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+    }
+
+    .account-container h2 {
+      text-align: center;
+      margin-bottom: 20px;
+    }
+
+    .account-container label {
+      display: block;
+      margin-bottom: 6px;
+      font-weight: bold;
+    }
+
+    .account-container input {
+      width: 100%;
+      padding: 10px;
+      margin-bottom: 15px;
+      border-radius: 6px;
+      border: 1px solid #ccc;
+      box-sizing: border-box;
+    }
+
+    .account-container button {
+      width: 100%;
+      padding: 10px;
+      background-color: #4e73df;
+      color: white;
+      border: none;
+      border-radius: 6px;
+      font-weight: bold;
+      cursor: pointer;
+    }
+
+    .account-container .note {
+      font-size: 0.9em;
+      color: gray;
+      margin-top: -10px;
+      margin-bottom: 15px;
+    }
+
+    .success {
+      color: green;
+      text-align: center;
+    }
+
+    .error {
+      color: red;
+      text-align: center;
+    }
+
+    .facebook-section {
+  border: 1px solid #ccc;
+  padding: 16px;
+  margin-top: 40px;
+  background: #f9f9f9;
+  border-radius: 8px;
+}
+
+.facebook-section {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 20px 0;
+}
+
+.facebook-section input {
+  width: 100%;
+  max-width: 100%;
+  box-sizing: border-box;
+}
+
+.facebook-section .fb-page {
+  max-width: 100%;
+  overflow: hidden;
+}
+
+.facebook-button {
+  display: inline-block;
+  background-color: #1877f2;
+  color: white;
+  font-weight: bold;
+  padding: 10px 20px;
+  border-radius: 8px;
+  text-decoration: none;
+  font-size: 16px;
+  transition: background-color 0.3s ease;
+}
+
+.facebook-button:hover {
+  background-color: #145dbf;
+}

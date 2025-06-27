@@ -1,0 +1,86 @@
+  /* top.module.css */
+  
+ .container {
+  background: linear-gradient(to bottom, #0f2027, #203a43, #2c5364);
+  color: white;
+  padding-bottom: 40px;
+}
+
+.header {
+  text-align: center;
+  padding: 20px 20px;
+}
+
+.title {
+  font-size: 3rem;
+  margin-bottom: 10px;
+  cursor: pointer;
+}
+
+.title:hover {
+  text-decoration: underline;
+}
+
+.tagline {
+  font-size: 1.2rem;
+  color: #ddd;
+}
+
+.nav {
+  text-align: center;
+  margin-top: 20px;
+}
+
+.nav a {
+  color: #fff;
+  margin: 0 10px;
+  text-decoration: none;
+  border: 1px solid #fff;
+  padding: 8px 16px;
+  border-radius: 4px;
+}
+
+.searchBox {
+  text-align: center;
+  margin: 30px auto;
+}
+
+.searchBox input {
+  padding: 10px;
+  width: 60%;
+  max-width: 400px;
+  border: none;
+  border-radius: 6px;
+}
+
+.userList {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 20px;
+  padding: 20px;
+}
+
+.userCard {
+  background: white;
+  color: #333;
+  border-radius: 12px;
+  padding: 20px;
+  width: 200px;
+  text-align: center;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+}
+
+.userCard img {
+  width: 100%;
+  border-radius: 8px;
+}
+
+.userCard a {
+  text-decoration: none;
+  color: #1f1f1f;
+  display: block;
+  margin-top: 10px;
+  font-weight: bold;
+}
+

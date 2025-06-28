@@ -1,8 +1,10 @@
+// lib/session.ts
 import { cookies } from 'next/headers';
 import { getIronSession, IronSession } from 'iron-session';
 import type { SessionOptions } from 'iron-session';
 import type { SessionData } from './session-types';
 import { NextResponse, NextRequest } from 'next/server';
+
 
 // ✅ セッションオプション
 export const sessionOptions: SessionOptions = {
@@ -72,6 +74,13 @@ export async function setSessionCookie(
   const session = await getIronSession<SessionData>(req, res, sessionOptions);
   session.uid = data.uid;
   session.username = data.username;
+  
+  // ✅ ユーザー名をセッションに保存する！
+  session.user = {
+    name: data.user?.name ?? data.username, // ← 安全に fallback
+    email: data.user?.email, // ← あるならこれもOK
+  };
+
   await session.save();
   return res;
 }

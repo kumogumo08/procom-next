@@ -128,7 +128,7 @@ const toggleUserList = async () => {
                   onClick={async () => {
                     if (!confirm(`「${user.name}」をお気に入りから削除しますか？`)) return;
 
-                    const res = await fetch('/api/favorites', {
+                    const res = await fetch('/api/favorites/users',{
                       method: 'DELETE',
                       headers: { 'Content-Type': 'application/json' },
                       body: JSON.stringify({ targetUid: user.uid }),

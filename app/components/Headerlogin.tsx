@@ -68,7 +68,7 @@ export default function Headerlogin() {
       </p>
 
       <div className="search-wrapper">
-        <form action="/users.html" method="GET" className="search-form">
+        <form action="/users" method="GET" className="search-form">
           <input type="text" name="q" placeholder="名前や肩書きで検索" required />
           <button type="submit">検索</button>
         </form>

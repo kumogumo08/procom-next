@@ -15,12 +15,10 @@ interface UserData {
   profile: UserProfile;
 }
 
-export default function UserSearchClient() {
+export default function UserSearchClient({ initialQuery }: { initialQuery: string }) {
   const [users, setUsers] = useState<UserData[]>([]);
   const [filteredUsers, setFilteredUsers] = useState<UserData[]>([]);
-  const searchParams = useSearchParams();
-  const q = searchParams?.get('q') ?? '';
-  const [searchValue, setSearchValue] = useState(q);
+  const [searchValue, setSearchValue] = useState(initialQuery);
 
   useEffect(() => {
     async function fetchUsers() {
@@ -28,7 +26,7 @@ export default function UserSearchClient() {
         const res = await fetch('/api/users');
         const data = await res.json();
 
-        const keyword = q.toLowerCase();
+        const keyword = initialQuery.toLowerCase();
         const filtered = keyword
           ? data.filter((user: UserData) => {
               const name = user.profile?.name?.toLowerCase() || '';
@@ -46,7 +44,8 @@ export default function UserSearchClient() {
     }
 
     fetchUsers();
-  }, [q]);
+  }, [initialQuery]);
+
 
   const handleInput = (val: string) => {
     const lower = val.toLowerCase();

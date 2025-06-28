@@ -3,10 +3,8 @@ import { db, admin } from '@/lib/firebase';
 import { getSessionUID } from '@/lib/session';
 import { NextRequest, NextResponse } from 'next/server';
 
-export async function POST(
-  req: NextRequest,
-  { params }: { params: { target: string } }
-) {
+export async function POST(req: NextRequest, props: { params: Promise<{ target: string }> }) {
+  const params = await props.params;
   const sessionUser = await getSessionUID(req); // ← await を必ず付ける
   const targetUser = params.target;
 

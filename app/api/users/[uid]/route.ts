@@ -2,10 +2,8 @@ import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/firebase'; // dbインスタンスの型はlibに応じて調整
 // import { admin } from '@/lib/firebase-admin'; // 必要なら
 
-export async function POST(
-  req: NextRequest,
-  { params }: { params: { uid: string } }
-) {
+export async function POST(req: NextRequest, props: { params: Promise<{ uid: string }> }) {
+  const params = await props.params;
   const { uid } = params;
   const data = await req.json();
 

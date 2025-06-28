@@ -1,7 +1,5 @@
-import { SessionOptions } from 'iron-session';
+import { SessionOptions, getIronSession } from 'iron-session';
 import type { SessionData } from '@/lib/session-types';
-import { NextRequest } from 'next/server';
-import { getIronSession } from 'iron-session';
 
 const sessionOptions: SessionOptions = {
   cookieName: 'procom_session',
@@ -11,9 +9,11 @@ const sessionOptions: SessionOptions = {
   },
 };
 
-export async function getSession(req: NextRequest): Promise<SessionData | null> {
+// ✅ Next.js 15 対応の getSession
+export async function getSession(req: Request): Promise<SessionData | null> {
   try {
-    const session = await getIronSession<SessionData>(req as any, sessionOptions);
+    const res = new Response(); // ← 追加：iron-sessionのために必要
+    const session = await getIronSession<SessionData>(req, res, sessionOptions);
 
     return session?.uid ? session : null;
   } catch (err) {

@@ -13,6 +13,10 @@ function isValidPassword(password: string): boolean {
   return lengthOK && hasUpper && hasLower && hasNumber && !hasSymbol;
 }
 
+function isValidEmail(email: string): boolean {
+  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+}
+
 export async function POST(req: NextRequest): Promise<NextResponse> {
   const { username, email, password }: { username: string; email: string; password: string } = await req.json();
 
@@ -62,7 +66,11 @@ const redirectTo = `/user/${uid}`;
 const res = NextResponse.json({ success: true, redirectTo });
 
 // ✅ セッションを res に反映（ここでクッキーがセットされる）
-await setSessionCookie(req, res, { uid, username });
+await setSessionCookie(req, res, {
+  uid,
+  username,
+  user: { name: username }, // ✅ 型に合った渡し方！
+});
 
 // ✅ そのまま返す
 return res;// ✅ JSONで返す

@@ -30,11 +30,17 @@ export default function InstagramEmbed({ uid, isEditable }: Props) {
   }, [uid]);
 
   // 🔽 Instagram埋め込みスクリプトの再読み込み
-  useEffect(() => {
-    if (loadedUrl && typeof window !== 'undefined' && (window as any).instgrm) {
-      (window as any).instgrm.Embeds.process();
-    }
-  }, [loadedUrl]);
+useEffect(() => {
+  if (loadedUrl && typeof window !== 'undefined' && (window as any).instgrm) {
+    setTimeout(() => {
+      try {
+        (window as any).instgrm.Embeds.process();
+      } catch (err) {
+        console.warn('Instagram埋め込み処理エラー:', err);
+      }
+    }, 100); // 少しだけ遅延させることでDOM更新が確実に終わる
+  }
+}, [loadedUrl]);
 
   // 🔽 保存処理
   const handleSave = async () => {

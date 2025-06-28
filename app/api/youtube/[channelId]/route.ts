@@ -6,11 +6,10 @@ import { NextRequest, NextResponse } from 'next/server';
 
 export async function GET(
   req: NextRequest,
-  contextPromise: Promise<{ params: { channelId?: string } }>
+  { params }: { params: { channelId?: string } }
 ): Promise<NextResponse> {
   try {
-    const { params } = await contextPromise;
-    const channelId = params?.channelId;
+    const { channelId } = params;
 
     if (!channelId) {
       return NextResponse.json({ error: 'channelId が指定されていません' }, { status: 400 });

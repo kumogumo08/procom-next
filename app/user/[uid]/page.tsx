@@ -24,7 +24,8 @@ import UserProfileSection from '@/components/UserProfileSection';
 import UserPageClient from '@/components/UserPageClient';
 import FacebookEmbedBlock from '@/components/FacebookEmbedBlock';
 
-export default function UserPage({ params }: { params: { uid: string } }) {
+export default function UserPage(props: { params: Promise<{ uid: string }> }) {
+  const params = use(props.params);
   const { uid } = params;
 
   const [showUserList, setShowUserList] = useState(false);
@@ -74,7 +75,7 @@ export default function UserPage({ params }: { params: { uid: string } }) {
     checkSession();
   }, [uid]);
 
-   const isOwnPage = !!(session?.loggedIn && session.uid === uid);
+  const isOwnPage = !!(session?.loggedIn && session.uid === uid);
 
   return (
     <>

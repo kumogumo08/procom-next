@@ -36,11 +36,10 @@ function cleanData(obj: Record<string, any>) {
 // --- GET: プロフィール情報取得 ---
 export async function GET(
   req: NextRequest,
-  contextPromise: Promise<{ params: { uid?: string } }>
+  { params }: { params: { uid?: string } }
 ): Promise<NextResponse> {
   try {
-    const { params } = await contextPromise;
-    const uid = params?.uid;
+    const { uid } = params;
 
     if (!uid) {
       return NextResponse.json({ error: 'uidが指定されていません' }, { status: 400 });
@@ -84,7 +83,7 @@ export async function GET(
       facebookUrl: rawProfile.facebookUrl ?? '',
     };
 
-    return NextResponse.json({
+   return NextResponse.json({
       message: 'ユーザー取得成功',
       uid,
       profile,
@@ -96,10 +95,8 @@ export async function GET(
 }
 
 // --- POST: プロフィール保存 ---
-export async function POST(
-  req: NextRequest,
-  { params }: { params: { uid: string } }
-) {
+export async function POST(req: NextRequest, props: { params: Promise<{ uid: string }> }) {
+  const params = await props.params;
   try {
     const uid = params.uid;
     if (!uid) {

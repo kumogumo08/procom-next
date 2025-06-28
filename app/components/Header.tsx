@@ -8,6 +8,7 @@ type SessionData = {
   loggedIn: boolean;
   uid?: string;
   username?: string;
+  name?: string; // ✅ 追加
 };
 
 export default function Header() {
@@ -36,8 +37,10 @@ export default function Header() {
       </h1>
 
       {/* 👤 ユーザー名を表示 */}
-      {session.loggedIn && session.username && (
-        <h2 className={styles.username}>{session.username}さんのページ</h2>
+      {session.loggedIn && (session.name || session.username) && (
+        <h2 className={styles.username}>
+          {(session.name ?? session.username)}さんのページ
+        </h2>
       )}
 
       <p className={styles.tagline}>あなたのすべてを、ここに集約。</p>
@@ -48,7 +51,9 @@ export default function Header() {
       {/* 🔁 ログイン／ログアウトのリンク */}
       {session.loggedIn ? (
       <div className={styles.authUI}>
-        <p className={styles.authGreeting}>ようこそ、{session.username}さん！</p>
+        <p className={styles.authGreeting}>
+          ようこそ、{session.name ?? session.username}さん！
+        </p>
 
         <div className={styles.authButtons}>
           <Link href={`/user/${session.uid}`} className="mypage-btn">マイページ</Link>

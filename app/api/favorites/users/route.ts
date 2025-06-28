@@ -62,7 +62,7 @@ export async function GET(req: NextRequest) {
       }
     }
 
-    return NextResponse.json(results);
+    return NextResponse.json({ users: results }); 
   } catch (err) {
     console.error('❌ お気に入り取得エラー:', err);
     return NextResponse.json({ error: '内部エラー' }, { status: 500 });

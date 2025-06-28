@@ -9,6 +9,7 @@ import { cookies } from 'next/headers';
 import { bucket } from '@/lib/firebase';
 import { v4 as uuidv4 } from 'uuid';
 
+
 // ✅ セッションオプション
 const sessionOptions: SessionOptions = {
   cookieName: 'procom_session',
@@ -19,16 +20,14 @@ const sessionOptions: SessionOptions = {
 };
 
 export async function POST(req: NextRequest) {
-  console.log('🍪 Cookie ヘッダー:', req.headers.get('cookie'));
-  const session = await getSession(req); 
-  console.log('📦 getSessionの中身:', session);
-  console.log('🧪 req.headers.cookie:', req.headers.get('cookie'));
-  const uid = session?.uid;
-  console.log('🧾 セッションUID:', uid);
+  const cookieStore = await cookies(); // ✅ await 必須（Next.js 15以降）
+  const session = await getIronSession<SessionData>(cookieStore, sessionOptions);
+  console.log('📦 セッション確認:', session);
 
-  if (!uid) {
+  if (!session.uid) {
     return NextResponse.json({ error: '未ログインです' }, { status: 401 });
   }
+  const uid = session.uid;
 
   try {
     const { base64Images } = await req.json();

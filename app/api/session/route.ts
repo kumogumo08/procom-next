@@ -16,6 +16,7 @@ export async function GET(req: NextRequest) {
     loggedIn: true,
     uid: session.uid,
     username: session.username,
+    name: session.user?.name, // ✅ 追加
   });
-}
+  }
 

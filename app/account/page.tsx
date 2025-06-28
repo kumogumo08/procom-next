@@ -14,27 +14,35 @@ export default function AccountSettingsPage() {
   const [showPassword, setShowPassword] = useState(false);
 
   const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setMessage('');
+  e.preventDefault();
+  setMessage('');
 
-    const res = await fetch('/account/update', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ newUsername, newEmail, newPassword })
-    });
+  const res = await fetch('/account/update', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      newUsername,
+      newEmail,
+      newPassword
+    })
+  });
 
-    const resultText = await res.text();
+  const resultText = await res.text();
 
-    if (res.ok) {
-      setMessage('✅ アカウント情報を更新しました');
+  if (res.ok) {
+    setMessage('✅ アカウント情報を更新しました');
+    const sessionRes = await fetch('/api/session');
+    const session = await sessionRes.json();
+    if (session.uid) {
+      router.refresh();
       setTimeout(() => {
-        const username = JSON.parse(resultText).username;
-        router.push(`/user/${username}`);
+        router.push(`/user/${session.uid}`);
       }, 1000);
-    } else {
-      setMessage(`❌ ${resultText}`);
     }
-  };
+  } else {
+    setMessage(`❌ ${resultText}`);
+  }
+};
 
   const handleWithdraw = async () => {
     const confirmed = confirm("本当にアカウントを削除しますか？この操作は元に戻せません。");

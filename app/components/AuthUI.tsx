@@ -21,7 +21,10 @@ export default function AuthUI() {
   useEffect(() => {
     async function fetchSession() {
       try {
-        const res = await fetch('/api/session');
+        const res = await fetch('/api/session', {
+        credentials: 'include',
+        cache: 'no-store', // ← これが重要！
+      });
         const data = await res.json();
         setSession(data);
         const currentUid = decodeURIComponent(window.location.pathname.split('/').pop() || '');

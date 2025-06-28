@@ -1,14 +1,13 @@
-// ✅ app/users/page.tsx
 import Header from '@/components/Header';
 import Footer from '@/components/Footer';
-import UserSearchClient from '@/components/UserSearchClient';
+import UserSearchClientWrapper from '@/components/UserSearchClientWrapper'; // ✅ ここ
 
 export default function UsersPage() {
   return (
     <>
       <Header />
       <main style={{ padding: '20px' }}>
-        <UserSearchClient />
+        <UserSearchClientWrapper /> {/* ✅ クエリを渡すラッパー */}
       </main>
       <Footer />
     </>

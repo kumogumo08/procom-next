@@ -1,6 +1,9 @@
-// app/lib/session-types.ts
+// lib/session-types.ts
 export type SessionData = {
-  uid?: string;
-  username?: string;
-  email?: string;
+  uid: string;
+  username: string;
+  user?: {
+    name?: string;
+    email?: string;
+  };
 };

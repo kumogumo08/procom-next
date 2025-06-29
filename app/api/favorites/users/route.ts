@@ -11,8 +11,8 @@ interface FavoriteUser {
   photoUrl?: string;
 }
 
-export async function GET(req: NextRequest) {
-  const uid = await getSessionUID(req);
+export async function GET(req: NextRequest, context: { params: { uid: string } }) {
+  const { uid } = context.params;
 
   if (!uid) {
     return NextResponse.json({ error: 'ログインが必要です' }, { status: 401 });

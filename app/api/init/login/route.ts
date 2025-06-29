@@ -1,10 +1,18 @@
 // app/api/login/route.ts
 import { NextRequest, NextResponse } from 'next/server';
-import { setSessionUID } from '@/lib/session';
+import { setSessionCookie } from '@/lib/session';
 
 export async function POST(req: NextRequest) {
-  const { uid } = await req.json();
+  const { uid, username } = await req.json();
+
   const res = NextResponse.json({ loggedIn: true });
-  setSessionUID(uid);
+
+  // UIDとユーザー名をセッションに保存
+  await setSessionCookie(req, res, {
+    uid,
+    username,
+    user: { name: username },
+  });
+
   return res;
 }

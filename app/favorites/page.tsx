@@ -35,7 +35,7 @@ export default function FavoritesPage() {
           return
         }
 
-        const res = await fetch('/api/favorites')
+        const res = await fetch(`/api/favorites/users?uid=${sessionData.uid}`);
         if (!res.ok) throw new Error('取得失敗')
         const data: FavoriteUser[] = await res.json()
 

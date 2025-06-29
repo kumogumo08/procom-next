@@ -4,6 +4,7 @@ import Head from 'next/head';
 import Header from '@/components/Header';
 import Footer from '@/components/Footer'; // 位置が合っていればこのままでOK
 import Link from 'next/link';
+import type { JSX } from 'react';
 
 export default function HelpPage(): JSX.Element {
   return (

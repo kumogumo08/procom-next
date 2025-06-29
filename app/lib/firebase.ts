@@ -23,7 +23,7 @@ export function initializeFirebaseAdmin(): void {
 
   admin.initializeApp({
     credential: admin.credential.cert(serviceAccount),
-    storageBucket: 'procom-fea80.firebasestorage.app', // ✅ .app → .com に修正
+    storageBucket: 'procom-fea80.firebasestorage.app',
   });
 
   initialized = true;

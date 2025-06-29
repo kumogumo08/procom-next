@@ -13,6 +13,7 @@
     "@fortawesome/fontawesome-free": "^6.7.2",
     "bcryptjs": "^3.0.2",
     "cookie": "^1.0.2",
+    "dotenv": "^17.0.0",
     "firebase-admin": "^13.4.0",
     "iron-session": "^8.0.4",
     "next": "^15.3.3",
@@ -23,6 +24,7 @@
   },
   "devDependencies": {
     "@eslint/eslintrc": "^3",
+    "@types/dotenv": "^6.1.1",
     "@types/node": "24.0.0",
     "@types/qrcode": "^1.5.5",
     "@types/react": "^19.1.8",

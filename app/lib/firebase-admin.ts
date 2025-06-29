@@ -1,21 +1,25 @@
 // lib/firebase-admin.ts
+import * as dotenv from 'dotenv';
+dotenv.config();
+
 import * as admin from 'firebase-admin';
 import fs from 'fs';
 import path from 'path';
 
-// 初期化チェック
 if (!admin.apps.length) {
-  // 🔑 環境変数から秘密鍵ファイルパスを取得
   const keyPath = process.env.FIREBASE_KEY_PATH;
 
   if (!keyPath) {
     throw new Error('環境変数 FIREBASE_KEY_PATH が未設定です');
   }
 
-  // 🔐 秘密鍵を読み込み・改行コード修正
-  const serviceAccount = JSON.parse(
-    fs.readFileSync(path.resolve(keyPath), 'utf8')
-  );
+  const resolvedPath = path.resolve(keyPath);
+
+  if (!fs.existsSync(resolvedPath)) {
+    throw new Error(`秘密鍵ファイルが見つかりません: ${resolvedPath}`);
+  }
+
+  const serviceAccount = JSON.parse(fs.readFileSync(resolvedPath, 'utf8'));
 
   if (serviceAccount.private_key && typeof serviceAccount.private_key === 'string') {
     serviceAccount.private_key = serviceAccount.private_key.replace(/\\n/g, '\n');

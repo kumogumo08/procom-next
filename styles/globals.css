@@ -1374,3 +1374,9 @@ body.own-page .auth-only {
 .facebook-button:hover {
   background-color: #145dbf;
 }
+
+input[type="search"],
+input[type="text"] {
+  color: #000; /* または任意の読みやすい色に */
+  background-color: #fff; /* 背景色も明るく */
+}

@@ -1,5 +1,6 @@
 import '../styles/globals.css';
 import Analytics from './analytics';
+import { Suspense } from 'react';
 
 export const metadata = {
   title: 'Procom',
@@ -26,7 +27,9 @@ export default function RootLayout({
         />
       </head>
       <body className="antialiased">
-        <Analytics />
+        <Suspense fallback={null}>
+          <Analytics />
+        </Suspense>
         {children}</body>
     </html>
   );

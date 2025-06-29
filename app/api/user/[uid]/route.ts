@@ -10,7 +10,7 @@ import { getIronSession } from 'iron-session';
 import { sessionOptions } from '@/lib/session';
 import type { SessionData } from '@/lib/session-types';
 import { db } from '@/lib/firebase-admin';
-import { admin } from '@/lib/firebase';
+import admin from 'firebase-admin';
 
 initializeFirebaseAdmin();
 
@@ -34,10 +34,7 @@ function cleanData(obj: Record<string, any>) {
 }
 
 // --- GET: プロフィール情報取得 ---
-export async function GET(
-  req: NextRequest,
-  context: { params: { uid: string } }
-): Promise<NextResponse> {
+export async function GET(req: NextRequest, context: any) {
   try {
     const { uid } = context.params;
 

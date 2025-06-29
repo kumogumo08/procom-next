@@ -11,8 +11,9 @@ interface FavoriteUser {
   photoUrl?: string;
 }
 
-export async function GET(req: NextRequest, context: { params: { uid: string } }) {
-  const { uid } = context.params;
+export async function GET(req: NextRequest) {
+  const { searchParams } = new URL(req.url);
+  const uid = searchParams.get('uid');
 
   if (!uid) {
     return NextResponse.json({ error: 'ログインが必要です' }, { status: 401 });
@@ -29,7 +30,6 @@ export async function GET(req: NextRequest, context: { params: { uid: string } }
     }
 
     const results: FavoriteUser[] = [];
-
     const chunks = chunkArray(favorites, 10);
     for (const chunk of chunks) {
       const snapshots = await db.getAll(

@@ -139,10 +139,6 @@ body {
   
   /* レスポンシブ対応 */
 
-  .carousel {
-    transition: all 0.3s ease;
-  }
-
   @media screen and (max-width: 768px) {
     .tagline {
       font-size: 1.1rem;
@@ -165,7 +161,7 @@ body {
     
     .slide {
       position: absolute;
-      transform: rotateY(calc(var(--i) * 45deg)) translateZ(400px); /* ← 45deg → 15deg に */
+      transform: rotateY(calc(var(--i) * 45deg)) translateZ(400px);
       transition: transform 0.5s ease, opacity 0.5s ease;
       opacity: 0.6;
       border-radius: 12px;
@@ -209,6 +205,7 @@ body {
     position: relative;
     height: 320px;
     transform-style: preserve-3d; 
+    transition: all 0.3s ease;
   }
 
 .carousel img {
@@ -223,14 +220,6 @@ body {
   border-radius: 12px;
   box-shadow: none;
 }
-
-/* .carousel .slide {
-  /* transform: translateX(calc(var(--i) * 100%)); */
-  /* transition: transform 0.5s ease;
-  position: absolute;
-  top: 0;
-  left: 0;
-} */ 
 
   .prev, .next {
     position: absolute;
@@ -606,7 +595,6 @@ body {
   }
 
   /* YouTube動画を横並びにする */
-  /* YouTube動画コンテナ */
 #videoContainer {
   justify-content: center;
   gap: 20px;
@@ -677,7 +665,7 @@ body {
 
 .sns-container > * {
   flex: 1 1 100%;
-  max-width: 600px; /* ✅ 幅制限ここ！ */
+  max-width: 600px;
 }
 
   /* ✅ TikTok：2カラム用に全体を囲う */
@@ -781,10 +769,10 @@ body {
     min-height: 150px;
     box-sizing: border-box;
     box-shadow: inset 0 0 5px rgba(0,0,0,0.05);
-    max-width: 100%;         /* ✅ 追加 */
-    width: 100%;             /* ✅ 追加 */
-    display: flex;           /* ✅ 中身を広げる */
-    justify-content: center; /* ✅ センター揃え */
+    max-width: 100%;        
+    width: 100%;           
+    display: flex;           
+    justify-content: center; 
    }
 
   .note {

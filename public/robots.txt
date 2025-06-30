@@ -1,9 +1,4 @@
-# *
 User-agent: *
 Allow: /
 
-# Host
-Host: https://procom-next.onrender.com
-
-# Sitemaps
 Sitemap: https://procom-next.onrender.com/sitemap.xml

@@ -40,7 +40,7 @@ export default function RootLayout({
   return (
     <html lang="ja">
       <head>
-        <meta name="google-site-verification" content="t6Dm9fjYoVqLLPdklFeE6uNu_FzgB26c4f5eE3dqJ7A" />
+        <meta name="google-site-verification" content="f6A-hc6jAwrweCHOaVCvsk0kyCukcP-BHebE9pCs2yo" />
         <link
           href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP&display=swap"
           rel="stylesheet"

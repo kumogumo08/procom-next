@@ -5,6 +5,7 @@ import Head from 'next/head';
 import Header from '@/components/Header';
 import Footer from 'app/components/Footer';
 import { useRouter, useSearchParams } from 'next/navigation';
+import Link from 'next/link'
 
 export default function LoginPage() {
   const [mode, setMode] = useState<'login' | 'register'>('login');
@@ -140,6 +141,11 @@ export default function LoginPage() {
               >
                 → 新規登録はこちら
               </div>
+              <p className="text-center mt-2">
+                <Link href="/forgot-password" className="text-blue-500 underline">
+                  パスワードを忘れた方はこちら
+                </Link>
+              </p>
             </div>
           ) : (
             <div id="registerForm">

@@ -1,8 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { v4 as uuidv4 } from 'uuid';
-import bcrypt from 'bcryptjs'
+import bcrypt from 'bcryptjs';
 import { admin } from '@/lib/firebase';
 import { setSessionCookie } from '@/lib/session';
+import { getAuth, createUserWithEmailAndPassword } from 'firebase/auth';
+import { firebaseApp } from '@/lib/firebaseClient';
 
 function isValidPassword(password: string): boolean {
   const lengthOK = password.length >= 8 && password.length <= 32;
@@ -30,24 +31,37 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
 
   const db = admin.firestore();
 
+  // ユーザー名の重複チェック
   const usernameSnapshot = await db.collection('users').where('profile.name', '==', username).get();
   if (!usernameSnapshot.empty) {
     return new NextResponse('ユーザー名は既に使用されています', { status: 409 });
   }
 
+  // メールアドレスの重複チェック（Firestore上）
   const emailSnapshot = await db.collection('users').where('email', '==', email).get();
   if (!emailSnapshot.empty) {
     return new NextResponse('メールアドレスは既に使用されています', { status: 409 });
   }
 
-  const uid = uuidv4();
+  let uid = '';
   const hashed = await bcrypt.hash(password, 10);
+
+  try {
+    const auth = getAuth(firebaseApp);
+    const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+    uid = userCredential.user.uid; // ✅ Firebase Auth の uid を取得
+  } catch (err: any) {
+    console.error('Firebase Auth 登録エラー:', err);
+    return new NextResponse('Firebase Authentication 登録に失敗しました', { status: 500 });
+  }
+
+  // Firestore にプロフィール登録
   const userRef = db.collection('users').doc(uid);
 
   await userRef.set({
     uid,
     email: email.trim().toLowerCase(),
-    password: hashed,
+    password: hashed, // Firestoreには bcrypt で暗号化して保存（※必要に応じて省略可）
     profile: {
       name: username.trim(),
       title: '',
@@ -61,18 +75,15 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
     },
   });
 
-  // ✅ res を作ってから setSessionCookie に渡す
-const redirectTo = `/user/${uid}`;
-const res = NextResponse.json({ success: true, redirectTo });
+  // セッション & レスポンス
+  const redirectTo = `/user/${uid}`;
+  const res = NextResponse.json({ success: true, redirectTo });
 
-// ✅ セッションを res に反映（ここでクッキーがセットされる）
-await setSessionCookie(req, res, {
-  uid,
-  username,
-  user: { name: username }, // ✅ 型に合った渡し方！
-});
+  await setSessionCookie(req, res, {
+    uid,
+    username,
+    user: { name: username },
+  });
 
-// ✅ そのまま返す
-return res;// ✅ JSONで返す
-
+  return res;
 }

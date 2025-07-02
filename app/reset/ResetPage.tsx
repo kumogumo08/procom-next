@@ -12,6 +12,16 @@ export default function ResetPage() {
   const router = useRouter();
   const oobCode = searchParams.get('oobCode');
 
+    // ✅ Procomと同じバリデーションルールを追加
+  const validatePassword = (password: string): string | null => {
+    if (password.length < 8 || password.length > 32) return 'パスワードは8〜32文字である必要があります';
+    if (!/[A-Z]/.test(password)) return '大文字を含めてください';
+    if (!/[a-z]/.test(password)) return '小文字を含めてください';
+    if (!/[0-9]/.test(password)) return '数字を含めてください';
+    if (/[^A-Za-z0-9]/.test(password)) return '記号は使えません';
+    return null;
+  };
+  
   const handleReset = async () => {
     if (!oobCode || !password) return;
     try {

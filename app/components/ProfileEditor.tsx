@@ -10,6 +10,16 @@ type Props = {
   isEditable: boolean;
 };
 
+// 改行＋XSS対策用のエスケープ関数
+function escapeHtml(str: string): string {
+  return str
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+}
+
 export default function ProfileEditor({
   uid,
   initialName = '',
@@ -143,14 +153,12 @@ const handleSave = async () => {
         </h2>
 
         {bio.trim() !== '' && (
-          <div id="bio">
-            {bio
-              .split('\n')
-              .filter(line => line.trim() !== '')
-              .map((line, i) => (
-                <div key={i}>{line}</div>
-              ))}
-          </div>
+          <div
+            id="bio"
+            dangerouslySetInnerHTML={{
+              __html: escapeHtml(bio).replace(/\n/g, '<br>'),
+            }}
+          />
         )}
 
       {isEditable && (

@@ -16,7 +16,7 @@ export const metadata = {
     siteName: 'Procom',
     images: [
       {
-        url: 'https://procom.jp/ogp-image.jpg',
+        url: 'https://procom-next.onrender.com/og-image.jpg',
         width: 1200,
         height: 630,
         alt: 'Procom OGP画像',
@@ -28,7 +28,7 @@ export const metadata = {
     card: 'summary_large_image',
     title: 'Procom',
     description: 'SNSプロフィールをまとめて表示できるプラットフォーム。',
-    images: ['https://procom.jp/ogp-image.jpg'],
+    images: ['https://procom-next.onrender.com/og-image.jpg'],
   },
 };
 

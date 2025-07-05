@@ -1,5 +1,5 @@
 // app/api/oshi/[uid]/route.ts
-export const runtime = 'nodejs'; // 👈 これが必須
+export const runtime = 'nodejs'; // ← Edge runtimeではなくNode.jsを明示
 
 import { NextRequest, NextResponse } from 'next/server';
 import { initializeFirebaseAdmin } from '@/lib/firebase';
@@ -8,11 +8,12 @@ import { getFirestore } from 'firebase-admin/firestore';
 initializeFirebaseAdmin();
 const db = getFirestore();
 
+// POST: 推し数を加算
 export async function POST(
   req: NextRequest,
-  { params }: { params: { uid: string } }
-) {
-  const uid = params.uid;
+  context: { params: { uid: string } } // ✅ Next.jsが要求する形式（OK）
+): Promise<NextResponse> {
+  const uid = context.params.uid;
   const userRef = db.collection('users').doc(uid);
 
   try {
@@ -33,11 +34,12 @@ export async function POST(
   }
 }
 
+// GET: 推し数を取得
 export async function GET(
   req: NextRequest,
-  { params }: { params: { uid: string } }
-) {
-  const uid = params.uid;
+  context: { params: { uid: string } } // ✅ contextの型をそのまま受ける
+): Promise<NextResponse> {
+  const uid = context.params.uid;
 
   try {
     const doc = await db.collection('users').doc(uid).get();

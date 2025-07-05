@@ -12,7 +12,7 @@ export const metadata = {
   openGraph: {
     title: 'Procom（プロコム）',
     description: 'SNSリンクを一括表示。あなたの情報を1ページに。',
-    url: 'https://procom.jp',
+    url: 'https://procom-next.onrender.com/',
     siteName: 'Procom',
     images: [
       {
@@ -65,7 +65,7 @@ export default function RootLayout({
               "@context": "https://schema.org",
               "@type": "WebSite",
               name: "Procom（プロコム）",
-              url: "https://procom.jp",
+              url: "https://procom-next.onrender.com/",
               description: "フリーランス・クリエイターのためのプロフィール & SNSリンク集",
               publisher: {
                 "@type": "Organization",

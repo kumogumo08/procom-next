@@ -80,15 +80,29 @@ export default function UserPage(props: { params: Promise<{ uid: string }> }) {
 
   return (
     <>
-      <Head>
-        <title>Procom - ユーザーページ</title>
-        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-        <link rel="icon" href="/favicon.ico" />
-        <link rel="stylesheet" href="/style.css" />
-        <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP&display=swap" rel="stylesheet" />
-      </Head>
+        <Head>
+          <title>{profile?.name ?? 'Procomユーザー'}さんのSNSプロフィール - Procom</title>
+          <meta name="description" content={`${profile?.name ?? 'このユーザー'}さん（${profile?.title ?? '登録ユーザー'}）のSNS、写真、予定、紹介などをまとめたプロフィールページです。`} />
+          <meta property="og:title" content={`${profile?.name ?? 'Procomユーザー'} - Procomプロフィール`} />
+          <meta property="og:description" content={profile?.bio ?? 'SNSリンクや自己紹介、写真を集約したProcomのプロフィールページです。'} />
+          <meta property="og:type" content="profile" />
+          <meta property="og:url" content={`https://procom-next.onrender.com/user/${uid}`} />
+          <meta property="og:image" content={photos[0]?.url ?? '/og-image.jpg'} />
+          <link rel="canonical" href={`https://procom-next.onrender.com/user/${uid}`} />
+          <meta name="robots" content="index, follow" />
+          <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+          <link rel="icon" href="/favicon.ico" />
+          <link rel="stylesheet" href="/style.css" />
+          <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP&display=swap" rel="stylesheet" />
+        </Head>
 
       <Header />
+    {/* ユーザー名表示 */}
+    {profile?.name && (
+      <h1 style={{ textAlign: 'center', fontWeight: 'bold', fontSize: '1.8rem', margin: '1em 0' }}>
+        {profile.name}さんのプロフィールページ
+      </h1>
+    )}
 
       <div style={{ position: 'absolute', top: 20, left: 20, zIndex: 10 }}>
         <h3

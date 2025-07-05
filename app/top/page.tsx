@@ -50,7 +50,7 @@ export default function TopPage() {
         <meta name="description" content="Procomは、YouTuberやダンサー、インフルエンサーのためのSNSプロフィール集約サイトです。" />
         <meta property="og:title" content="Procom - あなたのSNSをまとめよう" />
         <meta property="og:description" content="YouTube・X・Instagram・TikTokを一つのページで表示。" />
-        <meta property="og:image" content="https://procom.jp/og-image.jpg" />
+        <meta property="og:image" content="https://procom-next.onrender.com//og-image.jpg" />
         <meta name="twitter:card" content="summary_large_image" />
       </Head>
 

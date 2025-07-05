@@ -23,6 +23,7 @@ import QRCodeBlock from '@/components/QRCodeBlock';
 import UserProfileSection from '@/components/UserProfileSection';
 import UserPageClient from '@/components/UserPageClient';
 import FacebookEmbedBlock from '@/components/FacebookEmbedBlock';
+import OshiButton from '@/components/OshiButton';
 
 export default function UserPage(props: { params: Promise<{ uid: string }> }) {
   const params = use(props.params);
@@ -118,6 +119,7 @@ export default function UserPage(props: { params: Promise<{ uid: string }> }) {
           photos ={photos}
           setPhotos={setPhotos}
         />
+          <OshiButton uid={uid} />
           <UserListToggle />
           <AuthUI />
           <UserProfileSection uid={uid} isEditable={session?.uid === uid} />

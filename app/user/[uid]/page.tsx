@@ -1,3 +1,5 @@
+// app/user/[uid]/page.tsx
+
 import { getProfileFromFirestore } from '@/lib/getProfile';
 import { getSessionServer } from '@/lib/getSessionServer';
 import Header from '@/components/Headerlogin';
@@ -15,9 +17,10 @@ import QRCodeBlock from '@/components/QRCodeBlock';
 import OshiButton from '@/components/OshiButton';
 import Script from 'next/script';
 
-// ✅ generateMetadata を外部ファイルからインポートして再エクスポート
+// ✅ generateMetadata を別ファイルから再エクスポート（定義しない！）
 export { generateMetadata } from './generate-metadata';
 
+// ✅ ページコンポーネント
 export default async function UserPage({
   params,
 }: {
@@ -29,7 +32,9 @@ export default async function UserPage({
   const profile = await getProfileFromFirestore(uid);
 
   const photos = (profile?.photos || []).map((p: any) =>
-    typeof p === 'string' ? { url: p, position: '50' } : { url: p.url, position: p.position ?? '50' }
+    typeof p === 'string'
+      ? { url: p, position: '50' }
+      : { url: p.url, position: p.position ?? '50' }
   );
 
   return (

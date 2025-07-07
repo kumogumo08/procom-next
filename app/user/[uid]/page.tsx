@@ -63,8 +63,10 @@ export async function generateMetadata({ params }: { params: { uid: string } }) 
   };
 }
 
-export default async function UserPage({ params }: { params: { uid: string } }) {
+export default async function UserPage(props: { params: { uid: string } }) {
+  const { params } = props;
   const uid = params.uid;
+
   const session = await getSessionServer();
   const isEditable = session?.uid === uid;
   const profile = await getProfileFromFirestore(uid);

@@ -2,7 +2,7 @@ import { getProfileFromFirestore } from '@/lib/getProfile';
 import { getSessionServer } from '@/lib/getSessionServer';
 import Header from '@/components/Headerlogin';
 import Footer from '@/components/Footer';
-import UserPhotoSliderClient from '@/components/UserPhotoSliderClient'; // ⭐️ 新規追加
+import UserPhotoSliderClient from '@/components/UserPhotoSliderClient';
 import AuthUI from '@/components/AuthUI';
 import UserProfileSection from '@/components/UserProfileSection';
 import UserPageClient from '@/components/UserPageClient';
@@ -14,18 +14,28 @@ import FacebookEmbedBlock from '@/components/FacebookEmbedBlock';
 import QRCodeBlock from '@/components/QRCodeBlock';
 import OshiButton from '@/components/OshiButton';
 import Script from 'next/script';
+import type { Metadata } from 'next';
 
-export async function generateMetadata({ params }: { params: { uid: string } }) {
+type PageProps = {
+  params: {
+    uid: string;
+  };
+};
+
+export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
   const profile = await getProfileFromFirestore(params.uid);
 
   const name = profile?.name ?? 'ユーザー';
   const title = `${name}さんのプロフィール | Procom`;
-  const description = profile?.bio || 'SNSや活動履歴をまとめたページです。Procomであなたの魅力をもっと伝えよう。';
+  const description =
+    profile?.bio ||
+    'SNSや活動履歴をまとめたページです。Procomであなたの魅力をもっと伝えよう。';
 
-  // Firebase Storage の URL で署名期限切れを考慮（なければデフォルト画像）
-  const image = profile?.photos?.[0]?.url?.startsWith('https://firebasestorage') && profile.photos[0].url.includes('token=')
-    ? 'https://procom-next.onrender.com/og-image.jpg'
-    : profile?.photos?.[0]?.url || 'https://procom-next.onrender.com/og-image.jpg';
+  const image =
+    profile?.photos?.[0]?.url?.startsWith('https://firebasestorage') &&
+    profile.photos[0].url.includes('token=')
+      ? 'https://procom-next.onrender.com/og-image.jpg'
+      : profile?.photos?.[0]?.url || 'https://procom-next.onrender.com/og-image.jpg';
 
   return {
     title,
@@ -63,10 +73,8 @@ export async function generateMetadata({ params }: { params: { uid: string } }) 
   };
 }
 
-export default async function UserPage(props: { params: { uid: string } }) {
-  const { params } = props;
+export default async function UserPage({ params }: PageProps) {
   const uid = params.uid;
-
   const session = await getSessionServer();
   const isEditable = session?.uid === uid;
   const profile = await getProfileFromFirestore(uid);
@@ -79,26 +87,40 @@ export default async function UserPage(props: { params: { uid: string } }) {
     <>
       <Header />
       {profile?.name && (
-        <h1 style={{ textAlign: 'center', fontWeight: 'bold', fontSize: '1.8rem', margin: '1em 0' }}>
+        <h1
+          style={{
+            textAlign: 'center',
+            fontWeight: 'bold',
+            fontSize: '1.8rem',
+            margin: '1em 0',
+          }}
+        >
           {profile.name}さんのプロフィールページ
         </h1>
       )}
       <main>
-        <UserPhotoSliderClient uid={uid} initialPhotos={photos} /> {/* ← ここだけ差し替え */}
+        <UserPhotoSliderClient uid={uid} initialPhotos={photos} />
         <OshiButton uid={uid} />
         <UserProfileSection uid={uid} isEditable={isEditable} />
         <UserPageClient uid={uid} profile={profile} isEditable={isEditable} />
         <YouTubeEmbedBlock uid={uid} isEditable={isEditable} />
         <div className="sns-container">
-          <div className="sns-box"><XEmbed uid={uid} isEditable={isEditable} /></div>
-          <div className="sns-box"><InstagramEmbed uid={uid} isEditable={isEditable} /></div>
+          <div className="sns-box">
+            <XEmbed uid={uid} isEditable={isEditable} />
+          </div>
+          <div className="sns-box">
+            <InstagramEmbed uid={uid} isEditable={isEditable} />
+          </div>
         </div>
         <TikTokEmbed uid={uid} isEditable={isEditable} />
         <FacebookEmbedBlock uid={uid} isEditable={isEditable} />
         <QRCodeBlock />
       </main>
       <Footer />
-      <Script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js" strategy="afterInteractive" />
+      <Script
+        src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"
+        strategy="afterInteractive"
+      />
       <Script src="https://www.tiktok.com/embed.js" strategy="afterInteractive" />
       <Script src="https://platform.twitter.com/widgets.js" strategy="afterInteractive" />
       <Script src="https://www.instagram.com/embed.js" strategy="afterInteractive" />

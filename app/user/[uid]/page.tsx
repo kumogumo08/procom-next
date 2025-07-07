@@ -1,3 +1,4 @@
+// app/user/[uid]/page.tsx
 import { getProfileFromFirestore } from '@/lib/getProfile';
 import { getSessionServer } from '@/lib/getSessionServer';
 import Header from '@/components/Headerlogin';
@@ -16,20 +17,16 @@ import OshiButton from '@/components/OshiButton';
 import Script from 'next/script';
 import type { Metadata } from 'next';
 
-type PageProps = {
-  params: {
-    uid: string;
-  };
-};
-
-export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
+// ✅ 修正ポイント：generateMetadataの定義方法
+export const generateMetadata = async (
+  { params }: { params: { uid: string } }
+): Promise<Metadata> => {
   const profile = await getProfileFromFirestore(params.uid);
 
   const name = profile?.name ?? 'ユーザー';
   const title = `${name}さんのプロフィール | Procom`;
   const description =
-    profile?.bio ||
-    'SNSや活動履歴をまとめたページです。Procomであなたの魅力をもっと伝えよう。';
+    profile?.bio || 'SNSや活動履歴をまとめたページです。Procomであなたの魅力をもっと伝えよう。';
 
   const image =
     profile?.photos?.[0]?.url?.startsWith('https://firebasestorage') &&
@@ -71,9 +68,14 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
     },
     themeColor: '#4f7cf7',
   };
-}
+};
 
-export default async function UserPage({ params }: PageProps) {
+// ✅ ページ本体
+export default async function UserPage({
+  params,
+}: {
+  params: { uid: string };
+}) {
   const uid = params.uid;
   const session = await getSessionServer();
   const isEditable = session?.uid === uid;

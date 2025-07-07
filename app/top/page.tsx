@@ -10,7 +10,17 @@ export const metadata = {
   openGraph: {
     title: 'Procom - あなたのSNSをまとめよう',
     description: 'YouTube・X・Instagram・TikTokを一つのページで表示。',
-    images: ['https://procom-next.onrender.com/og-image.jpg'],
+    url: 'https://procom-next.onrender.com/top',
+    siteName: 'Procom',
+    images: [
+      {
+        url: 'https://procom-next.onrender.com/og-image.jpg',
+        width: 1200,
+        height: 630,
+        alt: 'ProcomのOG画像',
+      },
+    ],
+    type: 'website',
   },
   twitter: {
     card: 'summary_large_image',

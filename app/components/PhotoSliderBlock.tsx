@@ -3,7 +3,7 @@
 import React, { useState } from 'react';
 import PhotoSlider from '@/components/PhotoSlider';
 
-type Photo = {
+export type Photo = {
   url: string;
   position?: string;
 };
@@ -11,7 +11,7 @@ type Photo = {
 type Props = {
   uid: string;
   photos: Photo[];
-  setPhotos: React.Dispatch<React.SetStateAction<Photo[]>>;
+  setPhotos?: React.Dispatch<React.SetStateAction<Photo[]>>; // optional に変更
 };
 
 function resizeImage(file: File, maxWidth = 800): Promise<Blob> {
@@ -41,20 +41,19 @@ function resizeImage(file: File, maxWidth = 800): Promise<Blob> {
 }
 
 export default function PhotoSliderBlock({ uid, photos, setPhotos }: Props) {
-  const [current, setCurrent] = useState(0); // スライダーの現在位置を管理
+  const [current, setCurrent] = useState(0);
 
-  // 📤 ファイル読み込み・スライダー更新
   const handlePhotoInput = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files;
-    if (!files) return;
+    if (!files || !setPhotos) return;
 
     const arr: Photo[] = [];
 
     for (const file of Array.from(files).slice(0, 5)) {
-      const resizedBlob = await resizeImage(file); // ✅ リサイズする
+      const resizedBlob = await resizeImage(file);
       const reader = new FileReader();
 
-      reader.onload = ev => {
+      reader.onload = (ev) => {
         arr.push({ url: ev.target?.result as string, position: '50' });
 
         if (arr.length === Math.min(files.length, 5)) {
@@ -63,68 +62,68 @@ export default function PhotoSliderBlock({ uid, photos, setPhotos }: Props) {
         }
       };
 
-      reader.readAsDataURL(resizedBlob); // ✅ リサイズ後の画像をbase64に変換
+      reader.readAsDataURL(resizedBlob);
     }
   };
 
-  // 📍 object-position のスライダー操作
   const handlePositionChange = (index: number, value: string) => {
-    setPhotos(prev =>
+    if (!setPhotos) return;
+    setPhotos((prev) =>
       prev.map((photo, i) =>
         i === index ? { ...photo, position: value } : photo
       )
     );
   };
 
-// 💾 写真をStorageへまとめてアップロード → FirestoreへURLと位置を保存
 const savePhotos = async () => {
+  if (!setPhotos) return;
   try {
     if (photos.length === 0) {
       alert('❌ 写真がありません');
       return;
     }
 
-    // base64だけ抽出
-    const base64Images = photos.map(p => p.url);
-    console.log('📤 送信する画像数:', base64Images.length);
-    console.log('🖼️ 最初の画像の先頭:', base64Images[0]?.slice(0, 50));
+    const base64Images = photos
+      .filter(p => p.url.startsWith('data:image/')) // base64だけ抽出
+      .map(p => p.url);
 
-    // 🔁 一括アップロードAPIに送信
-    const uploadRes = await fetch('/api/uploadPhotos', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      credentials: 'include',
-      body: JSON.stringify({ base64Images }),
-    });
+    let uploaded: Photo[] = [];
 
-    if (!uploadRes.ok) {
-      const errorText = await uploadRes.text();  // ← HTMLかJSON文字列になる
-      console.error('❌ uploadPhotos API error:', errorText);
-      alert('❌ 写真の保存に失敗しました\n' + errorText);
-      throw new Error('アップロード失敗');
+    if (base64Images.length > 0) {
+      // base64画像があればアップロード処理を行う
+      const uploadRes = await fetch('/api/uploadPhotos', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({ base64Images }),
+      });
+
+      if (!uploadRes.ok) {
+        const errorText = await uploadRes.text();
+        console.error('❌ uploadPhotos API error:', errorText);
+        alert('❌ 写真の保存に失敗しました\n' + errorText);
+        throw new Error('アップロード失敗');
+      }
+
+      const data = await uploadRes.json();
+      if (!Array.isArray(data.urls) || data.urls.length === 0) {
+        throw new Error('画像アップロード結果が不正です');
+      }
+
+      uploaded = data.urls.map((url: string, i: number) => ({
+        url,
+        position: photos[i].position ?? '50',
+      }));
+    } else {
+      // アップロードなし。既存URLのままpositionだけ保存
+      uploaded = photos;
     }
 
-    const data = await uploadRes.json(); // { urls: [...] }
-    if (!Array.isArray(data.urls) || data.urls.length === 0) {
-      throw new Error('画像アップロード結果が不正です');
-    }
-
-    const uploaded = data.urls.map((url: string, i: number) => ({
-      url,
-      position: photos[i].position ?? '50',
-    }));
-
-    console.log('✅ アップロード成功:', uploaded);
-
-    // Firestoreに保存（uidで指定）
+    // Firestoreに保存（共通処理）
     const res = await fetch(`/api/user/${uid}`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        profile: {
-          photos: uploaded,
-        },
-      }),
+      body: JSON.stringify({ profile: { photos: uploaded } }),
     });
 
     if (!res.ok) {
@@ -140,45 +139,46 @@ const savePhotos = async () => {
   }
 };
 
-
   return (
     <>
       <PhotoSlider
         photos={photos}
         current={current}
-        onPrev={() => setCurrent(c => (c === 0 ? photos.length - 1 : c - 1))}
-        onNext={() => setCurrent(c => (c === photos.length - 1 ? 0 : c + 1))}
+        onPrev={() => setCurrent((c) => (c === 0 ? photos.length - 1 : c - 1))}
+        onNext={() => setCurrent((c) => (c === photos.length - 1 ? 0 : c + 1))}
         onPositionChange={handlePositionChange}
       />
 
-      <div className="photo-upload auth-only" style={{ textAlign: 'center', marginTop: 20 }}>
-        <h3 style={{ marginBottom: 10 }}>写真を登録 (最大5枚)</h3>
-        <input
-          type="file"
-          accept="image/*"
-          multiple
-          id="photoInput"
-          onChange={handlePhotoInput}
-          style={{ marginBottom: 10 }}
-        />
-        <br />
-        <button
-          type="button"
-          id="savePhotosBtn"
-          onClick={savePhotos}
-          style={{
-            backgroundColor: '#4f7cf7',
-            color: 'white',
-            border: 'none',
-            padding: '10px 20px',
-            borderRadius: 6,
-            cursor: 'pointer',
-            fontWeight: 'bold'
-          }}
-        >
-          写真を保存
-        </button>
-      </div>
+      {setPhotos && (
+        <div className="photo-upload auth-only" style={{ textAlign: 'center', marginTop: 20 }}>
+          <h3 style={{ marginBottom: 10 }}>写真を登録 (最大5枚)</h3>
+          <input
+            type="file"
+            accept="image/*"
+            multiple
+            id="photoInput"
+            onChange={handlePhotoInput}
+            style={{ marginBottom: 10 }}
+          />
+          <br />
+          <button
+            type="button"
+            id="savePhotosBtn"
+            onClick={savePhotos}
+            style={{
+              backgroundColor: '#4f7cf7',
+              color: 'white',
+              border: 'none',
+              padding: '10px 20px',
+              borderRadius: 6,
+              cursor: 'pointer',
+              fontWeight: 'bold',
+            }}
+          >
+            写真を保存
+          </button>
+        </div>
+      )}
     </>
   );
 }

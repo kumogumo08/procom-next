@@ -67,19 +67,34 @@ export default function ProfileEditor({
     }, [uid]);
 
 const handleSave = async () => {
+  const isNameEmpty = nameCleared.current || name.trim() === '';
+  const isTitleEmpty = titleCleared.current || title.trim() === '';
+  const isBioEmpty = bioCleared.current || bio.trim() === '';
+
+  // すべて空ならエラー
+  if (isNameEmpty && isTitleEmpty && isBioEmpty) {
+    alert('🛑 名前・肩書・プロフィールのいずれかを入力してください');
+    return;
+  }
+
+  // 名前だけは必須としたい場合（任意で）
+  if (isNameEmpty) {
+    alert('🛑 名前を入力してください');
+    return;
+  }
+
   const profile: any = {};
 
   if (!nameCleared.current && name.trim()) {
     profile.name = name.trim();
   }
-
   if (!titleCleared.current && title.trim()) {
     profile.title = title.trim();
   }
-
   if (!bioCleared.current && bio.trim()) {
     profile.bio = bio.trim();
   }
+
 
   // 🔽 SNS系
   const youtubeChannelId = localStorage.getItem('youtubeChannelId');

@@ -1,17 +1,15 @@
 // app/user/[uid]/generate-metadata.ts
 import { getProfileFromFirestore } from '@/lib/getProfile';
-import type { Metadata, ResolvingMetadata } from 'next';
+import type { Metadata } from 'next';
 
 export async function generateMetadata(
-  params: { uid: string },
-  _parent?: ResolvingMetadata
+  { params }: { params: { uid: string } }
 ): Promise<Metadata> {
   const profile = await getProfileFromFirestore(params.uid);
   const name = profile?.name ?? 'ユーザー';
   const title = `${name}さんのプロフィール | Procom`;
   const description =
-    profile?.bio ||
-    'SNSや活動履歴をまとめたページです。Procomであなたの魅力をもっと伝えよう。';
+    profile?.bio || 'SNSや活動履歴をまとめたページです。Procomであなたの魅力をもっと伝えよう。';
 
   const image =
     profile?.photos?.[0]?.url?.startsWith('https://firebasestorage') &&
@@ -43,5 +41,6 @@ export async function generateMetadata(
       description,
       images: [image],
     },
+    themeColor: '#4f7cf7',
   };
 }

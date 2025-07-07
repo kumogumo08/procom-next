@@ -17,9 +17,6 @@ import QRCodeBlock from '@/components/QRCodeBlock';
 import OshiButton from '@/components/OshiButton';
 import Script from 'next/script';
 
-// ✅ generateMetadata を別ファイルから再エクスポート（定義しない！）
-export { generateMetadata } from './generate-metadata';
-
 // ✅ ページコンポーネント
 export default async function UserPage({
   params,

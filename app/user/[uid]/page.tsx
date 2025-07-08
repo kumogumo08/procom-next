@@ -64,7 +64,13 @@ export async function generateMetadata(
   };
 }
 
-export default async function UserPage({ params }: Props) {
+type PageProps = {
+  params: {
+    uid: string;
+  };
+};
+
+export default async function UserPage({ params }: PageProps) {
   const uid = params.uid;
   const session = await getSessionServer();
   const isEditable = session?.uid === uid;

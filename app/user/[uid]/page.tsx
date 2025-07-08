@@ -20,7 +20,6 @@ import type { Metadata, ResolvingMetadata } from 'next';
 
 export async function generateMetadata(
   { params }: { params: { uid: string } },
-  parent: ResolvingMetadata
 ): Promise<Metadata> {
   const profile = await getProfileFromFirestore(params.uid);
   const name = profile?.name ?? 'ユーザー';

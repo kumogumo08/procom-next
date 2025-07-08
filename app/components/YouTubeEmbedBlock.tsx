@@ -41,17 +41,18 @@ export default function YouTubeEmbedBlock({ uid, isEditable }: Props) {
         .then(res => res.json())
         .then(data => {
           if (Array.isArray(data.videos)) {
-            const elements = data.videos.slice(0, 2).map((videoId, index) => (
-              <iframe
-                key={index}
-                width="100%"
-                height="315"
-                src={`https://www.youtube.com/embed/${videoId}`}
-                title={`YouTube latest ${index}`}
-                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                allowFullScreen
-              ></iframe>
-            ));
+          const elements = (data.videos as string[]).slice(0, 2).map((videoId: string, index: number) => (
+            <iframe
+              key={index}
+              width="100%"
+              height="315"
+              src={`https://www.youtube.com/embed/${videoId}`}
+              title={`YouTube video player ${index}`}
+              frameBorder="0"
+              allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+              allowFullScreen
+            />
+          ));
             setVideoElements(elements);
           }
         });

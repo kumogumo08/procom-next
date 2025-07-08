@@ -4,9 +4,10 @@ import type { Metadata } from 'next';
 export async function generateMetadata({
   params,
 }: {
-  params: { uid: string };
+  params: Promise<{ uid: string }>
 }): Promise<Metadata> {
-  const profile = await getProfileFromFirestore(params.uid);
+  const { uid } = await params;
+  const profile = await getProfileFromFirestore(uid);
   const name = profile?.name ?? 'ユーザー';
   const title = `${name}さんのプロフィール | Procom`;
   const description =
@@ -25,7 +26,7 @@ export async function generateMetadata({
     openGraph: {
       title,
       description,
-      url: `https://procom-next.onrender.com/user/${params.uid}`,
+      url: `https://procom-next.onrender.com/user/${uid}`,
       images: [
         {
           url: image,

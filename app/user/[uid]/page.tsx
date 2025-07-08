@@ -18,9 +18,9 @@ import Script from 'next/script';
 export default async function UserPage({
   params,
 }: {
-  params: { uid: string };
+  params: Promise<{ uid: string }>;
 }) {
-  const uid = params.uid;
+  const { uid } = await params;
   const session = await getSessionServer();
   const isEditable = session?.uid === uid;
   const profile = await getProfileFromFirestore(uid);

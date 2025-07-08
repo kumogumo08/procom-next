@@ -8,7 +8,7 @@
     ],
     "allowJs": true,
     "skipLibCheck": true,
-    "strict": false,
+    "strict": true,
     "noEmit": true,
     "incremental": true,
     "types": [
@@ -30,7 +30,6 @@
         "name": "next"
       }
     ],
-    "strictNullChecks": true,
     "baseUrl": ".",
     "paths": {
       "@/*": [
@@ -42,8 +41,7 @@
     "**/*.ts",
     "**/*.tsx",
     "lib/qrcode.min.js",
-    "next-env.d.ts",
-    ".next/types/**/*.ts"
+    "next-env.d.ts"
   ],
   "exclude": [
     "node_modules"

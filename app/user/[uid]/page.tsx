@@ -1,4 +1,4 @@
-// app/user/[uid]/page.tsx
+// ✅ 型名を使わず、明示的にその場で型定義するのが一番安全！
 
 import { getProfileFromFirestore } from '@/lib/getProfile';
 import { getSessionServer } from '@/lib/getSessionServer';
@@ -18,14 +18,8 @@ import OshiButton from '@/components/OshiButton';
 import Script from 'next/script';
 import type { Metadata, ResolvingMetadata } from 'next';
 
-type Props = {
-  params: {
-    uid: string;
-  };
-};
-
 export async function generateMetadata(
-  { params }: Props,
+  { params }: { params: { uid: string } },
   parent: ResolvingMetadata
 ): Promise<Metadata> {
   const profile = await getProfileFromFirestore(params.uid);
@@ -64,13 +58,9 @@ export async function generateMetadata(
   };
 }
 
-type PageProps = {
-  params: {
-    uid: string;
-  };
-};
-
-export default async function UserPage({ params }: PageProps) {
+export default async function UserPage(
+  { params }: { params: { uid: string } }
+) {
   const uid = params.uid;
   const session = await getSessionServer();
   const isEditable = session?.uid === uid;

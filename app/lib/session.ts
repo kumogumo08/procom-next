@@ -13,7 +13,7 @@ export const sessionOptions: SessionOptions = {
   cookieOptions: {
     secure: process.env.NODE_ENV === 'production',
     sameSite: 'lax',
-    maxAge: undefined, // セッション終了で削除されるクッキー
+    maxAge: 60 * 60 * 24 * 30, // ✅ 30日間ログイン状態を保持
   },
 };
 

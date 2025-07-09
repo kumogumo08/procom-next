@@ -278,6 +278,7 @@ body {
     display: flex;
     align-items: center;
     margin-bottom: 1em;
+    width: 100%;
   }
   .form-row label {
     width: 150px;
@@ -1369,3 +1370,70 @@ input[type="text"] {
   background-color: #fff; /* 背景色も明るく */
 }
 
+/* style.css またはグローバルに追加 */
+.editFormOverlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(255, 255, 255, 0.97);
+  z-index: 1000;
+  overflow-y: auto;
+  padding: 2rem 1rem;
+  box-sizing: border-box;
+}
+
+@media (min-width: 768px) {
+  .editFormOverlay {
+    max-width: 600px;
+    margin: 2rem auto;
+    border-radius: 12px;
+    box-shadow: 0 0 10px rgba(0,0,0,0.2);
+  }
+}
+
+.editFormOverlay .form-row {
+  margin-bottom: 1.5rem;
+}
+
+.editFormOverlay input,
+.editFormOverlay textarea {
+  width: 100%;
+  padding: 0.75rem;
+  font-size: 1rem;
+  border-radius: 6px;
+  border: 1px solid #ccc;
+  box-sizing: border-box;
+}
+
+.editFormOverlay .delete-btn {
+  margin-top: 0.5rem;
+  background: #eee;
+  border: none;
+  padding: 0.4rem 0.6rem;
+  border-radius: 4px;
+  font-size: 0.9rem;
+}
+
+@media (max-width: 768px) {
+  .profile-info {
+    padding: 1rem;
+  }
+
+  #nameTitle {
+    font-size: 1.5rem;
+  }
+
+  #name {
+    font-size: 1.6rem;
+  }
+
+  #title {
+    font-size: 1rem;
+  }
+
+  #bio {
+    font-size: 1rem;
+  }
+}

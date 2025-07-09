@@ -198,81 +198,87 @@ export default function ProfileEditor({
 
               <div className="form-row">
                 <label htmlFor="nameInput">名前：</label>
-                <input
-                  type="text"
-                  id="nameInput"
-                  value={name}
-                  onChange={e => {
-                    setName(e.target.value);
-                    nameCleared.current = false;
-                  }}
-                />
-                <button
-                  type="button"
-                  className="delete-btn"
-                  onClick={() => {
-                    setName('');
-                    nameCleared.current = true;
-                  }}
-                >
-                  ✖
-                </button>
+                <div className="input-with-delete">
+                  <input
+                    type="text"
+                    id="nameInput"
+                    value={name}
+                    onChange={e => {
+                      setName(e.target.value);
+                      nameCleared.current = false;
+                    }}
+                  />
+                  <button
+                    type="button"
+                    className="delete-btn"
+                    onClick={() => {
+                      setName('');
+                      nameCleared.current = true;
+                    }}
+                  >
+                    ✖
+                  </button>
+                </div>
               </div>
 
               <div className="form-row">
                 <label htmlFor="titleInput">肩書：</label>
-                <input
-                  type="text"
-                  id="titleInput"
-                  value={title}
-                  onChange={e => {
-                    setTitle(e.target.value);
-                    titleCleared.current = false;
-                  }}
-                />
-                <button
-                  type="button"
-                  className="delete-btn"
-                  onClick={() => {
-                    setTitle('');
-                    titleCleared.current = true;
-                  }}
-                >
-                  ✖
-                </button>
+                <div className="input-with-delete">
+                  <input
+                    type="text"
+                    id="titleInput"
+                    value={title}
+                    onChange={e => {
+                      setTitle(e.target.value);
+                      titleCleared.current = false;
+                    }}
+                  />
+                  <button
+                    type="button"
+                    className="delete-btn"
+                    onClick={() => {
+                      setTitle('');
+                      titleCleared.current = true;
+                    }}
+                  >
+                    ✖
+                  </button>
+                </div>
               </div>
 
               <div className="form-row">
                 <label htmlFor="bioInput">プロフィール：</label>
-             <textarea
-              id="bioInput"
-              rows={30} // 高さを増やす
-              style={{
-                width: '100%',
-                minHeight: '300px',
-                padding: '12px',
-                fontSize: '1rem',
-                boxSizing: 'border-box',
-                borderRadius: '6px',
-                border: '1px solid #ccc',
-                resize: 'vertical',
-              }}
-              value={bio}
-              onChange={e => {
-                setBio(e.target.value);
-                bioCleared.current = false;
-              }}
-            ></textarea>
-                <button
-                  type="button"
-                  className="delete-btn"
-                  onClick={() => {
-                    setBio('');
-                    bioCleared.current = true;
-                  }}
-                >
-                  ✖
-                </button>
+                <div className="input-with-delete">
+                  <textarea
+                    id="bioInput"
+                    rows={30}
+                    style={{
+                      width: '100%',
+                      minHeight: '300px',
+                      padding: '12px',
+                      fontSize: '1rem',
+                      boxSizing: 'border-box',
+                      borderRadius: '6px',
+                      border: '1px solid #ccc',
+                      resize: 'vertical',
+                    }}
+                    value={bio}
+                    onChange={e => {
+                      setBio(e.target.value);
+                      bioCleared.current = false;
+                    }}
+                  />
+                  <button
+                    type="button"
+                    className="delete-btn"
+                    onClick={() => {
+                      setBio('');
+                      bioCleared.current = true;
+                    }}
+                  >
+                    ✖
+                  </button>
+                </div>
               </div>
 
               <button type="button" id="saveBtn" onClick={handleSave}>
@@ -286,5 +292,5 @@ export default function ProfileEditor({
         </>
       )}
     </div>
-  ); 
-  }
+  );
+}

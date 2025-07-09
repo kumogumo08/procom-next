@@ -274,37 +274,66 @@ body {
     border-radius: 10px;
     box-shadow: 0 0 10px rgba(0,0,0,0.1);
   }
-  .form-row {
-    display: flex;
-    align-items: center;
-    margin-bottom: 1em;
-    width: 100%;
-  }
-  .form-row label {
-    width: 150px;
-    font-weight: bold;
-  }
-  .form-row input, .form-row textarea {
-    flex: 1;
-    padding: 0.5em;
-    border-radius: 4px;
-    border: 1px solid #ffffff;
-  }
-  #bioInput {
-    resize: vertical;
-    height: 100px;
-  }
-  #nameTitle {
-    font-size: 1.5em;
-    font-weight: bold;
-  }
-  #nameTitle #title {
-    margin-left: 0.5em;
-    color: gray;
-  }
-  .hidden {
-    display: none;
-  }
+
+.form-row {
+  display: block; /* 横並びを解除して縦並びに */
+  margin-bottom: 1.5rem;
+}
+
+.form-row label {
+  display: block;
+  margin-bottom: 0.4rem;
+  font-weight: bold;
+  text-align: left;
+}
+
+.form-row input,
+.form-row textarea {
+  width: 100%;
+  font-size: 1rem;
+  padding: 10px;
+  box-sizing: border-box;
+  border-radius: 6px;
+  border: 1px solid #ccc;
+}
+
+.input-with-delete {
+  display: flex;
+  gap: 0.5rem;
+  align-items: flex-start;
+  width: 100%;
+}
+
+.input-with-delete input,
+.input-with-delete textarea {
+  flex: 1;
+}
+
+.delete-btn {
+  flex-shrink: 0;
+  padding: 6px 10px;
+  font-size: 1rem;
+  cursor: pointer;
+}
+
+#bioInput {
+  resize: vertical;
+  height: 180px; /* プロフィール欄の高さを広めに */
+}
+
+#nameTitle {
+  font-size: 1.5em;
+  font-weight: bold;
+}
+
+#nameTitle #title {
+  margin-left: 0.5em;
+  color: gray;
+}
+
+.hidden {
+  display: none;
+}
   
   /* イベントカレンダー */  
 .calendar {

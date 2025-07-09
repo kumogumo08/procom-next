@@ -40,6 +40,19 @@ export default function RootLayout({
   return (
     <html lang="ja">
       <head>
+        <meta name="viewport" content="width=device-width, initial-scale=1" />
+        <meta name="twitter:card" content="summary_large_image" />
+        <meta name="twitter:site" content="@your_twitter_id" />
+        <meta name="twitter:title" content="Procom" />
+        <meta name="twitter:description" content="SNSプロフィールをまとめて表示できるプラットフォーム。" />
+        <meta name="twitter:image" content="https://procom-next.onrender.com/og-image.jpg" />
+
+        <meta property="og:title" content="Procom（プロコム）" />
+        <meta property="og:description" content="SNSリンクを一括表示。あなたの情報を1ページに。" />
+        <meta property="og:image" content="https://procom-next.onrender.com/og-image.jpg" />
+        <meta property="og:url" content="https://procom-next.onrender.com/" />
+        <meta property="og:type" content="website" />
+
         <meta name="google-site-verification" content="f6A-hc6jAwrweCHOaVCvsk0kyCukcP-BHebE9pCs2yo" />
         <link
           href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP&display=swap"

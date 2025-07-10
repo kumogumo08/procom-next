@@ -1,13 +1,20 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9" xmlns:news="http://www.google.com/schemas/sitemap-news/0.9" xmlns:xhtml="http://www.w3.org/1999/xhtml" xmlns:mobile="http://www.google.com/schemas/sitemap-mobile/1.0" xmlns:image="http://www.google.com/schemas/sitemap-image/1.1" xmlns:video="http://www.google.com/schemas/sitemap-video/1.1">
-<url><loc>https://procom-next.onrender.com/favorites</loc><lastmod>2025-06-30T12:42:01.794Z</lastmod><changefreq>weekly</changefreq><priority>0.7</priority></url>
-<url><loc>https://procom-next.onrender.com/deleted</loc><lastmod>2025-06-30T12:42:01.794Z</lastmod><changefreq>weekly</changefreq><priority>0.7</priority></url>
-<url><loc>https://procom-next.onrender.com/owner</loc><lastmod>2025-06-30T12:42:01.794Z</lastmod><changefreq>weekly</changefreq><priority>0.7</priority></url>
-<url><loc>https://procom-next.onrender.com/help</loc><lastmod>2025-06-30T12:42:01.794Z</lastmod><changefreq>weekly</changefreq><priority>0.7</priority></url>
-<url><loc>https://procom-next.onrender.com</loc><lastmod>2025-06-30T12:42:01.794Z</lastmod><changefreq>weekly</changefreq><priority>0.7</priority></url>
-<url><loc>https://procom-next.onrender.com/privacy</loc><lastmod>2025-06-30T12:42:01.794Z</lastmod><changefreq>weekly</changefreq><priority>0.7</priority></url>
-<url><loc>https://procom-next.onrender.com/top</loc><lastmod>2025-06-30T12:42:01.794Z</lastmod><changefreq>weekly</changefreq><priority>0.7</priority></url>
-<url><loc>https://procom-next.onrender.com/terms</loc><lastmod>2025-06-30T12:42:01.794Z</lastmod><changefreq>weekly</changefreq><priority>0.7</priority></url>
-<url><loc>https://procom-next.onrender.com/users</loc><lastmod>2025-06-30T12:42:01.794Z</lastmod><changefreq>weekly</changefreq><priority>0.7</priority></url>
-<url><loc>https://procom-next.onrender.com/withdraw</loc><lastmod>2025-06-30T12:42:01.794Z</lastmod><changefreq>weekly</changefreq><priority>0.7</priority></url>
+<url><loc>https://procom-next.onrender.com/help</loc><lastmod>2025-07-10T11:45:24.022Z</lastmod><changefreq>weekly</changefreq><priority>0.7</priority></url>
+<url><loc>https://procom-next.onrender.com/forgot-password</loc><lastmod>2025-07-10T11:45:24.023Z</lastmod><changefreq>weekly</changefreq><priority>0.7</priority></url>
+<url><loc>https://procom-next.onrender.com/favorites</loc><lastmod>2025-07-10T11:45:24.023Z</lastmod><changefreq>weekly</changefreq><priority>0.7</priority></url>
+<url><loc>https://procom-next.onrender.com/owner</loc><lastmod>2025-07-10T11:45:24.023Z</lastmod><changefreq>weekly</changefreq><priority>0.7</priority></url>
+<url><loc>https://procom-next.onrender.com</loc><lastmod>2025-07-10T11:45:24.023Z</lastmod><changefreq>weekly</changefreq><priority>0.7</priority></url>
+<url><loc>https://procom-next.onrender.com/reset</loc><lastmod>2025-07-10T11:45:24.023Z</lastmod><changefreq>weekly</changefreq><priority>0.7</priority></url>
+<url><loc>https://procom-next.onrender.com/privacy</loc><lastmod>2025-07-10T11:45:24.023Z</lastmod><changefreq>weekly</changefreq><priority>0.7</priority></url>
+<url><loc>https://procom-next.onrender.com/top</loc><lastmod>2025-07-10T11:45:24.023Z</lastmod><changefreq>weekly</changefreq><priority>0.7</priority></url>
+<url><loc>https://procom-next.onrender.com/users</loc><lastmod>2025-07-10T11:45:24.023Z</lastmod><changefreq>weekly</changefreq><priority>0.7</priority></url>
+<url><loc>https://procom-next.onrender.com/terms</loc><lastmod>2025-07-10T11:45:24.023Z</lastmod><changefreq>weekly</changefreq><priority>0.7</priority></url>
+<url><loc>https://procom-next.onrender.com/user/1vgpGoKH18SLlXs6YGQ0IWywNO62</loc><lastmod>2025-07-10T11:45:24.474Z</lastmod><changefreq>weekly</changefreq><priority>0.7</priority></url>
+<url><loc>https://procom-next.onrender.com/user/26qlH1UppohWUbuoXuqDTeWmTri1</loc><lastmod>2025-07-10T11:45:24.474Z</lastmod><changefreq>weekly</changefreq><priority>0.7</priority></url>
+<url><loc>https://procom-next.onrender.com/user/39OOytEH6ZYbqILWaV60Oqr7bMw1</loc><lastmod>2025-07-10T11:45:24.474Z</lastmod><changefreq>weekly</changefreq><priority>0.7</priority></url>
+<url><loc>https://procom-next.onrender.com/user/b9JgmZY5PZZ8OpH1b5Zc3zZOyz13</loc><lastmod>2025-07-10T11:45:24.474Z</lastmod><changefreq>weekly</changefreq><priority>0.7</priority></url>
+<url><loc>https://procom-next.onrender.com/user/uBtrDpWu5eehVopNBMkLv3tiSUn1</loc><lastmod>2025-07-10T11:45:24.474Z</lastmod><changefreq>weekly</changefreq><priority>0.7</priority></url>
+<url><loc>https://procom-next.onrender.com/user/wD8H3shdMTdpLAD1JwdZJf6zs6N2</loc><lastmod>2025-07-10T11:45:24.474Z</lastmod><changefreq>weekly</changefreq><priority>0.7</priority></url>
+<url><loc>https://procom-next.onrender.com/user/wfCZT8BsAvgvLcmCB1OmKmaJ1ov1</loc><lastmod>2025-07-10T11:45:24.474Z</lastmod><changefreq>weekly</changefreq><priority>0.7</priority></url>
 </urlset>

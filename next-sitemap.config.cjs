@@ -1,26 +1,34 @@
 // next-sitemap.config.cjs
 
-/** @type {import('next-sitemap').IConfig} */
-const fetch = require('node-fetch'); // 追記：APIでUID一覧を取得するために必要
+const admin = require('firebase-admin');
+const serviceAccount = require('./firebase-key.json'); // ← 環境に応じて調整
 
+if (!admin.apps.length) {
+  admin.initializeApp({
+    credential: admin.credential.cert(serviceAccount),
+  });
+}
+
+const db = admin.firestore();
+
+/** @type {import('next-sitemap').IConfig} */
 module.exports = {
   siteUrl: 'https://procom-next.onrender.com',
   generateRobotsTxt: true,
-  sitemapSize: 7000,
   changefreq: 'weekly',
   priority: 0.7,
+  sitemapSize: 7000,
   exclude: ['/account', '/login', '/register', '/deleted', '/withdraw'],
 
-  // 🔽 追加: user/[uid] を含めるための設定
-  async additionalPaths(config) {
-    const res = await fetch('https://procom-next.onrender.com/api/all-uids');
-    const { uids } = await res.json();
+  async additionalPaths() {
+    const snapshot = await db.collection('users').get();
+    const uids = snapshot.docs.map(doc => doc.id);
 
     return uids.map(uid => ({
       loc: `/user/${uid}`,
+      lastmod: new Date().toISOString(),
       changefreq: 'weekly',
       priority: 0.7,
-      lastmod: new Date().toISOString(),
     }));
   },
 };

@@ -1,34 +1,30 @@
 // next-sitemap.config.cjs
 
-const admin = require('firebase-admin');
-const serviceAccount = require('./firebase-key.json'); // ← 環境に応じて調整
-
-if (!admin.apps.length) {
-  admin.initializeApp({
-    credential: admin.credential.cert(serviceAccount),
-  });
-}
-
-const db = admin.firestore();
-
 /** @type {import('next-sitemap').IConfig} */
+const fetch = require('node-fetch');
+
 module.exports = {
   siteUrl: 'https://procom-next.onrender.com',
   generateRobotsTxt: true,
+  sitemapSize: 7000,
   changefreq: 'weekly',
   priority: 0.7,
-  sitemapSize: 7000,
   exclude: ['/account', '/login', '/register', '/deleted', '/withdraw'],
 
-  async additionalPaths() {
-    const snapshot = await db.collection('users').get();
-    const uids = snapshot.docs.map(doc => doc.id);
+  async additionalPaths(config) {
+    try {
+      const res = await fetch('https://procom-next.onrender.com/api/all-uids');
+      const { uids } = await res.json();
 
-    return uids.map(uid => ({
-      loc: `/user/${uid}`,
-      lastmod: new Date().toISOString(),
-      changefreq: 'weekly',
-      priority: 0.7,
-    }));
-  },
+      return uids.map(uid => ({
+        loc: `/user/${uid}`,
+        changefreq: 'weekly',
+        priority: 0.7,
+        lastmod: new Date().toISOString(),
+      }));
+    } catch (err) {
+      console.error('❌ UID取得エラー:', err);
+      return [];
+    }
+  }
 };

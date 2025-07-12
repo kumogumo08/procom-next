@@ -34,7 +34,7 @@ export default async function UserPage({
   return (
     <>
       <Header />
-      {profile?.name && (
+        {profile?.name && (
         <h1
           style={{
             textAlign: 'center',
@@ -45,7 +45,7 @@ export default async function UserPage({
         >
           {profile.name}さんのプロフィールページ
         </h1>
-      )}
+        )}
       <main>
         <UserPhotoSliderClient uid={uid} initialPhotos={photos} />
         <OshiButton uid={uid} />

@@ -42,7 +42,7 @@ export default function RootLayout({
       <head>
         <meta name="viewport" content="width=device-width, initial-scale=1" />
         <meta name="twitter:card" content="summary_large_image" />
-        <meta name="twitter:site" content="@your_twitter_id" />
+        <meta name="twitter:site" content="@Procom_next" />
         <meta name="twitter:title" content="Procom" />
         <meta name="twitter:description" content="SNSプロフィールをまとめて表示できるプラットフォーム。" />
         <meta name="twitter:image" content="https://procom-next.onrender.com/og-image.jpg" />

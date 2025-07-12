@@ -1466,3 +1466,22 @@ input[type="text"] {
     font-size: 1rem;
   }
 }
+
+.ten-questions-btn {
+  background: linear-gradient(to right, #f760cc, #89b0f3);
+  color: #ffffff;
+  font-weight: bold;
+  padding: 10px 20px;
+  border: none;
+  border-radius: 9999px;
+  font-size: 1rem;
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.15);
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+  cursor: pointer;
+  margin-top: 10px;
+}
+
+.ten-questions-btn:hover {
+  transform: scale(1.05);
+  box-shadow: 0 6px 12px rgba(0, 0, 0, 0.25);
+}

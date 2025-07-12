@@ -2,6 +2,19 @@
 
 import { useState, useRef, useEffect } from 'react';
 
+const TEN_QUESTIONS_TEMPLATE = `＼＼ 10の質問 ／／
+
+1. 活動ジャンルは？
+2. 一番好きな作品・活動は？
+3. 得意なことは？
+4. 苦手なことは？
+5. 黒歴史は…ある？
+6. 好きな時間の過ごし方は？
+7. 無人島に1つだけ持ってくなら？
+8. 最近ハマって？いることは？
+9. これからの目標は？
+10. 最後に一言！`;
+
 type Props = {
   uid: string;
   initialName?: string;
@@ -222,31 +235,6 @@ export default function ProfileEditor({
               </div>
 
               <div className="form-row">
-                <label htmlFor="titleInput">肩書：</label>
-                <div className="input-with-delete">
-                  <input
-                    type="text"
-                    id="titleInput"
-                    value={title}
-                    onChange={e => {
-                      setTitle(e.target.value);
-                      titleCleared.current = false;
-                    }}
-                  />
-                  <button
-                    type="button"
-                    className="delete-btn"
-                    onClick={() => {
-                      setTitle('');
-                      titleCleared.current = true;
-                    }}
-                  >
-                    ✖
-                  </button>
-                </div>
-              </div>
-
-              <div className="form-row">
                 <label htmlFor="bioInput">プロフィール：</label>
                 <div className="input-with-delete">
                   <textarea
@@ -279,8 +267,16 @@ export default function ProfileEditor({
                     ✖
                   </button>
                 </div>
+                </div>
+                {/* 🔽 このボタンを追加！ */}
+              <div style={{ textAlign: 'center', marginBottom: '1rem' }}>
+                <button
+                  onClick={() => setBio(TEN_QUESTIONS_TEMPLATE)}
+                  className="ten-questions-btn"
+                >
+                  🎀 10の質問を挿入する
+                </button>
               </div>
-
               <button type="button" id="saveBtn" onClick={handleSave}>
                 保存
               </button>

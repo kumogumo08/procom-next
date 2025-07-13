@@ -93,8 +93,20 @@ export default function FacebookEmbedBlock({ uid, isEditable }: Props) {
                         placeholder="https://www.facebook.com/xxxxxx"
                         style={{ width: '100%', padding: '8px' }}
                     />
-                    <button onClick={handleSave} style={{ marginTop: '10px' }}>
-                        保存して表示
+                    <button
+                    type="button"
+                    onClick={handleSave}
+                    style={{
+                        marginTop: '10px',
+                        background: '#4e73df',
+                        color: 'white',
+                        border: 'none',
+                        borderRadius: '4px',
+                        padding: '4px 8px',
+                        cursor: 'pointer',
+                    }}
+                    >
+                    保存して表示
                     </button>
                 </>
             )}

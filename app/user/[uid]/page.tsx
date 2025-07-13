@@ -14,6 +14,7 @@ import FacebookEmbedBlock from '@/components/FacebookEmbedBlock';
 import QRCodeBlock from '@/components/QRCodeBlock';
 import OshiButton from '@/components/OshiButton';
 import Script from 'next/script';
+import XShareButton from '@/components/XShareButton';
 
 export default async function UserPage({
   params,
@@ -49,6 +50,7 @@ export default async function UserPage({
       <main>
         <UserPhotoSliderClient uid={uid} initialPhotos={photos} />
         <OshiButton uid={uid} />
+        <XShareButton uid={uid} name={profile?.name} />
         <UserProfileSection uid={uid} isEditable={isEditable} />
         <UserPageClient uid={uid} profile={profile} isEditable={isEditable} />
         <YouTubeEmbedBlock uid={uid} isEditable={isEditable} />

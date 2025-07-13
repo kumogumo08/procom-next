@@ -5,6 +5,15 @@ export default function Footer() {
   return (
     <footer className="bg-gradient-to-br from-[#1f1f2e] to-[#38385a] text-white text-center py-8 px-5 mt-16 border-t-4 border-[#ff4f81] shadow-md">
       <p className="text-sm">&copy; 2025 Procom</p>
+            {/* 🔽 トップに戻るボタン */}
+      <div className="my-4">
+        <Link
+          href="/top"
+          className="inline-block bg-[#ff4f81] text-white px-6 py-2 rounded-full text-sm hover:bg-pink-600 transition"
+        >
+          トップページに戻る
+        </Link>
+      </div>
         <p className="text-sm text-white">
         <Link href="/privacy"><span className={linkClass}>プライバシーポリシー</span></Link> |
         <Link href="/owner"><span className={linkClass}>運営者情報</span></Link> |

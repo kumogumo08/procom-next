@@ -5,27 +5,27 @@ import Footer from '@/components/Footer';
 import styles from './top.module.css';
 
 export const metadata = {
-  title: 'Procom - あなたのSNS・プロフィール・活動情報を一つにまとめる自己発信プラットフォーム。',
-  description: 'Procomは、YouTuberやダンサー、インフルエンサーのためのSNSプロフィール集約サイトです。',
+  title: 'Procom（プロコム） - あなたのSNS・プロフィール・活動情報を一つにまとめる自己発信プラットフォーム。',
+  description: 'Procom（プロコム）は、YouTuberやダンサー、インフルエンサーのためのSNSプロフィール集約サイトです。',
   openGraph: {
-    title: 'Procom - あなたのSNSをまとめよう',
+    title: 'Procom（プロコム） - あなたのSNSをまとめよう',
     description: 'YouTube・X・Instagram・TikTokを一つのページで表示。',
     url: 'https://procom-next.onrender.com/top',
-    siteName: 'Procom',
+    siteName: 'Procom（プロコム）',
     images: [
       {
         url: 'https://procom-next.onrender.com/og-image.jpg',
         width: 1200,
         height: 630,
-        alt: 'ProcomのOG画像',
+        alt: 'Procom（プロコム）のOG画像',
       },
     ],
     type: 'website',
   },
   twitter: {
     card: 'summary_large_image',
-    title: 'Procom',
-    description: 'SNSプロフィールをまとめて表示できるプラットフォーム。',
+    title: 'Procom（プロコム）',
+    description: 'SNSプロフィールをまとめて表示できるプラットフォーム「Procom（プロコム）」で、自分だけの発信ページを作ろう。',
     images: ['https://procom-next.onrender.com/og-image.jpg'],
   },
 };

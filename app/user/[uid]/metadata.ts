@@ -12,7 +12,7 @@ export async function generateMetadata({
   const title = `${name}さんのプロフィール | Procom`;
   const description =
     profile?.bio ||
-    'SNSや活動履歴をまとめたページです。Procomであなたの魅力をもっと伝えよう。';
+    'SNSや活動履歴をまとめたページです。Procom（プロコム）であなたの魅力をもっと伝えよう。';
   const image =
     profile?.photos?.[0]?.url?.startsWith('https://firebasestorage') &&
     profile.photos[0].url.includes('token=')

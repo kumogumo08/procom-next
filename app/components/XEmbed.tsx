@@ -37,33 +37,33 @@ export default function XEmbed({ uid, isEditable }: Props) {
     fetchXUsername();
   }, [uid]);
 
-  const handleSave = async () => {
-    if (!inputValue.trim()) {
-      alert('ユーザー名を入力してください');
-      return;
-    }
+const handleSave = async () => {
+  if (showX && !inputValue.trim()) {
+    alert('ユーザー名を入力してください');
+    return;
+  }
 
-    try {
-      const res = await fetch(`/api/user/${uid}`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          profile: {
-            xUsername: inputValue.trim(),
-            settings: {
-              showX: showX,
-            },
+  try {
+    const res = await fetch(`/api/user/${uid}`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        profile: {
+          xUsername: inputValue.trim(),
+          settings: {
+            showX: showX,
           },
-        }),
-      });
+        },
+      }),
+    });
 
-      if (!res.ok) throw new Error('保存失敗');
-      alert('Xユーザー名を保存しました');
-      setUsername(inputValue.trim());
-    } catch (err) {
-      alert('保存に失敗しました');
-    }
-  };
+    if (!res.ok) throw new Error('保存失敗');
+    alert('Xユーザー名を保存しました');
+    setUsername(inputValue.trim());
+  } catch (err) {
+    alert('保存に失敗しました');
+  }
+};
 
   const profileUrl = username ? `https://x.com/${username}` : '';
 

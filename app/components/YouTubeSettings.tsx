@@ -11,17 +11,30 @@ const YouTubeSettings: React.FC<Props> = ({ initialMode = 'latest', initialChann
   const [mode, setMode] = useState<'latest' | 'manual'>(initialMode);
   const [channelId, setChannelId] = useState(initialChannelId);
   const [manualUrls, setManualUrls] = useState<string[]>(initialManualUrls);
+  const [showYouTube, setShowYouTube] = useState<boolean | undefined>(undefined);
 
-  useEffect(() => {
-    // localStorageから読み込み（初期化）
-    const savedMode = localStorage.getItem('youtubeMode') as 'latest' | 'manual';
-    const savedChannelId = localStorage.getItem('youtubeChannelId') || '';
-    const savedManualUrls = JSON.parse(localStorage.getItem('manualYouTubeUrls') || '[]');
+    useEffect(() => {
+      async function fetchInitial() {
+        try {
+          const sessionRes = await fetch('/session');
+          const session = await sessionRes.json();
+          if (!session.loggedIn) return;
 
-    if (savedMode) setMode(savedMode);
-    if (savedChannelId) setChannelId(savedChannelId);
-    if (Array.isArray(savedManualUrls)) setManualUrls(savedManualUrls);
-  }, []);
+          const res = await fetch(`/api/user/${session.uid}`);
+          const data = await res.json();
+          const profile = data.profile || {};
+
+          setMode(profile.youtubeMode || 'latest');
+          setChannelId(profile.youtubeChannelId || '');
+          setManualUrls(profile.manualYouTubeUrls || []);
+          setShowYouTube(profile.settings?.showYouTube !== false); // ✅ ここで初期値を反映
+        } catch (e) {
+          console.warn('初期データの取得に失敗しました');
+        }
+      }
+
+      fetchInitial();
+    }, []);
 
   const handleAddManualInput = () => {
     if (manualUrls.length >= 4) return alert('最大4つまで登録できます');
@@ -36,10 +49,10 @@ const YouTubeSettings: React.FC<Props> = ({ initialMode = 'latest', initialChann
 
   const handleSave = async () => {
     if (mode === 'latest') {
-      const match = channelId.match(/(UC[\w-]+)/);
+      const match = channelId.trim().match(/(UC[\w-]+)/);
       if (!match) return alert('正しいチャンネルIDを入力してください');
     } else {
-      const validUrls = manualUrls.filter((url) => url.includes('youtube.com/watch'));
+      const validUrls = manualUrls.filter((url) => url.trim().includes('youtube.com/watch'));
       if (validUrls.length === 0) return alert('URLを1つ以上入力してください');
     }
 
@@ -47,6 +60,9 @@ const YouTubeSettings: React.FC<Props> = ({ initialMode = 'latest', initialChann
       youtubeMode: mode,
       youtubeChannelId: mode === 'latest' ? channelId : '',
       manualYouTubeUrls: mode === 'manual' ? manualUrls : [],
+      settings: {
+      showYouTube,
+  },
     };
 
     localStorage.setItem('youtubeMode', profile.youtubeMode);
@@ -115,6 +131,14 @@ const YouTubeSettings: React.FC<Props> = ({ initialMode = 'latest', initialChann
       )}
 
       <button type="button" onClick={handleSave} className="auth-only">保存</button>
+      <label>
+      <input
+        type="checkbox"
+        checked={showYouTube}
+        onChange={(e) => setShowYouTube(e.target.checked)}
+      />
+      YouTubeを表示する
+    </label>
     </div>
   );
 };

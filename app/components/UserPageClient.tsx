@@ -2,6 +2,12 @@
 
 import { useEffect } from 'react';
 
+declare global {
+  interface Window {
+    embedFacebookPage?: (url: string) => void;
+  }
+}
+
 type Photo = {
   url: string;
   position?: string;
@@ -19,7 +25,19 @@ type Profile = {
   instagramPostUrl?: string;
   tiktokUrls?: string[];
   calendarEvents?: { date: string; events: string[] }[];
+
+  // SNS表示設定
+  settings?: {
+    showX?: boolean;
+    showInstagram?: boolean;
+    showTikTok?: boolean;
+    showFacebook?: boolean;
+  };
+
+  // ← FacebookページURLを追加
+  facebookPageUrl?: string;
 };
+
 
 type Props = {
   uid: string;
@@ -84,9 +102,18 @@ const UserPageClient = ({ uid, profile, isEditable }: Props) => {
     }
 
     // SNS表示
-    if (profile.xUsername) window.showXProfile?.(profile.xUsername);
-    if (profile.instagramPostUrl) window.embedInstagramPost?.(profile.instagramPostUrl);
-    if (Array.isArray(profile.tiktokUrls)) window.displayTikTokVideos?.(profile.tiktokUrls);
+    if (profile.settings?.showX && profile.xUsername) {
+      window.showXProfile?.(profile.xUsername);
+    }
+    if (profile.settings?.showInstagram && profile.instagramPostUrl) {
+      window.embedInstagramPost?.(profile.instagramPostUrl);
+    }
+    if (profile.settings?.showTikTok && Array.isArray(profile.tiktokUrls)) {
+      window.displayTikTokVideos?.(profile.tiktokUrls);
+    }
+    if (profile.settings?.showFacebook && profile.facebookPageUrl) {
+      window.embedFacebookPage?.(profile.facebookPageUrl);
+}
 
     // カレンダーイベント
     if (Array.isArray(profile.calendarEvents)) {

@@ -65,7 +65,7 @@ export default function ProfileEditor({
         if (profile?.name) setName(profile.name);
         if (profile?.title) setTitle(profile.title);
         if (profile?.bio) setBio(profile.bio);
-
+          
         // 📌 取得した最新プロフィールを保存しておく
         latestProfileRef.current = {
           name: profile?.name ?? '',
@@ -107,7 +107,6 @@ export default function ProfileEditor({
     if (!bioCleared.current && bio.trim()) {
       profile.bio = bio.trim();
     }
-
 
     // 🔽 SNS系
     const youtubeChannelId = localStorage.getItem('youtubeChannelId');
@@ -158,7 +157,6 @@ export default function ProfileEditor({
       alert('❌ プロフィール保存に失敗しました');
     }
   };
-
 
   const handleCancel = () => {
     // ✅ 最新状態に戻す（初期値ではなく）
@@ -284,6 +282,7 @@ export default function ProfileEditor({
                 キャンセル
               </button>
             </div>
+            
           )}
         </>
       )}

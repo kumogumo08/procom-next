@@ -1,7 +1,8 @@
-// app/components/XEmbed.tsx
 'use client';
 
 import { useEffect, useState } from 'react';
+import SnsVisibilityToggle from './SnsVisibilityToggle';
+import SnsHelpTooltip from './SnsHelpTooltip';
 
 type Props = {
   uid: string;
@@ -11,6 +12,7 @@ type Props = {
 export default function XEmbed({ uid, isEditable }: Props) {
   const [username, setUsername] = useState('');
   const [inputValue, setInputValue] = useState('');
+  const [showX, setShowX] = useState<boolean>(true); // 初期値 true に修正
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -18,9 +20,13 @@ export default function XEmbed({ uid, isEditable }: Props) {
       try {
         const res = await fetch(`/api/user/${uid}`);
         const data = await res.json();
-        const name = data?.profile?.xUsername || '';
+        const profile = data?.profile || {};
+        const name = profile.xUsername || '';
+        const flag = profile.settings?.showX;
+
         setUsername(name);
         setInputValue(name);
+        setShowX(flag !== undefined ? flag : true); // undefined のとき true
       } catch (err) {
         console.warn('Xユーザー名の取得に失敗:', err);
       } finally {
@@ -41,7 +47,14 @@ export default function XEmbed({ uid, isEditable }: Props) {
       const res = await fetch(`/api/user/${uid}`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ profile: { xUsername: inputValue.trim() } }),
+        body: JSON.stringify({
+          profile: {
+            xUsername: inputValue.trim(),
+            settings: {
+              showX: showX,
+            },
+          },
+        }),
       });
 
       if (!res.ok) throw new Error('保存失敗');
@@ -53,6 +66,11 @@ export default function XEmbed({ uid, isEditable }: Props) {
   };
 
   const profileUrl = username ? `https://x.com/${username}` : '';
+
+  // ✅ フックの後で return 条件を判定
+  if (loading) return null;
+
+  if (!isEditable && (!username || showX === false)) return null;
 
   return (
     <div className="sns-item">
@@ -68,12 +86,16 @@ export default function XEmbed({ uid, isEditable }: Props) {
             style={{ padding: '6px', width: '100%', maxWidth: 400 }}
           />
           <button onClick={handleSave} style={{ marginTop: 8 }}>保存</button>
+          <SnsVisibilityToggle
+            label="Xを表示する"
+            checked={showX}
+            onChange={setShowX}
+          />
+          <SnsHelpTooltip />
         </div>
       )}
 
-      {loading ? (
-        <p>読み込み中...</p>
-      ) : username ? (
+      {username && showX && (
         <div style={{ textAlign: 'center', marginTop: '10px' }}>
           <a
             href={profileUrl}
@@ -95,8 +117,6 @@ export default function XEmbed({ uid, isEditable }: Props) {
             />
           </a>
         </div>
-      ) : (
-        !isEditable && <p>ユーザー名が登録されていません。</p>
       )}
     </div>
   );

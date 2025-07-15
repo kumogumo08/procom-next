@@ -1,6 +1,8 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import SnsVisibilityToggle from './SnsVisibilityToggle';
+import SnsHelpTooltip from './SnsHelpTooltip';
 
 interface Props {
   uid: string;
@@ -10,8 +12,9 @@ interface Props {
 export default function TikTokEmbed({ uid, isEditable }: Props) {
   const [urls, setUrls] = useState<string[]>([]);
   const [loadedUrls, setLoadedUrls] = useState<string[]>([]);
+  const [showTikTok, setShowTikTok] = useState(true);
 
-  // 🔽 Firestoreから初期データを取得
+  // 🔽 データ取得
   useEffect(() => {
     async function fetchData() {
       try {
@@ -19,11 +22,13 @@ export default function TikTokEmbed({ uid, isEditable }: Props) {
         const data = await res.json();
         const profile = data.profile || {};
         const tiktok = (profile.tiktokUrls || [])
-            .map((url: string) => url.trim())
-            .filter((url: string) => url !== '')
-            .slice(0, 3); // ← ✅ ここで初期ロードも最大3件に制限！
+          .map((url: string) => url.trim())
+          .filter((url: string) => url !== '')
+          .slice(0, 3);
+
         setUrls(tiktok);
         setLoadedUrls(tiktok);
+        setShowTikTok(profile.settings?.showTikTok !== false);
       } catch (e) {
         console.warn('TikTok情報の取得に失敗しました');
       }
@@ -31,37 +36,48 @@ export default function TikTokEmbed({ uid, isEditable }: Props) {
     fetchData();
   }, [uid]);
 
-  // 🔽 TikTok埋め込みスクリプトを再実行
+  // 🔽 スクリプト読み込み
   useEffect(() => {
-    if (typeof window !== 'undefined' && (window as any).tiktokEmbedLoad) {
-      (window as any).tiktokEmbedLoad();
-    } else if (typeof window !== 'undefined') {
+    if (!showTikTok || loadedUrls.length === 0) return;
+
+    const timeout = setTimeout(() => {
       const script = document.createElement('script');
       script.src = 'https://www.tiktok.com/embed.js';
       script.async = true;
       document.body.appendChild(script);
-    }
-  }, [loadedUrls]);
+    }, 100);
 
-  // 🔽 保存処理
-    const handleSave = async () => {
+    return () => clearTimeout(timeout);
+  }, [loadedUrls, showTikTok]);
+
+  // ✅ フックの後に早期 return を入れる（ここが大事）
+  if (!isEditable && !showTikTok) {
+    return null;
+  }
+
+  // 🔽 残りの処理
+  const handleSave = async () => {
     const cleaned = urls
-        .map(url => url.trim())
-        .filter(url => url !== '')
-        .slice(0, 3); // 最大3件に制限
+      .map(url => url.trim())
+      .filter(url => url !== '')
+      .slice(0, 3);
 
     await fetch(`/api/user/${uid}`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ profile: { tiktokUrls: cleaned } }),
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        profile: {
+          tiktokUrls: cleaned,
+          settings: { showTikTok },
+        },
+      }),
     });
 
     setLoadedUrls(cleaned);
-    setUrls(cleaned); 
+    setUrls(cleaned);
     alert('TikTokリンクを保存しました');
-    };
+  };
 
-  // 🔽 動画IDをURLから抽出
   const extractVideoId = (url: string): string => {
     const match = url.match(/video\/(\d+)/);
     return match ? match[1] : '';
@@ -72,84 +88,83 @@ export default function TikTokEmbed({ uid, isEditable }: Props) {
       <div className="sns-item" id="tiktok-section">
         <h2>TikTok動画を登録（最大3つ）</h2>
 
-        {/* 🔽 入力欄 */}
-      {isEditable && (
-        <div className="sns-section">
-          {urls.map((url, i) => (
-            <div
-              key={i}
-              style={{
-                display: 'flex',
-                alignItems: 'center',
-                marginBottom: '10px',
-              }}
-            >
-              <input
-                type="text"
-                value={url}
-                placeholder={`TikTok URL ${i + 1}`}
-                onChange={(e) => {
-                  const updated = [...urls];
-                  updated[i] = e.target.value;
-                  setUrls(updated);
-                }}
-                className="tiktok-input"
-                style={{ flex: 1 }}
-              />
-              <button
-                type="button"
-                onClick={() => {
-                  const updated = [...urls];
-                  updated.splice(i, 1);
-                  setUrls(updated);
-                }}
-                style={{
-                  marginLeft: '8px',
-                  background: 'red',
-                  color: 'white',
-                  border: 'none',
-                  borderRadius: '4px',
-                  padding: '4px 8px',
-                  cursor: 'pointer',
-                }}
-              >
-                ×
-              </button>
-            </div>
-          ))}
-
-          {urls.filter((url) => url.trim() !== '').length < 3 && (
-            <button onClick={() => setUrls([...urls, ''])}>＋ 入力欄を追加</button>
-          )}
-
-          <button onClick={handleSave} className="auth-only">保存</button>
-        </div>
-      )}
-
-
-        {/* 🔽 表示エリア */}
-        <div id="tiktok-container" className="tiktok-grid">
-          {loadedUrls.map((url, i) => {
-            const videoId = extractVideoId(url);
-            const embedUrl = `https://www.tiktok.com/embed/${videoId}`;
-            return (
-              <div key={i} className="tiktok-wrapper">
-                <iframe
-                  src={embedUrl}
-                  width="325"
-                  height="570"
-                  allow="autoplay; encrypted-media"
-                  allowFullScreen
-                  style={{
-                    border: 'none',
-                    maxWidth: '100%',
-                    borderRadius: '8px',
+        {isEditable && (
+          <div className="sns-section">
+            {urls.map((url, i) => (
+              <div key={i} style={{ display: 'flex', alignItems: 'center', marginBottom: '10px' }}>
+                <input
+                  type="text"
+                  value={url}
+                  placeholder={`TikTok URL ${i + 1}`}
+                  onChange={(e) => {
+                    const updated = [...urls];
+                    updated[i] = e.target.value;
+                    setUrls(updated);
                   }}
-                ></iframe>
+                  className="tiktok-input"
+                  style={{ flex: 1 }}
+                />
+                <button
+                  type="button"
+                  onClick={() => {
+                    const updated = [...urls];
+                    updated.splice(i, 1);
+                    setUrls(updated);
+                  }}
+                  style={{
+                    marginLeft: '8px',
+                    background: 'red',
+                    color: 'white',
+                    border: 'none',
+                    borderRadius: '4px',
+                    padding: '4px 8px',
+                    cursor: 'pointer',
+                  }}
+                >
+                  ×
+                </button>
               </div>
-            );
-          })}
-        </div>
+            ))}
+
+            {urls.filter((url) => url.trim() !== '').length < 3 && (
+              <button onClick={() => setUrls([...urls, ''])}>＋ 入力欄を追加</button>
+            )}
+            <button onClick={handleSave} className="auth-only" style={{ marginTop: '10px' }}>
+              保存
+            </button>
+            <SnsVisibilityToggle
+              label="TikTokを表示する"
+              checked={showTikTok}
+              onChange={setShowTikTok}
+            />
+            <SnsHelpTooltip />
+          </div>
+        )}
+
+        {showTikTok && (
+          <div id="tiktok-container" className="tiktok-grid">
+            {loadedUrls.map((url, i) => {
+              const videoId = extractVideoId(url);
+              const embedUrl = `https://www.tiktok.com/embed/${videoId}`;
+              return (
+                <div key={i} className="tiktok-wrapper">
+                  <iframe
+                    src={embedUrl}
+                    width="325"
+                    height="570"
+                    allow="autoplay; encrypted-media"
+                    allowFullScreen
+                    style={{
+                      border: 'none',
+                      maxWidth: '100%',
+                      borderRadius: '8px',
+                    }}
+                  ></iframe>
+                </div>
+              );
+            })}
+          </div>
+        )}
       </div>
     </div>
   );

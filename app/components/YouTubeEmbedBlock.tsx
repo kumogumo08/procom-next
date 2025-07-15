@@ -2,6 +2,8 @@
 
 import { useEffect, useState } from 'react';
 import { ReactNode } from 'react';
+import SnsVisibilityToggle from './SnsVisibilityToggle';
+import SnsHelpTooltip from './SnsHelpTooltip';
 
 type Props = {
   uid: string;
@@ -13,7 +15,7 @@ export default function YouTubeEmbedBlock({ uid, isEditable }: Props) {
   const [channelId, setChannelId] = useState('');
   const [manualUrls, setManualUrls] = useState<string[]>([]);
   const [videoElements, setVideoElements] = useState<ReactNode[]>([]);
-
+  const [showYouTube, setShowYouTube] = useState<boolean | undefined>(undefined);
   // 初期化
   useEffect(() => {
     async function fetchData() {
@@ -24,6 +26,7 @@ export default function YouTubeEmbedBlock({ uid, isEditable }: Props) {
         setMode(profile.youtubeMode || 'latest');
         setChannelId(profile.youtubeChannelId || '');
         setManualUrls(profile.manualYouTubeUrls || []);
+        setShowYouTube(profile.settings?.showYouTube);
       } catch (e) {
         console.warn('YouTube設定の取得に失敗しました');
       }
@@ -76,14 +79,16 @@ export default function YouTubeEmbedBlock({ uid, isEditable }: Props) {
       setVideoElements(container);
     }
   }, [mode, channelId, manualUrls]);
-
-
+  
   // 保存処理
   const handleSave = async () => {
     const payload = {
       youtubeMode: mode,
       youtubeChannelId: channelId,
       manualYouTubeUrls: manualUrls,
+      settings: {
+      showYouTube, // ✅ ここを追加
+    },
     };
     await fetch(`/api/user/${uid}`, {
       method: 'POST',
@@ -97,6 +102,18 @@ export default function YouTubeEmbedBlock({ uid, isEditable }: Props) {
     const match = url.match(/(?:v=|\.be\/)([a-zA-Z0-9_-]{11})/);
     return match ? match[1] : '';
   };
+
+  // 🔽 非表示条件を追加（他人のページでYouTubeが未設定 or 表示対象なしなら非表示）
+      if (
+        !isEditable &&
+        (
+          showYouTube === false ||
+          (mode === 'latest' && !channelId) ||
+          (mode === 'manual' && manualUrls.filter(url => !!extractVideoId(url)).length === 0)
+        )
+      ) {
+        return null;
+      }
 
   return (
     <div className="sns-item" id="youtube-section">
@@ -191,8 +208,16 @@ export default function YouTubeEmbedBlock({ uid, isEditable }: Props) {
         <button type="button" onClick={handleSave}>
           保存
         </button>
+        
       )}
-
+        {isEditable && (
+          <SnsVisibilityToggle
+            label="YouTubeを表示する"
+            checked={showYouTube ?? true}
+            onChange={setShowYouTube}
+          />
+        )}
+        <SnsHelpTooltip />
       {/* 🔽 表示 */}
       <div id="videoContainer" className="video-container">
         {videoElements}

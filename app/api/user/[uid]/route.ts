@@ -78,6 +78,7 @@ export async function GET(req: NextRequest, context: any) {
       youtubeMode: rawProfile.youtubeMode ?? 'latest',
       manualYouTubeUrls: rawProfile.manualYouTubeUrls ?? [],
       facebookUrl: rawProfile.facebookUrl ?? '',
+      settings: rawProfile.settings ?? {},
     };
 
     return NextResponse.json({
@@ -220,6 +221,10 @@ export async function POST(req: NextRequest, props: { params: Promise<{ uid: str
       youtubeMode: profile.youtubeMode ?? existingProfile.youtubeMode ?? 'latest',
       manualYouTubeUrls: profile.manualYouTubeUrls ?? existingProfile.manualYouTubeUrls ?? [],
       facebookUrl: profile.facebookUrl ?? existingProfile.facebookUrl ?? '',
+      settings: {
+        ...existingProfile.settings ?? {},
+        ...profile.settings ?? {},
+      }
     });
 
     await userRef.set({ profile: cleanedProfile }, { merge: true });

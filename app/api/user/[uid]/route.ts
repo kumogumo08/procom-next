@@ -79,6 +79,7 @@ export async function GET(req: NextRequest, context: any) {
       manualYouTubeUrls: rawProfile.manualYouTubeUrls ?? [],
       facebookUrl: rawProfile.facebookUrl ?? '',
       settings: rawProfile.settings ?? {},
+      bannerLinks: rawProfile.bannerLinks ?? [],
     };
 
     return NextResponse.json({
@@ -122,6 +123,7 @@ export async function POST(req: NextRequest, props: { params: Promise<{ uid: str
 
     const existing = userDoc.data() || {};
     const existingProfile = existing.profile || {};
+    const existingBannerLinks = existing.bannerLinks ?? [];
 
     // 📅 カレンダー
     if (
@@ -221,13 +223,17 @@ export async function POST(req: NextRequest, props: { params: Promise<{ uid: str
       youtubeMode: profile.youtubeMode ?? existingProfile.youtubeMode ?? 'latest',
       manualYouTubeUrls: profile.manualYouTubeUrls ?? existingProfile.manualYouTubeUrls ?? [],
       facebookUrl: profile.facebookUrl ?? existingProfile.facebookUrl ?? '',
+      bannerLinks: profile.bannerLinks ?? existingProfile.bannerLinks ?? [],
       settings: {
         ...existingProfile.settings ?? {},
         ...profile.settings ?? {},
       }
     });
 
-    await userRef.set({ profile: cleanedProfile }, { merge: true });
+await userRef.set(
+  { profile: cleanedProfile },
+  { merge: true }
+);
     return NextResponse.json({ message: 'User profile updated' });
   } catch (err) {
     console.error('🔥 Firestore保存エラー:', err);

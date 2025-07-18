@@ -91,92 +91,101 @@ export default function FacebookEmbedBlock({ uid, isEditable }: Props) {
     }
   };
 
-  return (
-    <div className="facebook-section">
-      <h3>📘 Facebookページ</h3>
+ return (
+  <div className="facebook-section">
+    <h3>📘 Facebookページ</h3>
 
-      {isEditable && (
-        <>
-          <input
-            type="text"
-            value={inputValue}
-            onChange={(e) => setInputValue(e.target.value)}
-            placeholder="https://www.facebook.com/xxxxxx"
-            style={{ width: '100%', padding: '8px' }}
-          />
-          <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', marginTop: '10px' }}>
-            <button
-              type="button"
-              onClick={handleSave}
-              style={{
-                background: '#4e73df',
-                color: 'white',
-                border: 'none',
-                borderRadius: '4px',
-                padding: '4px 8px',
-                cursor: 'pointer',
-              }}
-            >
-              保存して表示
-            </button>
-            <SnsVisibilityToggle
-              label="Facebookを表示する"
-              checked={showFacebook ?? true}
-              onChange={setShowFacebook}
-            />
-            <SnsHelpTooltip />
-          </div>
-        </>
-      )}
-
-      {fbUrl && showFacebook && (
-        <>
-          <div
-            id="fbEmbedContainer"
+    {isEditable && (
+      <>
+        <input
+          type="text"
+          value={inputValue}
+          onChange={(e) => setInputValue(e.target.value)}
+          placeholder="https://www.facebook.com/xxxxxx"
+          style={{ width: '100%', padding: '8px' }}
+        />
+        <div
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: '1rem',
+            marginTop: '10px',
+          }}
+        >
+          <button
+            type="button"
+            onClick={handleSave}
             style={{
-              display: isFacebookPage(fbUrl) ? 'block' : 'none',
-              marginTop: '20px',
+              background: '#4e73df',
+              color: 'white',
+              border: 'none',
+              borderRadius: '4px',
+              padding: '4px 8px',
+              cursor: 'pointer',
             }}
           >
-            <div
-              className="fb-page"
-              data-href={fbUrl}
-              data-tabs="timeline"
-              data-width=""
-              data-height=""
-              data-small-header="false"
-              data-adapt-container-width="true"
-              data-hide-cover="false"
-              data-show-facepile="true"
-            >
-              <blockquote cite={fbUrl} className="fb-xfbml-parse-ignore">
-                <a href={fbUrl}>Facebook</a>
-              </blockquote>
-            </div>
-          </div>
+            保存
+          </button>
+          <SnsVisibilityToggle
+            label="Facebookを表示する"
+            checked={showFacebook ?? true}
+            onChange={setShowFacebook}
+          />
+          <SnsHelpTooltip />
+        </div>
+      </>
+    )}
 
-          <div style={{ marginTop: '20px', textAlign: 'center' }}>
-            <a
-              href={fbUrl}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="facebook-button"
-              style={{
-                display: 'inline-block',
-                backgroundColor: '#1877f2',
-                color: '#fff',
-                padding: '8px 16px',
-                borderRadius: '5px',
-                textDecoration: 'none',
-                fontWeight: 'bold',
-              }}
-            >
-              <i className="fab fa-facebook-square" style={{ marginRight: '8px' }}></i>
-              Facebook プロフィールを見る
-            </a>
+    {fbUrl && showFacebook && (
+      <>
+        <div
+          id="fbEmbedContainer"
+          style={{
+            display: isFacebookPage(fbUrl) ? 'block' : 'none',
+            marginTop: '20px',
+            maxWidth: '500px',
+            width: '100%',
+            marginLeft: 'auto',
+            marginRight: 'auto',
+          }}
+        >
+          <div
+            className="fb-page"
+            data-href={fbUrl}
+            data-tabs="timeline"
+            data-width="500"
+            data-height=""
+            data-small-header="false"
+            data-adapt-container-width="false"
+            data-hide-cover="false"
+            data-show-facepile="true"
+          >
+            <blockquote cite={fbUrl} className="fb-xfbml-parse-ignore" />
           </div>
-        </>
-      )}
-    </div>
-  );
+        </div>
+
+        <div style={{ marginTop: '32px', textAlign: 'center' }}>
+          <a
+            href={fbUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="facebook-button"
+            style={{
+              display: 'inline-block',
+              backgroundColor: '#1877f2',
+              color: '#fff',
+              padding: '8px 16px',
+              borderRadius: '5px',
+              textDecoration: 'none',
+              fontWeight: 'bold',
+            }}
+          >
+            <i className="fab fa-facebook-square" style={{ marginRight: '8px' }}></i>
+            Facebook プロフィールを見る
+          </a>
+        </div>
+      </>
+    )}
+  </div>
+);
 }

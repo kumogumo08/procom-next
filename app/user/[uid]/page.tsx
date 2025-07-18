@@ -15,6 +15,8 @@ import QRCodeBlock from '@/components/QRCodeBlock';
 import OshiButton from '@/components/OshiButton';
 import Script from 'next/script';
 import XShareButton from '@/components/XShareButton';
+import BannerLinksBlock from '@/components/BannerLinksBlock';
+
 
 export default async function UserPage({
   params,
@@ -63,7 +65,14 @@ export default async function UserPage({
           </div>
         </div>
         <TikTokEmbed uid={uid} isEditable={isEditable} />
-        <FacebookEmbedBlock uid={uid} isEditable={isEditable} />
+        <div className="sns-container">
+          <div className="sns-box">
+            <FacebookEmbedBlock uid={uid} isEditable={isEditable} />
+          </div>
+          <div className="sns-box">
+            <BannerLinksBlock uid={uid} isEditable={isEditable} />
+          </div>
+        </div>
         <QRCodeBlock />
       </main>
       <Footer />

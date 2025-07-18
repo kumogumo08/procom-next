@@ -690,9 +690,7 @@ body {
 .sns-box {
   max-width: 600px;
   width: 100%;
-  min-height: 500px; /* ✅ 高さを統一するために追加 */
   box-sizing: border-box;
-  padding: 10px;          /* optional: 余白の統一 */
   border-radius: 8px;     /* optional: デザイン統一 */
 }
 

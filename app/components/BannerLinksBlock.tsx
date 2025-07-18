@@ -221,20 +221,20 @@ const renderBannerInput = (banner: Banner, index: number) => (
   </div>
 );
 
-  if (!isEditable && !showBanners) {
-    return null;
-  }
+    if (!showBanners && !isEditable) {
+    return null; // 非表示 + 編集不可なら何も表示しない
+    }
 
-  return (
+    return (
     <div className="banner-section" style={{ maxWidth: '600px', margin: '0 auto', padding: '20px 0' }}>
-      <h3>バナーリンク</h3>
-       {isEditable && (
+        <h3>バナーリンク</h3>
+        {isEditable && (
         <SnsVisibilityToggle
-          label="バナーリンクを表示する"
-          checked={showBanners}
-          onChange={setShowBanners}
+            label="バナーリンクを表示する"
+            checked={showBanners}
+            onChange={setShowBanners}
         />
-      )}
+        )}
 
       {isEditable ? (
         <>

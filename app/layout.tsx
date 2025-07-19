@@ -11,7 +11,7 @@ export const metadata = {
   icons: { icon: '/favicon.ico' },
   openGraph: {
     title: 'Procom（プロコム）',
-    description: 'SNSリンクを一括表示。あなたの情報を1ページに。',
+    description: 'SSNSプロフィールとリンク集をまとめて1ページで魅せるプラットフォーム。',
     url: 'https://procom-next.onrender.com/',
     siteName: 'Procom',
     images: [
@@ -26,8 +26,8 @@ export const metadata = {
   },
   twitter: {
     card: 'summary_large_image',
-    title: 'Procom',
-    description: 'SNSプロフィールをまとめて表示できるプラットフォーム。',
+    title: 'ProcomでSNSプロフィールをまとめよう',
+    description: 'あなたのSNS・プロフィール・リンク集を1ページに。Procomなら誰でも簡単に。',
     images: ['https://procom-next.onrender.com/og-image.jpg'],
   },
 };

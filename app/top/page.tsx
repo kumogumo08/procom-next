@@ -1,18 +1,15 @@
-'use client'; // ✅ クライアントコンポーネントとして指定
+// ✅ ファイル: app/top/page.tsx（サーバーコンポーネント）
 
-import { useEffect } from 'react';
-import { useRouter } from 'next/navigation';
-import ClientUserList from './ClientUserList';
-import Header from '@/components/Header';
-import Footer from '@/components/Footer';
-import styles from './top.module.css';
+import TopPageClient from './TopPageClient';
 
 export const metadata = {
-  title: 'Procom（プロコム） - あなたのSNS・プロフィール・活動情報を一つにまとめる自己発信プラットフォーム。',
-  description: 'Procom（プロコム）は、YouTuberやダンサー、インフルエンサーのためのSNSプロフィール集約サイトです。',
+  title: 'Procom（プロコム） - SNS・プロフィール・リンク集を1ページに集約',
+  description:
+    'Procom（プロコム）は、YouTuber・ダンサー・インフルエンサーのためのSNSリンク集＆プロフィール集約プラットフォーム。自分の発信活動をまとめて見せよう。',
   openGraph: {
-    title: 'Procom（プロコム） - あなたのSNSをまとめよう',
-    description: 'YouTube・X・Instagram・TikTokを一つのページで表示。',
+    title: 'Procom（プロコム） - SNS・プロフィール・リンク集をまとめよう',
+    description:
+      'YouTube・X・Instagram・TikTokなどのSNSとプロフィールを1ページに集約。Procom（プロコム）であなたの魅力を伝えよう。',
     url: 'https://procom-next.onrender.com/top',
     siteName: 'Procom（プロコム）',
     images: [
@@ -20,34 +17,20 @@ export const metadata = {
         url: 'https://procom-next.onrender.com/og-image.jpg',
         width: 1200,
         height: 630,
-        alt: 'Procom（プロコム）のOG画像',
+        alt: 'Procom（プロコム）のOG画像 - SNS・プロフィール・リンク集',
       },
     ],
     type: 'website',
   },
   twitter: {
     card: 'summary_large_image',
-    title: 'Procom（プロコム）',
-    description: 'SNSプロフィールをまとめて表示できるプラットフォーム「Procom（プロコム）」で、自分だけの発信ページを作ろう。',
+    title: 'Procom（プロコム） - あなたのSNSとプロフィールをまとめよう',
+    description:
+      'SNSプロフィールをまとめて見せる自己発信プラットフォーム「Procom（プロコム）」。リンク集やプロフィールページが簡単に作れます。',
     images: ['https://procom-next.onrender.com/og-image.jpg'],
   },
 };
 
 export default function TopPage() {
-  const router = useRouter();
-
-  useEffect(() => {
-    const lastUrl = localStorage.getItem('lastVisitedUrl');
-    if (lastUrl && lastUrl !== '/top' && !lastUrl.startsWith('/login')) {
-      router.replace(lastUrl); // ✅ 自動リダイレクト（/loginなどは除外）
-    }
-  }, []);
-
-  return (
-    <>
-      <Header />
-      <ClientUserList />
-      <Footer />
-    </>
-  );
+  return <TopPageClient />;
 }

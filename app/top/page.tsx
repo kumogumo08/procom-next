@@ -1,4 +1,7 @@
-// ✅ app/top/page.tsx
+'use client'; // ✅ クライアントコンポーネントとして指定
+
+import { useEffect } from 'react';
+import { useRouter } from 'next/navigation';
 import ClientUserList from './ClientUserList';
 import Header from '@/components/Header';
 import Footer from '@/components/Footer';
@@ -31,10 +34,19 @@ export const metadata = {
 };
 
 export default function TopPage() {
+  const router = useRouter();
+
+  useEffect(() => {
+    const lastUrl = localStorage.getItem('lastVisitedUrl');
+    if (lastUrl && lastUrl !== '/top' && !lastUrl.startsWith('/login')) {
+      router.replace(lastUrl); // ✅ 自動リダイレクト（/loginなどは除外）
+    }
+  }, []);
+
   return (
     <>
       <Header />
-      <ClientUserList /> {/* クライアント側でユーザー一覧をフェッチして表示 */}
+      <ClientUserList />
       <Footer />
     </>
   );

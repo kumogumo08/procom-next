@@ -48,9 +48,10 @@ const embedScriptLoadedRef = useRef(false);
 const lastProcessedUrlRef = useRef<string | null>(null);
 const scriptAppendedRef = useRef(false); // ✅ scriptが追加されたか判定
 
+// 修正後（入力中の url に反応）
 useEffect(() => {
-  if (!loadedUrl || !showInstagram) return;
-  if (lastProcessedUrlRef.current === loadedUrl) return;
+  if (!url || !showInstagram) return;
+  if (lastProcessedUrlRef.current === url) return;
 
   const container = embedRef.current;
   if (!container) return;
@@ -59,9 +60,9 @@ useEffect(() => {
 
   const block = document.createElement('blockquote');
   block.className = 'instagram-media';
-  block.setAttribute('data-instgrm-permalink', loadedUrl);
+  block.setAttribute('data-instgrm-permalink', url);
   block.setAttribute('data-instgrm-version', '14');
-  block.setAttribute('data-instgrm-captioned', ''); // ← キャプション表示ON
+  block.setAttribute('data-instgrm-captioned', '');
   block.style.width = '100%';
   block.style.margin = '20px auto';
   container.appendChild(block);
@@ -69,7 +70,7 @@ useEffect(() => {
   const processEmbed = () => {
     try {
       (window as any).instgrm?.Embeds?.process();
-      lastProcessedUrlRef.current = loadedUrl;
+      lastProcessedUrlRef.current = url;
     } catch (err) {
       console.warn('Instagram埋め込み処理エラー:', err);
     }
@@ -90,8 +91,8 @@ useEffect(() => {
     document.body.appendChild(script);
     scriptAppendedRef.current = true;
   }
+}, [url, showInstagram]); // ✅ url に変更
 
-}, [loadedUrl, showInstagram]);
 
 
 const isValidInstagramUrl = (url: string) => {
@@ -148,7 +149,7 @@ const handleSave = async () => {
             style={{ width: '100%', marginBottom: '6px' }}
           />
           <p style={{ fontSize: '12px', color: '#555' }}>
-            プロフィールページまたはお気に入りのインスタ画像URLをご入力ください
+            お気に入りのインスタ画像URLをご入力ください
           </p>
           <button onClick={handleSave} style={{ marginTop: '10px' }}>
             保存

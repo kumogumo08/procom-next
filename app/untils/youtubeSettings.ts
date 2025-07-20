@@ -72,7 +72,7 @@ export function initializeYouTubeAndSNS(uid: string) {
       if (profile.instagramPostUrl) {
         const igInput = document.getElementById('instagramPostLink') as HTMLInputElement;
         if (igInput) igInput.value = profile.instagramPostUrl;
-        window.embedInstagramPost?.(false);
+        window.embedInstagramPost?.('');
       }
 
       // ▼ YouTube表示

@@ -27,6 +27,20 @@ export function embedInstagramPost(url: string) {
   window.instgrm?.Embeds?.process();
 }
 
+// Instagram URLを正規化（末尾に / を付ける）
+export function normalizeInstagramUrl(url: string): string {
+  if (!url) return '';
+  try {
+    const u = new URL(url);
+    if (!u.pathname.endsWith('/')) {
+      u.pathname += '/';
+    }
+    return u.toString();
+  } catch (e) {
+    return url; // 無効なURLでもそのまま返す
+  }
+}
+
 // X（旧Twitter）表示
 export function showXProfile(username: string) {
   const container = document.getElementById('xEmbed');

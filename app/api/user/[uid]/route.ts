@@ -11,6 +11,7 @@ import { sessionOptions } from '@/lib/session';
 import type { SessionData } from '@/lib/session-types';
 import { db } from '@/lib/firebase-admin';
 import admin from 'firebase-admin';
+import { normalizeInstagramUrl } from '@/lib/sns';
 
 initializeFirebaseAdmin();
 
@@ -65,13 +66,16 @@ export async function GET(req: NextRequest, context: any) {
           .filter(Boolean) as { url: string; position?: string }[]
       : [];
 
+    // 🔧 instagramPostUrl の正規化
+    const normalizedInstagramUrl = normalizeInstagramUrl(rawProfile.instagramPostUrl ?? '');
+
     const profile = {
       name: rawProfile.name ?? '',
       title: rawProfile.title ?? '',
       bio: rawProfile.bio ?? '',
       photos,
       youtubeChannelId: rawProfile.youtubeChannelId ?? '',
-      instagramPostUrl: rawProfile.instagramPostUrl ?? '',
+      instagramPostUrl: normalizedInstagramUrl ?? '', // ← 🔄 正規化されたURLを代入
       xUsername: rawProfile.xUsername ?? '',
       tiktokUrls: rawProfile.tiktokUrls ?? [],
       calendarEvents: rawProfile.calendarEvents ?? [],
@@ -92,6 +96,7 @@ export async function GET(req: NextRequest, context: any) {
     return NextResponse.json({ error: 'サーバーエラー' }, { status: 500 });
   }
 }
+
 
 // --- POST: プロフィール保存 ---
 export async function POST(req: NextRequest, props: { params: Promise<{ uid: string }> }) {
@@ -209,6 +214,14 @@ export async function POST(req: NextRequest, props: { params: Promise<{ uid: str
       }
     }
 
+    if (typeof profile.instagramPostUrl === 'string') {
+      const normalized = normalizeInstagramUrl(profile.instagramPostUrl);
+      if (normalized) {
+        profile.instagramPostUrl = normalized;
+      } else {
+        profile.instagramPostUrl = ''; // 無効なURLなら空文字にしておく
+      }
+    }
     // 🔄 プロフィール保存
     const cleanedProfile = cleanData({
       name: profile.name ?? existingProfile.name ?? '',

@@ -11,7 +11,8 @@ export default function Analytics() {
   const searchParams = useSearchParams();
 
   useEffect(() => {
-    if (!window.gtag) return;
+    if (typeof window === 'undefined' || typeof window.gtag !== 'function') return;
+
     const query = searchParams.toString();
     const url = query ? `${pathname}?${query}` : pathname;
     window.gtag('config', GA_ID, { page_path: url });
@@ -21,7 +22,7 @@ export default function Analytics() {
     <>
       <Script
         strategy="afterInteractive"
-        src={`https://www.googletagmanager.com/gtag/js?id=${GA_ID}`}
+        src="https://www.googletagmanager.com/gtag/js?id=G-5GXKQ5C9NL"
       />
       <Script
         id="gtag-init"

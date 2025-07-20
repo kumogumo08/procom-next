@@ -82,7 +82,6 @@ export default async function UserPage({
       />
       <Script src="https://www.tiktok.com/embed.js" strategy="afterInteractive" />
       <Script src="https://platform.twitter.com/widgets.js" strategy="afterInteractive" />
-      <Script src="https://www.instagram.com/embed.js" strategy="afterInteractive" />
     </>
   );
 }

@@ -16,6 +16,7 @@ export default function InstagramEmbed({ uid, isEditable }: Props) {
   const [isLoaded, setIsLoaded] = useState(false);
   const embedRef = useRef<HTMLDivElement>(null);
 
+  // 🔹 初期データ取得
   useEffect(() => {
     async function fetchData() {
       try {
@@ -24,15 +25,14 @@ export default function InstagramEmbed({ uid, isEditable }: Props) {
         const profile = data.profile || {};
 
         if (profile.instagramPostUrl) {
-          setUrl(profile.instagramPostUrl);
-          setLoadedUrl(profile.instagramPostUrl);
+          const fixedUrl = profile.instagramPostUrl.endsWith('/')
+            ? profile.instagramPostUrl
+            : profile.instagramPostUrl + '/';
+          setUrl(fixedUrl);
+          setLoadedUrl(fixedUrl);
         }
 
-        if (profile.settings?.showInstagram !== undefined) {
-          setShowInstagram(profile.settings.showInstagram);
-        } else {
-          setShowInstagram(true); // デフォルト true
-        }
+        setShowInstagram(profile.settings?.showInstagram ?? true);
       } catch (err) {
         console.warn('Instagram情報の取得に失敗しました');
       } finally {
@@ -42,56 +42,94 @@ export default function InstagramEmbed({ uid, isEditable }: Props) {
     fetchData();
   }, [uid]);
 
-  useEffect(() => {
-    if (!loadedUrl || !showInstagram) return;
+  // 🔹 Instagram embed.js 動的読み込み＋埋め込み実行
+  // 🔁 外でフラグを定義（複数実行を防ぐ）
+const embedScriptLoadedRef = useRef(false); 
+const lastProcessedUrlRef = useRef<string | null>(null);
+const scriptAppendedRef = useRef(false); // ✅ scriptが追加されたか判定
 
-    const processInstagram = () => {
-      try {
-        (window as any).instgrm.Embeds.process();
-      } catch (err) {
-        console.warn('Instagram埋め込み処理エラー:', err);
-      }
-    };
+useEffect(() => {
+  if (!loadedUrl || !showInstagram) return;
+  if (lastProcessedUrlRef.current === loadedUrl) return;
 
-    if (!(window as any).instgrm) {
-      const script = document.createElement('script');
-      script.src = 'https://www.instagram.com/embed.js';
-      script.async = true;
-      script.onload = () => {
-        setTimeout(processInstagram, 100);
-      };
-      document.body.appendChild(script);
-    } else {
-      setTimeout(processInstagram, 100);
-    }
-  }, [loadedUrl, showInstagram]);
+  const container = embedRef.current;
+  if (!container) return;
 
-  const handleSave = async () => {
+  container.innerHTML = '';
+
+  const block = document.createElement('blockquote');
+  block.className = 'instagram-media';
+  block.setAttribute('data-instgrm-permalink', loadedUrl);
+  block.setAttribute('data-instgrm-version', '14');
+  block.setAttribute('data-instgrm-captioned', ''); // ← キャプション表示ON
+  block.style.width = '100%';
+  block.style.margin = '20px auto';
+  container.appendChild(block);
+
+  const processEmbed = () => {
     try {
-      const res = await fetch(`/api/user/${uid}`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        credentials: 'include',
-        body: JSON.stringify({
-          profile: {
-            instagramPostUrl: url,
-            settings: {
-              showInstagram,
-            },
-          },
-        }),
-      });
-
-      if (!res.ok) throw new Error('保存失敗');
-      setLoadedUrl(url);
-      alert('Instagramリンクを保存しました');
+      (window as any).instgrm?.Embeds?.process();
+      lastProcessedUrlRef.current = loadedUrl;
     } catch (err) {
-      console.error('保存エラー:', err);
-      alert('保存に失敗しました');
+      console.warn('Instagram埋め込み処理エラー:', err);
     }
   };
 
-  // ✅ フックの後に早期 return
+  const isProcessAvailable = (window as any).instgrm?.Embeds?.process;
+
+  if (isProcessAvailable) {
+    processEmbed();
+  } else if (!embedScriptLoadedRef.current && !scriptAppendedRef.current) {
+    const script = document.createElement('script');
+    script.src = 'https://www.instagram.com/embed.js';
+    script.async = true;
+    script.onload = () => {
+      embedScriptLoadedRef.current = true;
+      processEmbed();
+    };
+    document.body.appendChild(script);
+    scriptAppendedRef.current = true;
+  }
+
+}, [loadedUrl, showInstagram]);
+
+
+const isValidInstagramUrl = (url: string) => {
+  return /^https:\/\/(www\.)?instagram\.com\/p\/[a-zA-Z0-9_-]+\/?$/.test(url);
+};
+
+const handleSave = async () => {
+  try {
+    const fixedUrl = url.endsWith('/') ? url : url + '/';
+
+    if (!isValidInstagramUrl(fixedUrl)) {
+      alert('⚠️ 正しいInstagram投稿URLを入力してください（例: https://www.instagram.com/p/xxxxxx/）');
+      return;
+    }
+
+    const res = await fetch(`/api/user/${uid}`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      credentials: 'include',
+      body: JSON.stringify({
+        profile: {
+          instagramPostUrl: fixedUrl,
+          settings: { showInstagram },
+        },
+      }),
+    });
+
+    if (!res.ok) throw new Error('保存失敗');
+    setLoadedUrl(fixedUrl);
+    alert('Instagramリンクを保存しました');
+  } catch (err) {
+    console.error('保存エラー:', err);
+    alert('保存に失敗しました');
+  }
+};
+
+
+  // 🔹 表示制御
   if (!isEditable && showInstagram === false) {
     return null;
   }
@@ -125,16 +163,10 @@ export default function InstagramEmbed({ uid, isEditable }: Props) {
         </>
       )}
 
-      {isLoaded && loadedUrl && showInstagram && (
-        <div ref={embedRef}>
-          <blockquote
-            className="instagram-media"
-            data-instgrm-permalink={loadedUrl}
-            data-instgrm-version="14"
-            style={{ width: '100%', margin: '20px auto' }}
-          ></blockquote>
-        </div>
-      )}
+{isLoaded && loadedUrl && showInstagram && (
+  <div ref={embedRef}></div>
+)}
+
     </div>
   );
 }

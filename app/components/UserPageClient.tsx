@@ -1,10 +1,18 @@
 'use client';
 
-import { useEffect } from 'react';
+import { useEffect, useRef } from 'react';
 
 declare global {
   interface Window {
     embedFacebookPage?: (url: string) => void;
+    embedInstagramPost?: (url: string) => void;
+    updatePhotoSlider?: (photos: Photo[], own: boolean) => void;
+    displayManualYouTubeVideos?: (urls: string[]) => void;
+    fetchLatestVideos?: (channelId: string) => void;
+    showXProfile?: (username: string) => void;
+    displayTikTokVideos?: (urls: string[]) => void;
+    createCalendar?: (date: Date, own: boolean) => void;
+    savePhotos?: () => void;
   }
 }
 
@@ -25,19 +33,14 @@ type Profile = {
   instagramPostUrl?: string;
   tiktokUrls?: string[];
   calendarEvents?: { date: string; events: string[] }[];
-
-  // SNS表示設定
   settings?: {
     showX?: boolean;
     showInstagram?: boolean;
     showTikTok?: boolean;
     showFacebook?: boolean;
   };
-
-  // ← FacebookページURLを追加
   facebookPageUrl?: string;
 };
-
 
 type Props = {
   uid: string;
@@ -46,6 +49,9 @@ type Props = {
 };
 
 const UserPageClient = ({ uid, profile, isEditable }: Props) => {
+  const lastInstagramUrlRef = useRef<string | null>(null);
+  const lastFacebookUrlRef = useRef<string | null>(null);
+
   useEffect(() => {
     if (!uid) return;
 
@@ -65,8 +71,8 @@ const UserPageClient = ({ uid, profile, isEditable }: Props) => {
     const nameEl = document.getElementById('name');
     if (nameEl) nameEl.textContent = profile.name || '';
 
-    const titleLabel = document.getElementById('title');
-    if (titleLabel) titleLabel.textContent = profile.title ? `（${profile.title}）` : '';
+    const titleText = document.getElementById('title');
+    if (titleText) titleText.textContent = profile.title ? `（${profile.title}）` : '';
 
     const bioEl = document.getElementById('bio');
     if (bioEl) bioEl.innerHTML = (profile.bio || '').replace(/\n/g, '<br>');
@@ -77,43 +83,53 @@ const UserPageClient = ({ uid, profile, isEditable }: Props) => {
     }
 
     // YouTube設定
-    if (profile.youtubeMode === 'manual') {
-      const manualRadio = document.querySelector('input[name="youtubeMode"][value="manual"]') as HTMLInputElement | null;
-      const latestInput = document.getElementById('youtube-latest-input');
-      const manualInput = document.getElementById('youtube-manual-input');
+if (profile.youtubeMode === 'manual') {
+  (document.querySelector('input[name="youtubeMode"][value="manual"]') as HTMLInputElement | null)?.click();
 
-      if (manualRadio) manualRadio.checked = true;
-      if (latestInput) latestInput.style.display = 'none';
-      if (manualInput) manualInput.style.display = 'block';
+  const latestInput = document.getElementById('youtube-latest-input');
+  if (latestInput) latestInput.style.display = 'none';
 
-      window.displayManualYouTubeVideos?.(profile.manualYouTubeUrls || []);
-    } else if (profile.youtubeChannelId) {
-      const latestRadio = document.querySelector('input[name="youtubeMode"][value="latest"]') as HTMLInputElement | null;
-      const latestInput = document.getElementById('youtube-latest-input');
-      const manualInput = document.getElementById('youtube-manual-input');
-      const input = document.getElementById('channelIdInput') as HTMLInputElement | null;
+  const manualInput = document.getElementById('youtube-manual-input');
+  if (manualInput) manualInput.style.display = 'block';
 
-      if (latestRadio) latestRadio.checked = true;
-      if (latestInput) latestInput.style.display = 'block';
-      if (manualInput) manualInput.style.display = 'none';
-      if (input) input.value = profile.youtubeChannelId;
+  window.displayManualYouTubeVideos?.(profile.manualYouTubeUrls || []);
+} else if (profile.youtubeChannelId) {
+  (document.querySelector('input[name="youtubeMode"][value="latest"]') as HTMLInputElement | null)?.click();
 
-      window.fetchLatestVideos?.(profile.youtubeChannelId);
-    }
+  const latestInput = document.getElementById('youtube-latest-input');
+  if (latestInput) latestInput.style.display = 'block';
+
+  const manualInput = document.getElementById('youtube-manual-input');
+  if (manualInput) manualInput.style.display = 'none';
+
+  const input = document.getElementById('channelIdInput') as HTMLInputElement | null;
+  if (input) input.value = profile.youtubeChannelId;
+
+  window.fetchLatestVideos?.(profile.youtubeChannelId);
+}
 
     // SNS表示
     if (profile.settings?.showX && profile.xUsername) {
       window.showXProfile?.(profile.xUsername);
     }
+
     if (profile.settings?.showInstagram && profile.instagramPostUrl) {
-      window.embedInstagramPost?.(profile.instagramPostUrl);
+      if (lastInstagramUrlRef.current !== profile.instagramPostUrl) {
+        lastInstagramUrlRef.current = profile.instagramPostUrl;
+        window.embedInstagramPost?.(profile.instagramPostUrl);
+      }
     }
+
     if (profile.settings?.showTikTok && Array.isArray(profile.tiktokUrls)) {
       window.displayTikTokVideos?.(profile.tiktokUrls);
     }
+
     if (profile.settings?.showFacebook && profile.facebookPageUrl) {
-      window.embedFacebookPage?.(profile.facebookPageUrl);
-}
+      if (lastFacebookUrlRef.current !== profile.facebookPageUrl) {
+        lastFacebookUrlRef.current = profile.facebookPageUrl;
+        window.embedFacebookPage?.(profile.facebookPageUrl);
+      }
+    }
 
     // カレンダーイベント
     if (Array.isArray(profile.calendarEvents)) {

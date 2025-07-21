@@ -231,7 +231,30 @@ export default function ProfileEditor({
                   </button>
                 </div>
               </div>
-
+              <div className="form-row">
+              <label htmlFor="titleInput">肩書：</label>
+              <div className="input-with-delete">
+                <input
+                  type="text"
+                  id="titleInput"
+                  value={title}
+                  onChange={e => {
+                    setTitle(e.target.value);
+                    titleCleared.current = false;
+                  }}
+                />
+                <button
+                  type="button"
+                  className="delete-btn"
+                  onClick={() => {
+                    setTitle('');
+                    titleCleared.current = true;
+                  }}
+                >
+                  ✖
+                </button>
+              </div>
+            </div>
               <div className="form-row">
                 <label htmlFor="bioInput">プロフィール：</label>
                 <div className="input-with-delete">

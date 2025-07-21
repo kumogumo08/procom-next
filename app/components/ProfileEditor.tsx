@@ -292,7 +292,7 @@ export default function ProfileEditor({
                 {/* 🔽 このボタンを追加！ */}
               <div style={{ textAlign: 'center', marginBottom: '1rem' }}>
                 <button
-                  onClick={() => setBio(TEN_QUESTIONS_TEMPLATE)}
+                  onClick={() => setBio(prev => prev + '\n\n' + TEN_QUESTIONS_TEMPLATE)}
                   className="ten-questions-btn"
                 >
                   🎀 10の質問を挿入する

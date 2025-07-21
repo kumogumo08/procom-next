@@ -612,6 +612,19 @@ body {
   .sns-item button:hover {
     background-color: #0056b3;
   }
+
+  button:active {
+  transform: scale(0.96);
+  transition: transform 0.05s ease;
+}
+
+#saveBtn {
+  transition: transform 0.1s ease, background-color 0.3s ease;
+}
+#saveBtn:active {
+  transform: scale(0.95);
+  background-color: #2c7be5;
+}
   
   .sns-links h3 {
     font-size: 1.3rem;

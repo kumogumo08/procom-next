@@ -16,7 +16,8 @@ import OshiButton from '@/components/OshiButton';
 import Script from 'next/script';
 import XShareButton from '@/components/XShareButton';
 import BannerLinksBlock from '@/components/BannerLinksBlock';
-
+import SNSButtonBlock from '@/components/SNSButtonBlock';
+import UserPageClientWrapper from '@/components/UserPageClientWrapper';
 
 export default async function UserPage({
   params,
@@ -27,7 +28,6 @@ export default async function UserPage({
   const session = await getSessionServer();
   const isEditable = session?.uid === uid;
   const profile = await getProfileFromFirestore(uid);
-
   const photos = (profile?.photos || []).map((p: any) =>
     typeof p === 'string'
       ? { url: p, position: '50' }
@@ -37,7 +37,7 @@ export default async function UserPage({
   return (
     <>
       <Header />
-        {profile?.name && (
+      {profile?.name && (
         <h1
           style={{
             textAlign: 'center',
@@ -48,7 +48,7 @@ export default async function UserPage({
         >
           {profile.name}さんのプロフィールページ
         </h1>
-        )}
+      )}
       <main>
         <UserPhotoSliderClient uid={uid} initialPhotos={photos} />
         <OshiButton uid={uid} />
@@ -73,6 +73,14 @@ export default async function UserPage({
             <BannerLinksBlock uid={uid} isEditable={isEditable} />
           </div>
         </div>
+
+        {/* ✅ SNSボタンブロック（クライアントでのみレンダリング） */}
+<UserPageClientWrapper
+  uid={uid}
+  profile={profile}
+  isEditable={isEditable}
+/>
+
         <QRCodeBlock />
       </main>
       <Footer />

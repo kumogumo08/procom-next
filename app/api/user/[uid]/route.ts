@@ -237,6 +237,7 @@ export async function POST(req: NextRequest, props: { params: Promise<{ uid: str
       manualYouTubeUrls: profile.manualYouTubeUrls ?? existingProfile.manualYouTubeUrls ?? [],
       facebookUrl: profile.facebookUrl ?? existingProfile.facebookUrl ?? '',
       bannerLinks: profile.bannerLinks ?? existingProfile.bannerLinks ?? [],
+      customLinks: profile.customLinks ?? existingProfile.customLinks ?? [],
       settings: {
         ...existingProfile.settings ?? {},
         ...profile.settings ?? {},
@@ -251,5 +252,42 @@ await userRef.set(
   } catch (err) {
     console.error('🔥 Firestore保存エラー:', err);
     return NextResponse.json({ error: 'Firestore保存に失敗しました' }, { status: 500 });
+  }
+}
+// --- PATCH: SNSボタンだけ保存 ---
+export async function PATCH(req: NextRequest, props: { params: Promise<{ uid: string }> }) {
+  const params = await props.params;
+  try {
+    const uid = params.uid;
+    if (!uid) {
+      return NextResponse.json({ error: 'uidが指定されていません' }, { status: 400 });
+    }
+
+    const session = await getIronSession<SessionData>(req, new NextResponse(), sessionOptions);
+    if (!session?.uid || session.uid !== uid) {
+      return NextResponse.json({ error: '権限がありません' }, { status: 403 });
+    }
+
+    const { customLinks } = await req.json();
+
+    if (!Array.isArray(customLinks)) {
+      return NextResponse.json({ error: 'customLinksが不正です' }, { status: 400 });
+    }
+
+    const userRef = db.collection('users').doc(uid);
+
+    await userRef.set(
+      {
+        profile: {
+          customLinks: customLinks.filter(link => link.label && link.url),
+        },
+      },
+      { merge: true }
+    );
+
+    return NextResponse.json({ message: 'SNSボタンを保存しました' });
+  } catch (err) {
+    console.error('❌ PATCHエラー:', err);
+    return NextResponse.json({ error: 'PATCHエラーが発生しました' }, { status: 500 });
   }
 }

@@ -56,11 +56,9 @@ const UserPageClient = ({ uid, profile, isEditable }: Props) => {
     if (!uid) return;
 
     // ローカルストレージのクリア
-    localStorage.removeItem('youtubeChannelId');
-    localStorage.removeItem('instagramPostUrl');
-    localStorage.removeItem('xUsername');
-    localStorage.removeItem('tiktokUrls');
-    localStorage.removeItem('calendarEvents');
+    ['youtubeChannelId', 'instagramPostUrl', 'xUsername', 'tiktokUrls', 'calendarEvents'].forEach(key => {
+      localStorage.removeItem(key);
+    });
 
     const own = isEditable;
 

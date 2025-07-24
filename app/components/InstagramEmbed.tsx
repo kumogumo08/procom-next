@@ -103,7 +103,8 @@ const handleSave = async () => {
   try {
     const fixedUrl = url.endsWith('/') ? url : url + '/';
 
-    if (!isValidInstagramUrl(fixedUrl)) {
+    // ✅ 入力がある場合のみバリデーション
+    if (url && !isValidInstagramUrl(fixedUrl)) {
       alert('⚠️ 正しいInstagram投稿URLを入力してください（例: https://www.instagram.com/p/xxxxxx/）');
       return;
     }
@@ -114,21 +115,20 @@ const handleSave = async () => {
       credentials: 'include',
       body: JSON.stringify({
         profile: {
-          instagramPostUrl: fixedUrl,
+          instagramPostUrl: url ? fixedUrl : '',  // 空欄のまま送ることを許容
           settings: { showInstagram },
         },
       }),
     });
 
     if (!res.ok) throw new Error('保存失敗');
-    setLoadedUrl(fixedUrl);
+    setLoadedUrl(url ? fixedUrl : '');
     alert('Instagramリンクを保存しました');
   } catch (err) {
     console.error('保存エラー:', err);
     alert('保存に失敗しました');
   }
 };
-
 
   // 🔹 表示制御
   if (!isEditable && showInstagram === false) {

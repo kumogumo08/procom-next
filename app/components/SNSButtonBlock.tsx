@@ -68,20 +68,24 @@ return (
       <div className="max-w-[700px] w-full flex flex-wrap justify-center gap-4">
         {links.map((link, index) => (
           <div key={index} className="relative">
-            <a
-              href={link.url}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="text-white font-semibold text-base shadow-lg hover:opacity-90 transition text-center px-6 py-3 rounded-full inline-block"
-              style={{
-                backgroundColor: link.color || '#555',
-                maxWidth: '220px',
-                minWidth: '120px',
-                whiteSpace: 'nowrap',
-              }}
-            >
-              {link.label}
-            </a>
+          <a
+            href={link.url}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-white font-semibold text-base shadow-lg hover:opacity-90 transition text-center inline-flex items-center justify-center"
+            style={{
+              backgroundColor: link.color || '#555',
+              width: '100px',       // ✅ 幅を固定
+              height: '100px',      // ✅ 高さも固定で正方形に
+              borderRadius: '16px',// ✅ 角丸（お好みで調整、16〜20pxくらいが自然）
+              overflow: 'hidden',  // ✅ テキストはみ出し防止
+              fontSize: '20px',
+              whiteSpace: 'normal',
+              wordBreak: 'break-word',
+            }}
+          >
+            {link.label}
+          </a>
 
             {isEditable && (
               <button

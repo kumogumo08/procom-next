@@ -5,6 +5,11 @@ import { fetchLatestVideos, embedInstagramPost, showXProfile, displayTikTokVideo
 import { createCalendar } from '@/lib/calendar';
 import { updatePhotoSlider } from '@/lib/photoSlider';
 
+function getUidFromURL(): string {
+  const match = window.location.pathname.match(/\/user\/([^\/]+)/);
+  return match ? match[1] : '';
+}
+
 type CalendarEvent = {
   date: string;
   events: string[];
@@ -36,6 +41,8 @@ type Props = {
 export default function UserProfileDisplay({ profile, isOwnPage }: Props) {
   const [events, setEvents] = useState<Record<string, string[]>>({});
   const [currentDate] = useState(new Date());
+
+  const uid = getUidFromURL();
 
   useEffect(() => {
     // 名前、肩書き、紹介文の表示
@@ -80,7 +87,7 @@ export default function UserProfileDisplay({ profile, isOwnPage }: Props) {
       });
       localStorage.setItem('calendarEvents', JSON.stringify(eventObj));
       setEvents(eventObj);
-      createCalendar(currentDate, isOwnPage);
+      createCalendar(currentDate, isOwnPage, true, uid);
     }
   }, [profile, isOwnPage, currentDate]);
 

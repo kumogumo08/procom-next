@@ -9,11 +9,11 @@ import { initializeFirebaseAdmin } from '@/lib/firebase';
 import { getIronSession } from 'iron-session';
 import { sessionOptions } from '@/lib/session';
 import type { SessionData } from '@/lib/session-types';
-import { db } from '@/lib/firebase-admin';
 import admin from 'firebase-admin';
 import { normalizeInstagramUrl } from '@/lib/sns';
 
 initializeFirebaseAdmin();
+const db = getFirestore();
 
 const firestore = getFirestore();
 const bucket = getStorage().bucket();
@@ -256,13 +256,11 @@ await userRef.set(
 }
 // --- PATCH: SNSボタンだけ保存 ---
 // --- PATCH: 一部フィールドの更新（SNSボタンやカレンダーなど） ---
-export async function PATCH(
-  req: NextRequest,
-  { params }: { params: { uid: string } }
-) {
-  const uid = params.uid;
-
+export async function PATCH(req: NextRequest) {
   try {
+    const url = new URL(req.url);
+    const uid = url.pathname.split('/').pop(); // /api/user/[uid] の uid を取得
+
     if (!uid) {
       return NextResponse.json({ error: 'uidが指定されていません' }, { status: 400 });
     }
@@ -275,7 +273,6 @@ export async function PATCH(
     const body = await req.json();
     const updates: any = {};
 
-    // 🔹 customLinks
     if (Array.isArray(body.customLinks)) {
       if (!updates.profile) updates.profile = {};
       updates.profile.customLinks = body.customLinks.filter(
@@ -283,7 +280,6 @@ export async function PATCH(
       );
     }
 
-    // 🔹 calendarEvents
     if (Array.isArray(body.profile?.calendarEvents)) {
       const cleaned = body.profile.calendarEvents
         .filter((e: any) => typeof e === 'object' && e.date && Array.isArray(e.events))
@@ -304,7 +300,6 @@ export async function PATCH(
     await userRef.set(updates, { merge: true });
 
     return NextResponse.json({ message: 'プロフィールの一部を更新しました' });
-
   } catch (err) {
     console.error('❌ PATCHエラー:', err);
     return NextResponse.json({ error: 'PATCHエラーが発生しました' }, { status: 500 });

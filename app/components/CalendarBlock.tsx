@@ -11,8 +11,10 @@ export default function CalendarBlock({
   uid?: string;
 }) {
   useEffect(() => {
-    createCalendar(new Date(), isEditable, true);
-  }, [isEditable]);
+    if (uid) {
+      createCalendar(new Date(), isEditable, true, uid); // ← 明示的に uid を渡す
+    }
+  }, [isEditable, uid]);
 
   return (
     <div id="calendar-container">
@@ -20,9 +22,15 @@ export default function CalendarBlock({
 
       {isEditable && (
         <div id="event-form" className="auth-only">
-          <h3>予定を追加</h3>
-          <label>日付: <input type="date" id="event-date" /></label><br />
-          <label>内容: <input type="text" id="event-text" placeholder="イベント内容" /></label><br />
+          <h3>予定を編集</h3>
+          <label>
+            日付: <input type="date" id="event-date" />
+          </label>
+          <br />
+          <label>
+            内容: <input type="text" id="event-text" placeholder="イベント内容" />
+          </label>
+          <br />
           <button id="add-event-btn">追加</button>
         </div>
       )}

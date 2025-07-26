@@ -41,13 +41,19 @@ export default function SNSButtonBlock({
     setNewLink((prev) => ({ ...prev, color }));
   };
 
-  const handleAddLink = () => {
-    if (!newLink.label || !newLink.url) return;
-    const updated = [...links, newLink];
-    setLinks(updated);
-    onChange?.(updated);
-    setNewLink({ label: '', url: '', color: colorOptions[0] });
-  };
+const handleAddLink = () => {
+  if (links.length >= 6) {
+    alert('SNSボタンは最大6個までです。');
+    return;
+  }
+
+  if (!newLink.label || !newLink.url) return;
+
+  const updated = [...links, newLink];
+  setLinks(updated);
+  onChange?.(updated);
+  setNewLink({ label: '', url: '', color: colorOptions[0] });
+};
 
   const handleDelete = (index: number) => {
     const updated = links.filter((_, i) => i !== index);

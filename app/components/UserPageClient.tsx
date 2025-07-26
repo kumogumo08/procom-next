@@ -1,6 +1,7 @@
 'use client';
 
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
+import SectionReorderBlock from '@/components/SectionReorderBlock';
 
 declare global {
   interface Window {
@@ -38,6 +39,7 @@ type Profile = {
     showInstagram?: boolean;
     showTikTok?: boolean;
     showFacebook?: boolean;
+    sectionOrder?: string[];
   };
   facebookPageUrl?: string;
 };
@@ -48,9 +50,42 @@ type Props = {
   isEditable: boolean;
 };
 
+const DEFAULT_ORDER = ['YouTube', 'X', 'Instagram', 'TikTok', 'Facebook', 'BannerLinks', 'SNSButtons'];
+
 const UserPageClient = ({ uid, profile, isEditable }: Props) => {
   const lastInstagramUrlRef = useRef<string | null>(null);
   const lastFacebookUrlRef = useRef<string | null>(null);
+  const [isReorderMode, setIsReorderMode] = useState(false);
+  const [sectionOrder, setSectionOrder] = useState<string[]>(profile.settings?.sectionOrder ?? DEFAULT_ORDER);
+
+    // --- 並び順保存 ---
+const saveOrderToServer = async () => {
+  try {
+    const updatedProfile = {
+      ...profile,
+      settings: {
+        ...profile.settings,
+        sectionOrder: sectionOrder,
+      },
+    };
+
+    const res = await fetch(`/api/user/${uid}`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ profile: updatedProfile }),
+    });
+
+    if (res.ok) {
+      alert('並び順を保存しました');
+      window.location.reload(); 
+    } else {
+      throw new Error();
+    }
+  } catch (err) {
+    alert('保存に失敗しました');
+  }
+};
+
 
   useEffect(() => {
     if (!uid) return;
@@ -177,7 +212,38 @@ if (profile.youtubeMode === 'manual') {
 
   }, [uid, profile, isEditable]);
 
-  return null;
+  // ✅ 編集モードボタン + 並び替えUI（isEditableのときだけ表示）
+  return (
+          <>
+      {isEditable && !isReorderMode && (
+        <div style={{ textAlign: 'center', margin: '30px 0' }}>
+          <button
+            onClick={() => setIsReorderMode(true)}
+            style={{
+              backgroundColor: '#0070f3',
+              color: '#fff',
+              padding: '10px 20px',
+              fontSize: '1rem',
+              borderRadius: '6px',
+              border: 'none',
+              cursor: 'pointer',
+            }}
+          >
+            📦 並び替えモードを開始
+          </button>
+        </div>
+      )}
+
+      {isEditable && isReorderMode && (
+        <SectionReorderBlock
+          sectionOrder={sectionOrder}
+          onChange={(newOrder) => setSectionOrder(newOrder)}
+          onSave={saveOrderToServer}
+          onCancel={() => setIsReorderMode(false)}
+        />
+      )}
+    </>
+  );
 };
 
 export default UserPageClient;

@@ -1,3 +1,6 @@
+export const runtime = 'nodejs';
+
+import React from 'react';
 import { getProfileFromFirestore } from '@/lib/getProfile';
 import { getSessionServer } from '@/lib/getSessionServer';
 import Header from '@/components/Headerlogin';
@@ -16,8 +19,8 @@ import OshiButton from '@/components/OshiButton';
 import Script from 'next/script';
 import XShareButton from '@/components/XShareButton';
 import BannerLinksBlock from '@/components/BannerLinksBlock';
-import SNSButtonBlock from '@/components/SNSButtonBlock';
 import UserPageClientWrapper from '@/components/UserPageClientWrapper';
+import type { JSX } from 'react';
 
 export default async function UserPage({
   params,
@@ -28,11 +31,85 @@ export default async function UserPage({
   const session = await getSessionServer();
   const isEditable = session?.uid === uid;
   const profile = await getProfileFromFirestore(uid);
+
   const photos = (profile?.photos || []).map((p: any) =>
     typeof p === 'string'
       ? { url: p, position: '50' }
       : { url: p.url, position: p.position ?? '50' }
   );
+
+  const sectionOrder: string[] =
+    profile?.settings?.sectionOrder ?? [
+      'YouTube',
+      'X',
+      'Instagram',
+      'TikTok',
+      'Facebook',
+      'BannerLinks',
+      'SNSButtons',
+    ];
+
+  const sectionMap: Record<string, JSX.Element> = {
+    YouTube: <YouTubeEmbedBlock uid={uid} isEditable={isEditable} />,
+    X: <XEmbed uid={uid} isEditable={isEditable} />,
+    Instagram: <InstagramEmbed uid={uid} isEditable={isEditable} />,
+    TikTok: <TikTokEmbed uid={uid} isEditable={isEditable} />,
+    Facebook: <FacebookEmbedBlock uid={uid} isEditable={isEditable} />,
+    BannerLinks: <BannerLinksBlock uid={uid} isEditable={isEditable} />,
+    SNSButtons: (
+      <UserPageClientWrapper
+        uid={uid}
+        profile={profile}
+        isEditable={isEditable}
+      />
+    ),
+  };
+
+  function renderSections(order: string[]) {
+    const result: JSX.Element[] = [];
+
+    const is1Col = (key: string) =>
+      key === 'X' || key === 'Instagram' || key === 'Facebook' || key === 'BannerLinks';
+
+    const is2Col = (key: string) =>
+      key === 'YouTube' || key === 'TikTok' || key === 'SNSButtons';
+
+    for (let i = 0; i < order.length; i++) {
+      const curr = order[i];
+      const next = order[i + 1];
+
+      // 1カラム要素が連続している場合（横並びにする）
+      if (is1Col(curr) && is1Col(next)) {
+        result.push(
+          <div className="sns-container" key={`group-${i}`}>
+            <div className="sns-box">{sectionMap[curr]}</div>
+            <div className="sns-box">{sectionMap[next]}</div>
+          </div>
+        );
+        i++; // skip next
+      }
+
+      // 単独の1カラム要素（中央に表示）
+      else if (is1Col(curr)) {
+        result.push(
+          <div className="sns-container" key={curr}>
+            <div className="sns-box">{sectionMap[curr]}</div>
+          </div>
+        );
+      }
+
+      // 2カラム要素（単体で中央表示）
+      else if (is2Col(curr)) {
+        result.push(
+          <div className="single-column-wrapper" key={curr}>
+            {sectionMap[curr]}
+          </div>
+        );
+      }
+    }
+
+    return result;
+  }
 
   return (
     <>
@@ -49,41 +126,21 @@ export default async function UserPage({
           {profile.name}さんのプロフィールページ
         </h1>
       )}
+
       <main>
         <UserPhotoSliderClient uid={uid} initialPhotos={photos} />
         <OshiButton uid={uid} />
         <XShareButton uid={uid} name={profile?.name} />
         <UserProfileSection uid={uid} isEditable={isEditable} />
         <UserPageClient uid={uid} profile={profile} isEditable={isEditable} />
-        <YouTubeEmbedBlock uid={uid} isEditable={isEditable} />
-        <div className="sns-container">
-          <div className="sns-box">
-            <XEmbed uid={uid} isEditable={isEditable} />
-          </div>
-          <div className="sns-box">
-            <InstagramEmbed uid={uid} isEditable={isEditable} />
-          </div>
-        </div>
-        <TikTokEmbed uid={uid} isEditable={isEditable} />
-        <div className="sns-container">
-          <div className="sns-box">
-            <FacebookEmbedBlock uid={uid} isEditable={isEditable} />
-          </div>
-          <div className="sns-box">
-            <BannerLinksBlock uid={uid} isEditable={isEditable} />
-          </div>
-        </div>
 
-        {/* ✅ SNSボタンブロック（クライアントでのみレンダリング） */}
-<UserPageClientWrapper
-  uid={uid}
-  profile={profile}
-  isEditable={isEditable}
-/>
+        {renderSections(sectionOrder)}
 
         <QRCodeBlock />
       </main>
+
       <Footer />
+
       <Script
         src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"
         strategy="afterInteractive"

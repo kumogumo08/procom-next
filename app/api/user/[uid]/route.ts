@@ -255,8 +255,8 @@ await userRef.set(
   }
 }
 // --- PATCH: SNSボタンだけ保存 ---
-export async function PATCH(req: NextRequest, props: { params: Promise<{ uid: string }> }) {
-  const params = await props.params;
+// --- PATCH: 一部フィールドの更新（SNSボタンやカレンダーなど） ---
+export async function PATCH(req: NextRequest, { params }: { params: { uid: string } }) {
   try {
     const uid = params.uid;
     if (!uid) {
@@ -268,26 +268,40 @@ export async function PATCH(req: NextRequest, props: { params: Promise<{ uid: st
       return NextResponse.json({ error: '権限がありません' }, { status: 403 });
     }
 
-    const { customLinks } = await req.json();
+    const body = await req.json();
+    const updates: any = {};
 
-    if (!Array.isArray(customLinks)) {
-      return NextResponse.json({ error: 'customLinksが不正です' }, { status: 400 });
+    // 🔹 customLinks
+      if (Array.isArray(body.customLinks)) {
+        if (!updates.profile) updates.profile = {};
+        updates.profile.customLinks = body.customLinks.filter(
+          (link: { label?: string; url?: string }) => link.label && link.url
+        );
+      }
+
+    // 🔹 calendarEvents
+        if (Array.isArray(body.profile?.calendarEvents)) {
+          const cleaned = body.profile.calendarEvents
+            .filter((e: any) => typeof e === 'object' && e.date && Array.isArray(e.events))
+            .map((e: any) => ({
+              date: String(e.date),
+              events: e.events.map(String),
+            }));
+
+          if (!updates.profile) updates.profile = {};
+          updates.profile.calendarEvents = cleaned;
+        }
+
+        if (Object.keys(updates).length === 0) {
+          return NextResponse.json({ error: '更新項目がありません' }, { status: 400 });
+        }
+
+        const userRef = db.collection('users').doc(uid);
+        await userRef.set(updates, { merge: true });
+
+        return NextResponse.json({ message: 'プロフィールの一部を更新しました' });
+      } catch (err) {
+        console.error('❌ PATCHエラー:', err);
+        return NextResponse.json({ error: 'PATCHエラーが発生しました' }, { status: 500 });
+      }
     }
-
-    const userRef = db.collection('users').doc(uid);
-
-    await userRef.set(
-      {
-        profile: {
-          customLinks: customLinks.filter(link => link.label && link.url),
-        },
-      },
-      { merge: true }
-    );
-
-    return NextResponse.json({ message: 'SNSボタンを保存しました' });
-  } catch (err) {
-    console.error('❌ PATCHエラー:', err);
-    return NextResponse.json({ error: 'PATCHエラーが発生しました' }, { status: 500 });
-  }
-}

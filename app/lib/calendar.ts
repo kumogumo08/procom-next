@@ -7,10 +7,8 @@ async function fetchCalendarEventsFromServer(uid: string) {
   try {
     const res = await fetch(`/api/user/${uid}`);
     const data = await res.json();
-
     const eventsArray = data.profile?.calendarEvents || [];
     events = {};
-
     eventsArray.forEach((entry: { date: string; events: string[] }) => {
       if (entry.date && Array.isArray(entry.events)) {
         events[entry.date] = entry.events;
@@ -27,32 +25,31 @@ async function saveCalendarEventsToServer(uid: string) {
   try {
     const eventsArray = Object.entries(events).map(([date, evts]) => ({
       date,
-      events: evts
+      events: evts,
     }));
 
     await fetch(`/api/user/${uid}`, {
-      method: 'POST',
+      method: 'PATCH',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         profile: {
-          calendarEvents: eventsArray
-        }
-      })
+          calendarEvents: eventsArray, // ✅ profileの中に入れる
+        },
+      }),
     });
   } catch (err) {
     console.error('❌ カレンダー予定の保存に失敗:', err);
   }
 }
 
+// ✅ カレンダー作成・表示（メイン関数）
 export async function createCalendar(
-  date: Date = currentDate, // ← currentDateをデフォルトに変更
+  date: Date = currentDate,
   isEditable: boolean = false,
-  reloadEvents = false // ← 初回だけtrueにする
+  reloadEvents = false,
+  uid: string
 ): Promise<void> {
-  const uid = getUidFromURL();
-  if (!uid) return;
 
-  // ✅ 初回だけサーバーからイベントを取得
   if (reloadEvents) {
     await fetchCalendarEventsFromServer(uid);
   }
@@ -65,7 +62,6 @@ export async function createCalendar(
   const daysInMonth = lastDay.getDate();
   const startDay = firstDay.getDay();
 
-  currentDate = new Date(year, month);
   calendar.innerHTML = '';
 
   const header = document.createElement('div');
@@ -102,6 +98,14 @@ export async function createCalendar(
     const cell = document.createElement('div');
     cell.className = 'calendar-cell';
     cell.textContent = String(day);
+
+    cell.addEventListener('click', () => {
+      const dateInput = document.getElementById('event-date') as HTMLInputElement | null;
+      if (dateInput) {
+        dateInput.value = fullDate;
+      }
+    });
+
 
     if (events[fullDate]) {
       cell.classList.add('event-day');
@@ -150,12 +154,12 @@ export async function createCalendar(
 
   prevBtn.onclick = () => {
     currentDate.setMonth(currentDate.getMonth() - 1);
-    createCalendar(currentDate, isEditable, false); // 🔁 reloadEvents: false
+    createCalendar(new Date(), isEditable, true, uid);
   };
 
   nextBtn.onclick = () => {
     currentDate.setMonth(currentDate.getMonth() + 1);
-    createCalendar(currentDate, isEditable, false); // セッション確認なし
+    createCalendar(currentDate, isEditable, false, uid);
   };
 
   const dateInput = document.getElementById('event-date') as HTMLInputElement | null;
@@ -171,21 +175,26 @@ export async function createCalendar(
       events[date].push(text);
       await saveCalendarEventsToServer(uid);
       textInput.value = '';
-      createCalendar(currentDate, isEditable);
+      await createCalendar(currentDate, isEditable, false, uid);
     };
   }
 }
 
+// ✅ イベント削除（×ボタン押下時）
 async function deleteEvent(date: string, index: number, isEditable: boolean, uid: string) {
   if (events[date]) {
     events[date].splice(index, 1);
-    if (events[date].length === 0) delete events[date];
+    if (events[date].length === 0) {
+      delete events[date];
+    }
+
     await saveCalendarEventsToServer(uid);
-    createCalendar(currentDate, isEditable);
+    await fetchCalendarEventsFromServer(uid); // ✅ 明示的に再取得
+    await createCalendar(currentDate, isEditable, false, uid); // ✅ reloadEvents = false に
   }
 }
-
+// ✅ URL から uid を取得
 function getUidFromURL(): string | null {
-  const match = window.location.pathname.match(/\/user\/(.+)\/?/);
+  const match = window.location.pathname.match(/\/user\/(.+?)\/?$/);
   return match ? match[1] : null;
 }

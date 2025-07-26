@@ -40,29 +40,32 @@ export default function SNSButtonBlockClientWrapper({
     setLinks(profile.customLinks || []);
   }, [profile.customLinks]);
 
-  const handleChange = async (updatedLinks: CustomSNSLink[]) => {
-    setLinks(updatedLinks);
-    onChange?.(updatedLinks);
+ const handleChange = async (updatedLinks: CustomSNSLink[]) => {
+  if (updatedLinks.length > 6) {
+    alert('SNSボタンは最大6個までです');
+    return;
+  }
 
-    // ✅ Firestoreに保存
-    if (isEditable) {
-      try {
-        const res = await fetch(`/api/user/${uid}`, {
+  setLinks(updatedLinks);
+  onChange?.(updatedLinks);
+
+  if (isEditable) {
+    try {
+      const res = await fetch(`/api/user/${uid}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-            customLinks: updatedLinks,
-        }),
-        });
+        body: JSON.stringify({ customLinks: updatedLinks }),
+      });
 
-        if (!res.ok) {
-          console.error('SNSリンクの保存に失敗しました');
-        }
-      } catch (err) {
-        console.error('保存中にエラーが発生しました:', err);
+      if (!res.ok) {
+        console.error('SNSリンクの保存に失敗しました');
       }
+    } catch (err) {
+      console.error('保存中にエラーが発生しました:', err);
     }
-  };
+  }
+};
+
 
   return (
     <SNSButtonBlock

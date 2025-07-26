@@ -692,24 +692,34 @@ body {
     margin-bottom: 32px;
   }
 
-  .sns-container {
+.sns-container {
   display: flex;
-  flex-wrap: wrap;         /* ✅ スマホで折り返し */
-  gap: 20px;
+  flex-wrap: wrap;
   justify-content: center;
-  margin-top: 30px;
+  gap: 12px;
+  margin: 30px auto;
+  max-width: 1400px;  /* ✅ 最大幅を制限 */
+  padding: 0 20px;   /* スマホ対応で左右に余白 */
+}
+
+.sns-box-1col {
+  flex: 1 1 300px;
+  max-width: 480px;
+  min-width: 280px;
+}
+
+.sns-box-2col {
+  flex: 1 1 45%;
+  min-width: 280px;
+  max-width: 600px;
 }
 
 .sns-box {
   max-width: 600px;
   width: 100%;
   box-sizing: border-box;
-  border-radius: 8px;     /* optional: デザイン統一 */
-}
-
-.sns-container > * {
-  flex: 1 1 100%;
-  max-width: 600px;
+  border-radius: 8px;
+  margin: 0 auto; /* ✅ 1つだけのとき中央寄せ */
 }
 
   /* ✅ TikTok：2カラム用に全体を囲う */

@@ -256,9 +256,13 @@ await userRef.set(
 }
 // --- PATCH: SNSボタンだけ保存 ---
 // --- PATCH: 一部フィールドの更新（SNSボタンやカレンダーなど） ---
-export async function PATCH(req: NextRequest, { params }: { params: { uid: string } }) {
+export async function PATCH(
+  req: NextRequest,
+  { params }: { params: { uid: string } }
+) {
+  const uid = params.uid;
+
   try {
-    const uid = params.uid;
     if (!uid) {
       return NextResponse.json({ error: 'uidが指定されていません' }, { status: 400 });
     }
@@ -272,36 +276,38 @@ export async function PATCH(req: NextRequest, { params }: { params: { uid: strin
     const updates: any = {};
 
     // 🔹 customLinks
-      if (Array.isArray(body.customLinks)) {
-        if (!updates.profile) updates.profile = {};
-        updates.profile.customLinks = body.customLinks.filter(
-          (link: { label?: string; url?: string }) => link.label && link.url
-        );
-      }
+    if (Array.isArray(body.customLinks)) {
+      if (!updates.profile) updates.profile = {};
+      updates.profile.customLinks = body.customLinks.filter(
+        (link: { label?: string; url?: string }) => link.label && link.url
+      );
+    }
 
     // 🔹 calendarEvents
-        if (Array.isArray(body.profile?.calendarEvents)) {
-          const cleaned = body.profile.calendarEvents
-            .filter((e: any) => typeof e === 'object' && e.date && Array.isArray(e.events))
-            .map((e: any) => ({
-              date: String(e.date),
-              events: e.events.map(String),
-            }));
+    if (Array.isArray(body.profile?.calendarEvents)) {
+      const cleaned = body.profile.calendarEvents
+        .filter((e: any) => typeof e === 'object' && e.date && Array.isArray(e.events))
+        .map((e: any) => ({
+          date: String(e.date),
+          events: e.events.map(String),
+        }));
 
-          if (!updates.profile) updates.profile = {};
-          updates.profile.calendarEvents = cleaned;
-        }
-
-        if (Object.keys(updates).length === 0) {
-          return NextResponse.json({ error: '更新項目がありません' }, { status: 400 });
-        }
-
-        const userRef = db.collection('users').doc(uid);
-        await userRef.set(updates, { merge: true });
-
-        return NextResponse.json({ message: 'プロフィールの一部を更新しました' });
-      } catch (err) {
-        console.error('❌ PATCHエラー:', err);
-        return NextResponse.json({ error: 'PATCHエラーが発生しました' }, { status: 500 });
-      }
+      if (!updates.profile) updates.profile = {};
+      updates.profile.calendarEvents = cleaned;
     }
+
+    if (Object.keys(updates).length === 0) {
+      return NextResponse.json({ error: '更新項目がありません' }, { status: 400 });
+    }
+
+    const userRef = db.collection('users').doc(uid);
+    await userRef.set(updates, { merge: true });
+
+    return NextResponse.json({ message: 'プロフィールの一部を更新しました' });
+
+  } catch (err) {
+    console.error('❌ PATCHエラー:', err);
+    return NextResponse.json({ error: 'PATCHエラーが発生しました' }, { status: 500 });
+  }
+}
+

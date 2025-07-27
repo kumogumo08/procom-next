@@ -14,6 +14,15 @@ export default function Footer() {
           トップページに戻る
         </Link>
       </div>
+            {/* ✅ 新規登録リンクを追加 */}
+      <div className="my-2">
+        <Link
+          href="/register"
+          className="inline-block text-white underline hover:text-pink-400 text-sm"
+        >
+          ▶ 新規会員登録はこちら
+        </Link>
+      </div>
         <p className="text-sm text-white">
         <Link href="/privacy"><span className={linkClass}>プライバシーポリシー</span></Link> |
         <Link href="/owner"><span className={linkClass}>運営者情報</span></Link> |

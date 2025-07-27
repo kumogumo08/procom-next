@@ -84,6 +84,7 @@ export async function GET(req: NextRequest, context: any) {
       facebookUrl: rawProfile.facebookUrl ?? '',
       settings: rawProfile.settings ?? {},
       bannerLinks: rawProfile.bannerLinks ?? [],
+      emailForContact: rawProfile.emailForContact ?? '',
     };
 
     return NextResponse.json({
@@ -238,6 +239,7 @@ export async function POST(req: NextRequest, props: { params: Promise<{ uid: str
       facebookUrl: profile.facebookUrl ?? existingProfile.facebookUrl ?? '',
       bannerLinks: profile.bannerLinks ?? existingProfile.bannerLinks ?? [],
       customLinks: profile.customLinks ?? existingProfile.customLinks ?? [],
+      emailForContact: profile.emailForContact ?? existingProfile.emailForContact ?? '',
       settings: {
         ...existingProfile.settings ?? {},
         ...profile.settings ?? {},

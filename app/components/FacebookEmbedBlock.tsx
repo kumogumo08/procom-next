@@ -136,56 +136,59 @@ export default function FacebookEmbedBlock({ uid, isEditable }: Props) {
       </>
     )}
 
-    {fbUrl && showFacebook && (
-      <>
-        <div
-          id="fbEmbedContainer"
-          style={{
-            display: isFacebookPage(fbUrl) ? 'block' : 'none',
-            marginTop: '20px',
-            maxWidth: '500px',
-            width: '100%',
-            marginLeft: 'auto',
-            marginRight: 'auto',
-          }}
-        >
-          <div
-            className="fb-page"
-            data-href={fbUrl}
-            data-tabs="timeline"
-            data-width="500"
-            data-height=""
-            data-small-header="false"
-            data-adapt-container-width="false"
-            data-hide-cover="false"
-            data-show-facepile="true"
-          >
-            <blockquote cite={fbUrl} className="fb-xfbml-parse-ignore" />
-          </div>
-        </div>
+      {fbUrl && showFacebook && (
+        <>
+          {/* 埋め込み：ページURL（/profile.php含まない場合）のみ表示 */}
+          {isFacebookPage(fbUrl) && (
+            <div
+              id="fbEmbedContainer"
+              style={{
+                marginTop: '20px',
+                maxWidth: '500px',
+                width: '100%',
+                marginLeft: 'auto',
+                marginRight: 'auto',
+              }}
+            >
+              <div
+                className="fb-page"
+                data-href={fbUrl}
+                data-tabs="timeline"
+                data-width="500"
+                data-height=""
+                data-small-header="false"
+                data-adapt-container-width="false"
+                data-hide-cover="false"
+                data-show-facepile="true"
+              >
+                <blockquote cite={fbUrl} className="fb-xfbml-parse-ignore" />
+              </div>
+            </div>
+          )}
 
-        <div style={{ marginTop: '32px', textAlign: 'center' }}>
-          <a
-            href={fbUrl}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="facebook-button"
-            style={{
-              display: 'inline-block',
-              backgroundColor: '#1877f2',
-              color: '#fff',
-              padding: '8px 16px',
-              borderRadius: '5px',
-              textDecoration: 'none',
-              fontWeight: 'bold',
-            }}
-          >
-            <i className="fab fa-facebook-square" style={{ marginRight: '8px' }}></i>
-            Facebook プロフィールを見る
-          </a>
-        </div>
-      </>
-    )}
+          {/* 📎 ページでなくてもリンクボタンは常に表示 */}
+          <div style={{ marginTop: '32px', textAlign: 'center' }}>
+            <a
+              href={fbUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="facebook-button"
+              style={{
+                display: 'inline-block',
+                backgroundColor: '#1877f2',
+                color: '#fff',
+                padding: '8px 16px',
+                borderRadius: '5px',
+                textDecoration: 'none',
+                fontWeight: 'bold',
+              }}
+            >
+              <i className="fab fa-facebook-square" style={{ marginRight: '8px' }}></i>
+              Facebook を開く
+            </a>
+          </div>
+        </>
+      )}
   </div>
 );
 }

@@ -1,11 +1,15 @@
 import Script from 'next/script';
 import Link from 'next/link';
+import React from 'react';
 
-export default function Footer() {
+const linkClass: string = "text-white hover:underline mx-1";
+
+const Footer: React.FC = () => {
   return (
     <footer className="bg-gradient-to-br from-[#1f1f2e] to-[#38385a] text-white text-center py-8 px-5 mt-16 border-t-4 border-[#ff4f81] shadow-md">
       <p className="text-sm">&copy; 2025 Procom</p>
-            {/* 🔽 トップに戻るボタン */}
+
+      {/* 🔽 トップに戻るボタン */}
       <div className="my-4">
         <Link
           href="/top"
@@ -14,7 +18,8 @@ export default function Footer() {
           トップページに戻る
         </Link>
       </div>
-            {/* ✅ 新規登録リンクを追加 */}
+
+      {/* ✅ 新規登録リンクを追加 */}
       <div className="my-2">
         <Link
           href="/login"
@@ -23,15 +28,16 @@ export default function Footer() {
           ▶ 新規会員登録はこちら
         </Link>
       </div>
-        <p className="text-sm text-white">
+
+      <p className="text-sm text-white">
         <Link href="/privacy"><span className={linkClass}>プライバシーポリシー</span></Link> |
         <Link href="/owner"><span className={linkClass}>運営者情報</span></Link> |
         <Link href="/withdraw"><span className={linkClass}>退会方法</span></Link> |
         <Link href="/terms"><span className={linkClass}>利用規約</span></Link> |
         <Link href="/help"><span className={linkClass}>ヘルプ</span></Link>
-        </p>
+      </p>
 
-      {/* ✅ Google Analyticsタグ（Tailwindとは別枠） */}
+      {/* ✅ Google Analyticsタグ */}
       <Script
         strategy="afterInteractive"
         src="https://www.googletagmanager.com/gtag/js?id=G-Q35GSFMBR5"
@@ -46,7 +52,6 @@ export default function Footer() {
       </Script>
     </footer>
   );
-}
+};
 
-const linkClass =
-  "text-white hover:underline mx-1";
+export default Footer;

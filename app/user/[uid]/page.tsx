@@ -29,13 +29,12 @@ type PageProps = {
   };
 };
 
-export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
-  const { uid } = params;
+export async function generateMetadata({ params }: any): Promise<Metadata> {
+  const uid = params.uid;
   const profile = await getProfileFromFirestore(uid);
   const name = profile?.name || 'Procomユーザー';
   const bio = profile?.bio || 'SNSプロフィールとリンク集をまとめたページ';
-  const photoUrl =
-    profile?.photos?.[0]?.url || 'https://procom-next.onrender.com/og-image.jpg';
+  const photoUrl = profile?.photos?.[0]?.url || 'https://procom-next.onrender.com/og-image.jpg';
 
   return {
     title: `${name} | Procom`,
@@ -64,16 +63,14 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
   };
 }
 
-export default async function UserPage({ params }: PageProps) {
+export default async function UserPage({ params }: { params: { uid: string } }) {
   const { uid } = params;
   const session = await getSessionServer();
   const isEditable = session?.uid === uid;
   const profile = await getProfileFromFirestore(uid);
 
   const photos = (profile?.photos || []).map((p: any) =>
-    typeof p === 'string'
-      ? { url: p, position: '50' }
-      : { url: p.url, position: p.position ?? '50' }
+    typeof p === 'string' ? { url: p, position: '50' } : { url: p.url, position: p.position ?? '50' }
   );
 
   const sectionOrder: string[] =

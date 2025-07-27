@@ -23,11 +23,13 @@ import UserPageClientWrapper from '@/components/UserPageClientWrapper';
 import type { JSX } from 'react';
 import type { Metadata } from 'next';
 
-export async function generateMetadata({
-  params,
-}: {
-  params: { uid: string };
-}): Promise<Metadata> {
+type PageProps = {
+  params: {
+    uid: string;
+  };
+};
+
+export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
   const { uid } = params;
   const profile = await getProfileFromFirestore(uid);
   const name = profile?.name || 'Procomユーザー';
@@ -62,11 +64,7 @@ export async function generateMetadata({
   };
 }
 
-export default async function UserPage({
-  params,
-}: {
-  params: { uid: string };
-}) {
+export default async function UserPage({ params }: PageProps) {
   const { uid } = params;
   const session = await getSessionServer();
   const isEditable = session?.uid === uid;

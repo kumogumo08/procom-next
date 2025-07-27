@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
 import { getAuth, confirmPasswordReset } from 'firebase/auth';
 import { firebaseApp } from '@/lib/firebaseClient';
+import Image from 'next/image';
 
 export default function ResetPage() {
   const [password, setPassword] = useState('');
@@ -38,7 +39,7 @@ export default function ResetPage() {
   return (
     <div className="min-h-screen flex flex-col items-center justify-center bg-gradient-to-br from-blue-100 to-blue-300 px-4">
       <div className="bg-white shadow-lg rounded-2xl p-8 w-full max-w-md">
-         <img src="/procom-logo.png" alt="Procom Logo" className="h-12 mx-auto mb-4" />
+         <Image src="/procom-logo.png" alt="Procom Logo" className="h-12 mx-auto mb-4" />
         <h1 className="text-2xl font-bold mb-6 text-center text-gray-800">🔐 パスワード再設定</h1>
         <input
           type="password"

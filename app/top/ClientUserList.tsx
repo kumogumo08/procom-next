@@ -3,6 +3,7 @@
 
 import { useEffect, useState } from 'react';
 import styles from './top.module.css';
+import Image from 'next/image';
 
 interface UserProfile {
   name?: string;
@@ -46,7 +47,7 @@ export default function ClientUserList() {
         return (
           <div className={styles.userCard} key={index}>
             <a href={`/user/${uid}`} style={{ textDecoration: 'none', color: 'inherit' }}>
-              <img src={photoUrl} alt={`${name}の写真`} />
+              <Image src={photoUrl} alt={`${name}の写真`} />
               <div style={{ marginTop: '10px' }}>
                 <strong>{name}</strong>
                 <p>{title}</p>

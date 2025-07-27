@@ -65,9 +65,9 @@ export async function generateMetadata({
 export default async function UserPage({
   params,
 }: {
-  params: Promise<{ uid: string }>;
+  params: { uid: string };
 }) {
-  const { uid } = await params;
+  const { uid } = params;
   const session = await getSessionServer();
   const isEditable = session?.uid === uid;
   const profile = await getProfileFromFirestore(uid);

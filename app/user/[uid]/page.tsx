@@ -29,36 +29,29 @@ type PageProps = {
   };
 };
 
-export async function generateMetadata({ params }: any): Promise<Metadata> {
-  const uid = params.uid;
-  const profile = await getProfileFromFirestore(uid);
-  const name = profile?.name || 'Procomユーザー';
-  const bio = profile?.bio || 'SNSプロフィールとリンク集をまとめたページ';
-  const photoUrl = profile?.photos?.[0]?.url || 'https://procom-next.onrender.com/og-image.jpg';
+export function generateMetadata({ params }: { params: { uid: string } }): Metadata {
+  const { uid } = params;
 
   return {
-    title: `${name} | Procom`,
-    description: bio,
+    title: `Procom | ${uid} さんのプロフィール`,
+    description: 'SNSプロフィールとリンク集をまとめたページ',
     openGraph: {
-      title: `${name} | Procom`,
-      description: bio,
+      title: `Procom | ${uid} さんのプロフィール`,
+      description: 'SNSプロフィールとリンク集をまとめたページ',
       url: `https://procom-next.onrender.com/user/${uid}`,
-      siteName: 'Procom',
       images: [
         {
-          url: photoUrl,
+          url: 'https://procom-next.onrender.com/og-image.jpg',
           width: 1200,
           height: 630,
-          alt: `${name}さんのOGP画像`,
         },
       ],
-      type: 'profile',
     },
     twitter: {
       card: 'summary_large_image',
-      title: `${name} | Procom`,
-      description: bio,
-      images: [photoUrl],
+      title: `Procom | ${uid} さんのプロフィール`,
+      description: 'SNSプロフィールとリンク集をまとめたページ',
+      images: ['https://procom-next.onrender.com/og-image.jpg'],
     },
   };
 }

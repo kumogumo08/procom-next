@@ -17,7 +17,7 @@ export default function Footer() {
             {/* ✅ 新規登録リンクを追加 */}
       <div className="my-2">
         <Link
-          href="/register"
+          href="/login"
           className="inline-block text-white underline hover:text-pink-400 text-sm"
         >
           ▶ 新規会員登録はこちら

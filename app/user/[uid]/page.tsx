@@ -21,6 +21,46 @@ import XShareButton from '@/components/XShareButton';
 import BannerLinksBlock from '@/components/BannerLinksBlock';
 import UserPageClientWrapper from '@/components/UserPageClientWrapper';
 import type { JSX } from 'react';
+import type { Metadata } from 'next';
+
+export async function generateMetadata({
+  params,
+}: {
+  params: { uid: string };
+}): Promise<Metadata> {
+  const { uid } = params;
+  const profile = await getProfileFromFirestore(uid);
+  const name = profile?.name || 'Procomユーザー';
+  const bio = profile?.bio || 'SNSプロフィールとリンク集をまとめたページ';
+  const photoUrl =
+    profile?.photos?.[0]?.url || 'https://procom-next.onrender.com/og-image.jpg';
+
+  return {
+    title: `${name} | Procom`,
+    description: bio,
+    openGraph: {
+      title: `${name} | Procom`,
+      description: bio,
+      url: `https://procom-next.onrender.com/user/${uid}`,
+      siteName: 'Procom',
+      images: [
+        {
+          url: photoUrl,
+          width: 1200,
+          height: 630,
+          alt: `${name}さんのOGP画像`,
+        },
+      ],
+      type: 'profile',
+    },
+    twitter: {
+      card: 'summary_large_image',
+      title: `${name} | Procom`,
+      description: bio,
+      images: [photoUrl],
+    },
+  };
+}
 
 export default async function UserPage({
   params,

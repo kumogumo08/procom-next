@@ -1,6 +1,7 @@
 export const runtime = 'nodejs';
 
 import React from 'react';
+import type { Metadata } from 'next';
 import { getProfileFromFirestore } from '@/lib/getProfile';
 import { getSessionServer } from '@/lib/getSessionServer';
 import Header from '@/components/Headerlogin';
@@ -21,7 +22,6 @@ import XShareButton from '@/components/XShareButton';
 import BannerLinksBlock from '@/components/BannerLinksBlock';
 import UserPageClientWrapper from '@/components/UserPageClientWrapper';
 import type { JSX } from 'react';
-import type { Metadata } from 'next';
 
 type PageProps = {
   params: {
@@ -29,15 +29,23 @@ type PageProps = {
   };
 };
 
-export function generateMetadata({ params }: { params: { uid: string } }): Metadata {
+// ❌ カスタム型は削除し、Next.js の形式に完全に合わせる
+export async function generateMetadata({
+  params,
+}: {
+  params: { uid: string };
+}): Promise<Metadata> {
   const { uid } = params;
+  const profile = await getProfileFromFirestore(uid);
+  const name = profile?.name || uid;
+  const bio = profile?.bio || 'SNSプロフィールとリンク集をまとめたページ';
 
   return {
-    title: `Procom | ${uid} さんのプロフィール`,
-    description: 'SNSプロフィールとリンク集をまとめたページ',
+    title: `Procom | ${name} さんのプロフィール`,
+    description: bio,
     openGraph: {
-      title: `Procom | ${uid} さんのプロフィール`,
-      description: 'SNSプロフィールとリンク集をまとめたページ',
+      title: `Procom | ${name} さんのプロフィール`,
+      description: bio,
       url: `https://procom-next.onrender.com/user/${uid}`,
       images: [
         {
@@ -49,14 +57,15 @@ export function generateMetadata({ params }: { params: { uid: string } }): Metad
     },
     twitter: {
       card: 'summary_large_image',
-      title: `Procom | ${uid} さんのプロフィール`,
-      description: 'SNSプロフィールとリンク集をまとめたページ',
+      title: `Procom | ${name} さんのプロフィール`,
+      description: bio,
       images: ['https://procom-next.onrender.com/og-image.jpg'],
     },
   };
 }
 
-export default async function UserPage({ params }: { params: { uid: string } }) {
+// ✅ propsの型定義をインラインで記述（Next.jsが推論できる形式）
+export default async function UserPage({ params }: PageProps) {
   const { uid } = params;
   const session = await getSessionServer();
   const isEditable = session?.uid === uid;
@@ -106,7 +115,6 @@ export default async function UserPage({ params }: { params: { uid: string } }) 
       const curr = order[i];
       const next = order[i + 1];
 
-      // 1カラム要素が連続している場合（横並びにする）
       if (is1Col(curr) && is1Col(next)) {
         result.push(
           <div className="sns-container" key={`group-${i}`}>
@@ -114,20 +122,14 @@ export default async function UserPage({ params }: { params: { uid: string } }) 
             <div className="sns-box">{sectionMap[next]}</div>
           </div>
         );
-        i++; // skip next
-      }
-
-      // 単独の1カラム要素（中央に表示）
-      else if (is1Col(curr)) {
+        i++;
+      } else if (is1Col(curr)) {
         result.push(
           <div className="sns-container" key={curr}>
             <div className="sns-box">{sectionMap[curr]}</div>
           </div>
         );
-      }
-
-      // 2カラム要素（単体で中央表示）
-      else if (is2Col(curr)) {
+      } else if (is2Col(curr)) {
         result.push(
           <div className="single-column-wrapper" key={curr}>
             {sectionMap[curr]}

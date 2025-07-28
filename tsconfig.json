@@ -17,14 +17,10 @@
     ],
     "module": "esnext",
     "esModuleInterop": true,
-    "moduleResolution": "node",
+    "moduleResolution": "bundler",
     "resolveJsonModule": true,
     "isolatedModules": true,
     "jsx": "preserve",
-    "typeRoots": [
-      "./node_modules/@types",
-      "./lib/types"
-    ],
     "plugins": [
       {
         "name": "next"
@@ -45,6 +41,7 @@
     ".next/types/**/*.ts"
   ],
   "exclude": [
-    "node_modules"
+    "node_modules",
+    ".next" // ✅ 推奨：自動生成フォルダを除外
   ]
 }

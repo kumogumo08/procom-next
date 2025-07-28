@@ -47,7 +47,13 @@ export default function ClientUserList() {
         return (
           <div className={styles.userCard} key={index}>
             <a href={`/user/${uid}`} style={{ textDecoration: 'none', color: 'inherit' }}>
-              <Image src={photoUrl} alt={`${name}の写真`} />
+              <Image
+                src={photoUrl}
+                alt={`${name}の写真`}
+                width={160}
+                height={160}
+                style={{ objectFit: 'cover', borderRadius: '8px' }}
+              />
               <div style={{ marginTop: '10px' }}>
                 <strong>{name}</strong>
                 <p>{title}</p>

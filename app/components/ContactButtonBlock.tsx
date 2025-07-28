@@ -13,6 +13,12 @@ export default function ContactButtonBlock({ uid, isEditable, initialEmail }: Pr
   const [savedEmail, setSavedEmail] = useState(initialEmail || '');
   const [saving, setSaving] = useState(false);
 
+  // ✅ 初期メールアドレスが変更されたときに反映する
+  useEffect(() => {
+    setEmail(initialEmail || '');
+    setSavedEmail(initialEmail || '');
+  }, [initialEmail]);
+
   const handleSave = async () => {
     if (!email) return;
     setSaving(true);
@@ -73,7 +79,7 @@ export default function ContactButtonBlock({ uid, isEditable, initialEmail }: Pr
       <a
         href={mailtoLink}
         className="bg-gradient-to-r from-blue-500 to-indigo-600 text-white font-semibold text-lg py-3 px-8 rounded-full shadow-md hover:shadow-lg transition-all duration-300 hover:brightness-110"
-        >
+      >
         お仕事を依頼する
       </a>
     </div>

@@ -12,11 +12,11 @@ export const metadata = {
   openGraph: {
     title: 'Procom（プロコム）',
     description: 'SSNSプロフィールとリンク集をまとめて1ページで魅せるプラットフォーム。',
-    url: 'https://procom-next.onrender.com/',
+    url: 'https://procom.jp/',
     siteName: 'Procom',
     images: [
       {
-        url: 'https://procom-next.onrender.com/og-image.jpg',
+        url: 'https://procom.jp/og-image.jpg',
         width: 1200,
         height: 630,
         alt: 'Procom OGP画像',
@@ -28,7 +28,7 @@ export const metadata = {
     card: 'summary_large_image',
     title: 'ProcomでSNSプロフィールをまとめよう',
     description: 'あなたのSNS・プロフィール・リンク集を1ページに。Procomなら誰でも簡単に。',
-    images: ['https://procom-next.onrender.com/og-image.jpg'],
+    images: ['https://procom.jp/og-image.jpg'],
   },
 };
 
@@ -45,12 +45,12 @@ export default function RootLayout({
         <meta name="twitter:site" content="@Procom_next" />
         <meta name="twitter:title" content="Procom" />
         <meta name="twitter:description" content="SNSプロフィールをまとめて表示できるプラットフォーム。" />
-        <meta name="twitter:image" content="https://procom-next.onrender.com/og-image.jpg" />
+        <meta name="twitter:image" content="https://procom.jp/og-image.jpg" />
 
         <meta property="og:title" content="Procom（プロコム）" />
         <meta property="og:description" content="SNSリンクを一括表示。あなたの情報を1ページに。" />
-        <meta property="og:image" content="https://procom-next.onrender.com/og-image.jpg" />
-        <meta property="og:url" content="https://procom-next.onrender.com/" />
+        <meta property="og:image" content="https://procom.jp/og-image.jpg" />
+        <meta property="og:url" content="https://procom.jp/" />
         <meta property="og:type" content="website" />
 
         <meta name="google-site-verification" content="f6A-hc6jAwrweCHOaVCvsk0kyCukcP-BHebE9pCs2yo" />
@@ -78,7 +78,7 @@ export default function RootLayout({
               "@context": "https://schema.org",
               "@type": "WebSite",
               name: "Procom（プロコム）",
-              url: "https://procom-next.onrender.com/",
+              url: "https://procom.jp/",
               description: "フリーランス・クリエイターのためのプロフィール & SNSリンク集",
               publisher: {
                 "@type": "Organization",

@@ -4,7 +4,7 @@ import { useEffect } from 'react';
 import { usePathname, useSearchParams } from 'next/navigation';
 import Script from 'next/script';
 
-const GA_ID = 'G-5GXKQ5C9NL'; // ← あなたの測定IDに置き換えてください
+const GA_ID = 'G-P67MF94JZX'; // ← あなたの測定IDに置き換えてください
 
 export default function Analytics() {
   const pathname = usePathname();
@@ -22,7 +22,7 @@ export default function Analytics() {
     <>
       <Script
         strategy="afterInteractive"
-        src="https://www.googletagmanager.com/gtag/js?id=G-5GXKQ5C9NL"
+        src={`https://www.googletagmanager.com/gtag/js?id=${GA_ID}`}
       />
       <Script
         id="gtag-init"

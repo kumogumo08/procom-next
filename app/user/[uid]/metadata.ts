@@ -16,9 +16,9 @@ export async function generateMetadata({
   const image =
     profile?.photos?.[0]?.url?.startsWith('https://firebasestorage') &&
     profile.photos[0].url.includes('token=')
-      ? 'https://procom-next.onrender.com/og-image.jpg'
+      ? 'https://procom.jp/og-image.jpg'
       : profile?.photos?.[0]?.url ||
-        'https://procom-next.onrender.com/og-image.jpg';
+        'https://procom.jp/og-image.jpg';
 
   return {
     title,
@@ -26,7 +26,7 @@ export async function generateMetadata({
     openGraph: {
       title,
       description,
-      url: `https://procom-next.onrender.com/user/${uid}`,
+      url: `https://procom.jp/user/${uid}`,
       images: [
         {
           url: image,

@@ -14,7 +14,7 @@ const XShareButton: React.FC<Props> = ({ uid, name }) => {
         ? `${name}さんのProcomプロフィールをぜひご覧ください！`
         : 'Procomでプロフィールを公開しました！ぜひ見てください！'
     );
-    const url = encodeURIComponent(`https://procom-next.onrender.com/user/${uid}`);
+    const url = encodeURIComponent(`https://procom.jp/user/${uid}`);
     const hashtags = 'Procom';
     const xShareUrl = `https://twitter.com/intent/tweet?text=${text}&url=${url}&hashtags=${hashtags}`;
     window.open(xShareUrl, '_blank');

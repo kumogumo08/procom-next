@@ -10,11 +10,11 @@ export const metadata = {
     title: 'Procom（プロコム） - SNS・プロフィール・リンク集をまとめよう',
     description:
       'YouTube・X・Instagram・TikTokなどのSNSとプロフィールを1ページに集約。Procom（プロコム）であなたの魅力を伝えよう。',
-    url: 'https://procom-next.onrender.com/top',
+    url: 'https://procom.jp/top',
     siteName: 'Procom（プロコム）',
     images: [
       {
-        url: 'https://procom-next.onrender.com/og-image.jpg',
+        url: 'https://procom.jp/og-image.jpg',
         width: 1200,
         height: 630,
         alt: 'Procom（プロコム）のOG画像 - SNS・プロフィール・リンク集',
@@ -27,7 +27,7 @@ export const metadata = {
     title: 'Procom（プロコム） - あなたのSNSとプロフィールをまとめよう',
     description:
       'SNSプロフィールをまとめて見せる自己発信プラットフォーム「Procom（プロコム）」。リンク集やプロフィールページが簡単に作れます。',
-    images: ['https://procom-next.onrender.com/og-image.jpg'],
+    images: ['https://procom.jp/og-image.jpg'],
   },
 };
 

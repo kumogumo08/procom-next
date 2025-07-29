@@ -3,7 +3,7 @@ User-agent: *
 Allow: /
 
 # Host
-Host: https://procom-next.onrender.com
+Host: https://procom.jp.com
 
 # Sitemaps
-Sitemap: https://procom-next.onrender.com/sitemap.xml
+Sitemap: https://procom.jp.com/sitemap.xml

@@ -33,7 +33,7 @@ export async function generateMetadata({
   const name = profile?.name || 'Procomユーザー';
   const bio = profile?.bio || 'SNSプロフィールとリンク集をまとめたページ';
   const photoUrl =
-    profile?.photos?.[0]?.url || 'https://procom-next.onrender.com/og-image.jpg';
+    profile?.photos?.[0]?.url || 'https://procom.jp/og-image.jpg';
 
   return {
     title: `${name} | Procom`,
@@ -41,7 +41,7 @@ export async function generateMetadata({
     openGraph: {
       title: `${name} | Procom`,
       description: bio,
-      url: `https://procom-next.onrender.com/user/${uid}`,
+      url: `https://procom.jp/user/${uid}`,
       siteName: 'Procom',
       images: [
         {

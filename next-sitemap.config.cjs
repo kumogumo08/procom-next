@@ -4,7 +4,7 @@
 const fetch = require('node-fetch');
 
 module.exports = {
-  siteUrl: 'https://procom-next.onrender.com',
+  siteUrl: 'https://procom.jp.com',
   generateRobotsTxt: true,
   sitemapSize: 7000,
   changefreq: 'weekly',
@@ -13,7 +13,7 @@ module.exports = {
 
   async additionalPaths(config) {
     try {
-      const res = await fetch('https://procom-next.onrender.com/api/all-uids');
+      const res = await fetch('https://procom.jp/api/all-uids');
       const { uids } = await res.json();
 
       return uids.map(uid => ({

@@ -4,7 +4,7 @@
 const fetch = require('node-fetch');
 
 module.exports = {
-  siteUrl: 'https://procom.jp.com',
+  siteUrl: 'https://procom.jp',
   generateRobotsTxt: true,
   sitemapSize: 7000,
   changefreq: 'weekly',

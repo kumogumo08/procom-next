@@ -14,7 +14,19 @@ interface SNSButtonBlockProps {
   onChange?: (links: CustomSNSLink[]) => void;
 }
 
-const colorOptions = ['#1DA1F2', '#E1306C', '#6441A5', '#FF4500', '#28a745', '#000000', '#FF66CC'];
+  const colorOptions = [
+    '#1DA1F2', // 青
+    '#E1306C', // ピンク
+    '#6441A5', // 紫
+    '#FF4500', // オレンジ
+    '#28a745', // 緑
+    '#000000', // 黒
+    '#FF66CC', // ピンク
+    // 🔽 追加：グラデーション
+    'linear-gradient(135deg, #667eea 0%, #764ba2 100%)', // 紫〜青
+    'linear-gradient(135deg, #f7971e 0%, #ffd200 100%)', // オレンジ〜黄色
+    'linear-gradient(135deg, #f77062 0%, #fe5196 100%)' // ピンク〜濃いピンク
+  ];
 
 export default function SNSButtonBlock({
   customLinks = [],
@@ -80,7 +92,7 @@ return (
             rel="noopener noreferrer"
             className="text-white font-semibold text-base shadow-lg hover:opacity-90 transition text-center inline-flex items-center justify-center"
             style={{
-              backgroundColor: link.color || '#555',
+              background: link.color || '#555',
               width: '100px',       // ✅ 幅を固定
               height: '100px',      // ✅ 高さも固定で正方形に
               borderRadius: '16px',// ✅ 角丸（お好みで調整、16〜20pxくらいが自然）
@@ -88,6 +100,16 @@ return (
               fontSize: '20px',
               whiteSpace: 'normal',
               wordBreak: 'break-word',
+              boxShadow: '0 4px 6px rgba(0, 0, 0, 0.1)',        // 通常時の影
+              transition: 'transform 0.2s ease, box-shadow 0.2s ease', // なめらかに
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.transform = 'translateY(-4px) scale(1.05)';
+              e.currentTarget.style.boxShadow = '0 10px 15px rgba(0, 0, 0, 0.2)';
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.transform = 'translateY(0) scale(1)';
+              e.currentTarget.style.boxShadow = '0 4px 6px rgba(0, 0, 0, 0.1)';
             }}
           >
             {link.label}
@@ -137,11 +159,13 @@ return (
                   key={color}
                   onClick={() => handleColorSelect(color)}
                   style={{
-                    backgroundColor: color,
+                    background: color,
                     width: 32,
                     height: 32,
                     borderRadius: '50%',
                     border: newLink.color === color ? '2px solid #000' : '1px solid #ccc',
+                    display: 'inline-block', // ✅ グラデ背景表示に必要
+                    padding: 0,               // ✅ 余計な余白をなくす
                   }}
                   aria-label={`色 ${color}`}
                 />

@@ -44,17 +44,6 @@ export default function Headerlogin() {
     <>
       {/* ✅ スマホ用ヘッダー */}
       <header className={`${styles.mobileHeader} mobile-only`}>
-      <div
-        style={{
-          position: 'fixed',
-          top: 70,
-          left: 10,
-          zIndex: 1000,
-          border: '1px solid red', // ← これで確認しやすく
-        }}
-      >
-        <UserListToggle />
-      </div>
         <div className={styles.topBar}>
           <Link href="/top" className={styles.logo}>Procom</Link>
           <div className={styles.mobileTagline}>あなたのすべてをここに</div>
@@ -64,6 +53,10 @@ export default function Headerlogin() {
             </button>
             <button onClick={() => setShowMenu(!showMenu)} className={styles.icon}>☰</button>
           </div>
+        </div>
+
+        <div style={{ margin: '6px 12px', textAlign: 'left' }}>
+          <UserListToggle />
         </div>
 
         {showSearch && (

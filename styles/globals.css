@@ -62,12 +62,6 @@ body {
   }
 }
 
-@media (max-width: 768px) {
-  .user-toggle-label {
-    color: black !important;
-  }
-}
-
 /* 通常は白 */
 .user-toggle-label {
   color: white;

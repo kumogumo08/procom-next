@@ -64,15 +64,15 @@ return (
   <>
     {/* 🔼 トグルボタン（スマホ・PC共通で左上に固定） */}
     <div
+      className="user-toggle-button"
       style={{
-        position: 'fixed',
-        top: 70,
-        left: 10,
-        zIndex: 1000,
+        marginTop: 5,
+        marginLeft: 10, // ← ✅ 左寄せにする
         whiteSpace: 'nowrap',
         writingMode: 'horizontal-tb',
+        textAlign: 'left',           // ✅ 明示的に左寄せ
+        display: 'inline-block',     // ✅ 幅の自動調整
       }}
-      className="user-toggle-button"
     >
       <h3
         className="user-toggle-label"

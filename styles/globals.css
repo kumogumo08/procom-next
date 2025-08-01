@@ -44,6 +44,34 @@ body {
     margin: 0 0 15px 0;
     animation: fadeInDown 1s ease-out;
   }
+
+  .mobile-only {
+  display: block;
+}
+
+.pc-only {
+  display: none;
+}
+
+@media (min-width: 768px) {
+  .mobile-only {
+    display: none;
+  }
+  .pc-only {
+    display: block;
+  }
+}
+
+@media (max-width: 768px) {
+  .user-toggle-label {
+    color: black !important;
+  }
+}
+
+/* 通常は白 */
+.user-toggle-label {
+  color: white;
+}
   
 .auth-forms {
   color: #333; /* ← 黒文字 */

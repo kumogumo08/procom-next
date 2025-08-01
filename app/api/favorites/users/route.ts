@@ -12,13 +12,11 @@ interface FavoriteUser {
 }
 
 export async function GET(req: NextRequest) {
-  const { searchParams } = new URL(req.url);
-  const uid = searchParams.get('uid');
+  const uid = await getSessionUID(req);
 
   if (!uid) {
     return NextResponse.json({ error: 'ログインが必要です' }, { status: 401 });
   }
-
   try {
     // ✅ 修正: ユーザードキュメントから favorites フィールドを取得
     const userSnap = await db.collection('users').doc(uid).get();

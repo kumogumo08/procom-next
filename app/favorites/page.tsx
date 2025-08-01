@@ -35,7 +35,9 @@ export default function FavoritesPage() {
           return
         }
 
-        const res = await fetch(`/api/favorites/users?uid=${sessionData.uid}`);
+        const res = await fetch('/api/favorites/users', {
+          credentials: 'include', // ← これが重要！（セッション送信）
+        });
         if (!res.ok) throw new Error('取得失敗')
         const data: FavoriteUser[] = await res.json()
 

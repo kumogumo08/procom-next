@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import { ReactNode } from 'react';
 import SnsVisibilityToggle from './SnsVisibilityToggle';
 import SnsHelpTooltip from './SnsHelpTooltip';
+import YouTubeHelpTooltip from '@/components/YouTubeHelpTooltip';
 
 type Props = {
   uid: string;
@@ -142,6 +143,8 @@ export default function YouTubeEmbedBlock({ uid, isEditable }: Props) {
             />
             お気に入り動画
           </label>
+
+          <YouTubeHelpTooltip />
         </div>
       )}
 
@@ -154,9 +157,6 @@ export default function YouTubeEmbedBlock({ uid, isEditable }: Props) {
             onChange={(e) => setChannelId(e.target.value)}
             placeholder="チャンネルID（UC〜）"
           />
-          <p className="help-text">
-            ※チャンネルIDはYouTubeログイン→設定→詳細設定で確認できます。
-          </p>
         </div>
       )}
 

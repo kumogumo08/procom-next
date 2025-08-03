@@ -126,12 +126,14 @@ export default function FacebookEmbedBlock({ uid, isEditable }: Props) {
           >
             保存
           </button>
-          <SnsVisibilityToggle
-            label="Facebookを表示する"
-            checked={showFacebook ?? true}
-            onChange={setShowFacebook}
-          />
-          <SnsHelpTooltip />
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
+            <SnsVisibilityToggle
+              label="Facebookを表示する"
+              checked={showFacebook ?? true}
+              onChange={setShowFacebook}
+            />
+            <SnsHelpTooltip />
+          </div>
         </div>
       </>
     )}

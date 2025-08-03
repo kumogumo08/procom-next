@@ -1,9 +1,28 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 
 export default function YouTubeHelpTooltip() {
   const [show, setShow] = useState(false);
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
+
+  // ✅ ログイン状態を確認
+  useEffect(() => {
+    const checkLogin = async () => {
+      try {
+        const res = await fetch('/api/session');
+        const data = await res.json();
+        if (data?.loggedIn) {
+          setIsLoggedIn(true);
+        }
+      } catch (err) {
+        console.error('ログイン確認失敗:', err);
+      }
+    };
+    checkLogin();
+  }, []);
+
+  if (!isLoggedIn) return null; // ✅ 未ログインなら表示しない
 
   return (
     <div style={{ position: 'relative', display: 'inline-block' }}>
@@ -48,11 +67,11 @@ export default function YouTubeHelpTooltip() {
             boxShadow: '0 2px 8px rgba(0,0,0,0.15)',
           }}
         >
-          <p style={{ margin: 0 }}>
-            ※チャンネルIDは YouTube にログイン後、「設定 → 詳細設定」で確認できます。
-          </p>
           <p style={{ marginBottom: '8px' }}>
             ※YouTube動画のURLは希望の動画ページで「共有」ボタン → 「コピー」でURLを取得できます。
+          </p>
+          <p style={{ margin: 0 }}>
+            ※チャンネルIDは YouTube にログイン後、「設定 → 詳細設定」で確認できます。
           </p>
         </div>
       )}

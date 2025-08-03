@@ -217,7 +217,7 @@ export default function YouTubeEmbedBlock({ uid, isEditable }: Props) {
             onChange={setShowYouTube}
           />
         )}
-        <SnsHelpTooltip />
+        {isEditable && <SnsHelpTooltip />}
       {/* 🔽 表示 */}
       <div id="videoContainer" className="video-container">
         {videoElements}

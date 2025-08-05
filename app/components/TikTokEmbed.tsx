@@ -145,22 +145,20 @@ export default function TikTokEmbed({ uid, isEditable }: Props) {
           <div id="tiktok-container" className="tiktok-grid">
             {loadedUrls.map((url, i) => {
               const videoId = extractVideoId(url);
-              const embedUrl = `https://www.tiktok.com/embed/${videoId}`;
+              const embedHtml = `
+                <blockquote class="tiktok-embed"
+                  cite="${url}"
+                  data-video-id="${videoId}"
+                  style="max-width: 325px; min-width: 325px;">
+                  <section>Loading...</section>
+                </blockquote>
+              `;
               return (
-                <div key={i} className="tiktok-wrapper">
-                  <iframe
-                    src={embedUrl}
-                    width="325"
-                    height="570"
-                    allow="autoplay; encrypted-media"
-                    allowFullScreen
-                    style={{
-                      border: 'none',
-                      maxWidth: '100%',
-                      borderRadius: '8px',
-                    }}
-                  ></iframe>
-                </div>
+                <div
+                  key={i}
+                  className="tiktok-wrapper"
+                  dangerouslySetInnerHTML={{ __html: embedHtml }}
+                />
               );
             })}
           </div>

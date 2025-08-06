@@ -1,6 +1,9 @@
 // ✅ ファイル: app/top/page.tsx（サーバーコンポーネント）
 
 import TopPageClient from './TopPageClient';
+import Header from '@/components/Header';
+import Footer from '@/components/Footer';
+import CategorySlider from '@/components/CategorySlider';
 
 export const metadata = {
   title: 'Procom（プロコム） - SNS・プロフィール・リンク集を1ページに集約',
@@ -32,5 +35,13 @@ export const metadata = {
 };
 
 export default function TopPage() {
-  return <TopPageClient />;
+  return (
+    <main>
+      <Header />
+      <CategorySlider title="ダンサー" category="ダンサー" icon="💃" />
+      <CategorySlider title="YouTuber" category="youtuber" icon="🎥" />
+      <CategorySlider title="新規登録者" category="new" icon="🆕" />
+      <Footer />
+    </main>
+  );
 }

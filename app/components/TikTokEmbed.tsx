@@ -96,10 +96,33 @@ export default function TikTokEmbed({ uid, isEditable }: Props) {
                   type="text"
                   value={url}
                   placeholder={`TikTok URL ${i + 1}`}
-                  onChange={(e) => {
+                  onChange={async (e) => {
+                    const inputUrl = e.target.value.trim();
                     const updated = [...urls];
-                    updated[i] = e.target.value;
+                    updated[i] = inputUrl;
                     setUrls(updated);
+
+                    // ✅ 短縮URL（vt.tiktok.com や vm.tiktok.com）を通常URLに変換
+                    if (/^https:\/\/(vt|vm)\.tiktok\.com\//.test(inputUrl)) {
+                      try {
+                        const res = await fetch('/api/resolve-tiktok-url', {
+                          method: 'POST',
+                          headers: { 'Content-Type': 'application/json' },
+                          body: JSON.stringify({ url: inputUrl }),
+                        });
+                        const data = await res.json();
+
+                        if (data.resolvedUrl) {
+                          const updatedResolved = [...urls];
+                          updatedResolved[i] = data.resolvedUrl;
+                          setUrls(updatedResolved);
+                        } else {
+                          console.warn('変換に失敗:', data.error);
+                        }
+                      } catch (err) {
+                        console.error('省略URLの展開に失敗:', err);
+                      }
+                    }
                   }}
                   className="tiktok-input"
                   style={{ flex: 1 }}

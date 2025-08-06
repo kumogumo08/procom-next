@@ -34,6 +34,7 @@
     "@eslint/eslintrc": "^3",
     "@types/dotenv": "^6.1.1",
     "@types/node": "24.0.0",
+    "@types/node-fetch": "^2.6.13",
     "@types/qrcode": "^1.5.5",
     "@types/react": "^19.1.8",
     "@types/react-dom": "^19.1.6",

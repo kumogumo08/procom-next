@@ -1151,6 +1151,16 @@ body {
   padding: 10px 0;
 }
 
+/* src/styles/globals.css または layout.tsx で読み込まれるCSSに追加 */
+.scrollbar-hide::-webkit-scrollbar {
+  display: none;
+}
+
+.scrollbar-hide {
+  -ms-overflow-style: none; /* IE/Edge */
+  scrollbar-width: none;    /* Firefox */
+}
+
 .carousel-image {
   width: 100%;
   height: 100%;

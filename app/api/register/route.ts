@@ -62,6 +62,7 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
     uid,
     email: email.trim().toLowerCase(),
     password: hashed, // Firestoreには bcrypt で暗号化して保存（※必要に応じて省略可）
+    createdAt: admin.firestore.FieldValue.serverTimestamp(),
     profile: {
       name: username.trim(),
       title: '',

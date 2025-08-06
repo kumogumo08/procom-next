@@ -41,7 +41,7 @@ export default function ClientUserList() {
       {users.map((user, index) => {
         const name = user.profile?.name || user.name || user.username || '未設定';
         const title = user.profile?.title || user.title || '';
-        const photoUrl = user.profile?.photos?.[0]?.url || '/procom-logo.png';
+        const photoUrl = user.profile?.photos?.[0]?.url || '/procom.png';
         const uid = user.uid || user.username;
 
         return (

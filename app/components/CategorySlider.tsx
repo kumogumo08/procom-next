@@ -88,7 +88,7 @@ export default function CategorySlider({
             className="user-card flex-shrink-0 w-40 sm:w-48 md:w-56 bg-white rounded-lg shadow-md overflow-hidden hover:shadow-lg transition-shadow"
             >
             <img
-                src={user.profile.photos?.[0]?.url || '/procom-logo.png'}
+                src={user.profile.photos?.[0]?.url || '/procom.png'}
                 alt={`${user.profile.name}の写真`}
                 className="w-full h-40 object-cover"
             />

@@ -58,63 +58,51 @@ export default function UserSearchClient({ initialQuery }: { initialQuery: strin
     setFilteredUsers(result);
   };
 
-  return (
-    <div style={{ padding: '20px' }}>
-      <input
-        id="searchInput"
-        type="text"
-        placeholder="名前や肩書きで検索"
-        value={searchValue}
-        onChange={(e) => handleInput(e.target.value)}
-        style={{ padding: '10px', width: '100%', marginBottom: '20px' }}
-      />
-      <div id="userList">
-        {filteredUsers.length === 0 ? (
-          <p>一致するユーザーが見つかりませんでした。</p>
-        ) : (
-          filteredUsers.map((user) => {
-            const name = user.profile?.name || '未設定';
-            const title = user.profile?.title || '';
-            const bio = user.profile?.bio || '';
-            const photoUrl = user.profile?.photos?.[0]?.url;
+return (
+  <div className="px-6 py-8">
+    <input
+      id="searchInput"
+      type="text"
+      placeholder="名前や肩書きで検索"
+      value={searchValue}
+      onChange={(e) => handleInput(e.target.value)}
+      className="w-full p-3 border rounded mb-6 shadow-sm"
+    />
 
-            return (
-              <a
-                key={user.uid}
-                href={`/user/${user.uid}`}
-                className="user-card"
-                style={{
-                  display: 'block',
-                  padding: '10px',
-                  borderBottom: '1px solid #ccc',
-                  textDecoration: 'none',
-                  color: 'inherit',
-                  marginBottom: '10px',
-                }}
-              >
-                {photoUrl && (
-                  <img
-                    src={photoUrl}
-                    alt={`${name}の写真`}
-                    className="user-thumb"
-                    style={{
-                      width: '60px',
-                      height: '60px',
-                      borderRadius: '50%',
-                      objectFit: 'cover',
-                      marginRight: '10px',
-                      float: 'left',
-                    }}
-                  />
-                )}
-                <h3>{name} {title ? `（${title}）` : ''}</h3>
-                <p dangerouslySetInnerHTML={{ __html: bio.replace(/\n/g, '<br>') }}></p>
-                <div style={{ clear: 'both' }}></div>
-              </a>
-            );
-          })
-        )}
+    {filteredUsers.length === 0 ? (
+      <p className="text-center text-gray-500">一致するユーザーが見つかりませんでした。</p>
+    ) : (
+      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
+        {filteredUsers.map((user) => {
+          const name = user.profile?.name || '未設定';
+          const title = user.profile?.title || '';
+          const bio = user.profile?.bio || '';
+          const photoUrl = user.profile?.photos?.[0]?.url || '/procom.png';
+
+          return (
+            <a
+              key={user.uid}
+              href={`/user/${user.uid}`}
+              className="bg-white rounded-lg shadow hover:shadow-lg transition duration-300 overflow-hidden"
+            >
+              <img
+                src={photoUrl}
+                alt={`${name}の写真`}
+                className="w-full h-48 object-cover"
+              />
+              <div className="p-4">
+                <h3 className="text-lg font-bold text-center">{name}</h3>
+                {title && <p className="text-sm text-center text-gray-600">{title}</p>}
+                <p
+                  className="text-sm text-gray-700 mt-2 line-clamp-3"
+                  dangerouslySetInnerHTML={{ __html: bio.replace(/\n/g, '<br>') }}
+                />
+              </div>
+            </a>
+          );
+        })}
       </div>
-    </div>
-  );
+    )}
+  </div>
+);
 }

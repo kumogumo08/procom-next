@@ -4,6 +4,7 @@ import TopPageClient from './TopPageClient';
 import Header from '@/components/Header';
 import Footer from '@/components/Footer';
 import CategorySlider from '@/components/CategorySlider';
+import Link from 'next/link';
 
 export const metadata = {
   title: 'Procom（プロコム） - SNS・プロフィール・リンク集を1ページに集約',
@@ -41,6 +42,14 @@ export default function TopPage() {
       <CategorySlider title="ダンサー" category="ダンサー" icon="💃" />
       <CategorySlider title="YouTuber" category="youtuber" icon="🎥" />
       <CategorySlider title="新規登録者" category="new" icon="🆕" />
+      <div className="text-center my-10">
+        <Link
+          href="/users"
+          className="inline-block px-6 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 transition"
+        >
+          登録者一覧を見る
+        </Link>
+      </div>
       <Footer />
     </main>
   );

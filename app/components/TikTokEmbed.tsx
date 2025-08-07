@@ -14,20 +14,42 @@ export default function TikTokEmbed({ uid, isEditable }: Props) {
   const [loadedUrls, setLoadedUrls] = useState<string[]>([]);
   const [showTikTok, setShowTikTok] = useState(true);
 
-  // 🔽 データ取得
+  // 🔽 データ取得 & 短縮URLの展開処理
   useEffect(() => {
     async function fetchData() {
       try {
         const res = await fetch(`/api/user/${uid}`);
         const data = await res.json();
         const profile = data.profile || {};
-        const tiktok = (profile.tiktokUrls || [])
+        const rawUrls = (profile.tiktokUrls || [])
           .map((url: string) => url.trim())
           .filter((url: string) => url !== '')
           .slice(0, 3);
 
-        setUrls(tiktok);
-        setLoadedUrls(tiktok);
+        // ✅ 省略URLをすべて展開
+        const resolved = await Promise.all(
+          rawUrls.map(async (url: string) => {
+            if (/^https:\/\/(vt|vm)\.tiktok\.com\//.test(url)) {
+              try {
+                const res = await fetch('/api/resolve-tiktok-url', {
+                  method: 'POST',
+                  headers: { 'Content-Type': 'application/json' },
+                  body: JSON.stringify({ url }),
+                });
+                const data = await res.json();
+                console.log('▶ TikTok展開後URL:', data.resolvedUrl);
+                return data.resolvedUrl || url;
+              } catch {
+                return url;
+              }
+            } else {
+              return url;
+            }
+          })
+        );
+
+        setUrls(resolved);
+        setLoadedUrls(resolved);
         setShowTikTok(profile.settings?.showTikTok !== false);
       } catch (e) {
         console.warn('TikTok情報の取得に失敗しました');
@@ -40,22 +62,24 @@ export default function TikTokEmbed({ uid, isEditable }: Props) {
   useEffect(() => {
     if (!showTikTok || loadedUrls.length === 0) return;
 
-    const timeout = setTimeout(() => {
-      const script = document.createElement('script');
-      script.src = 'https://www.tiktok.com/embed.js';
-      script.async = true;
-      document.body.appendChild(script);
-    }, 100);
+    const script = document.createElement('script');
+    script.src = 'https://www.tiktok.com/embed.js';
+    script.async = true;
 
-    return () => clearTimeout(timeout);
+    script.onload = () => {
+      if (typeof window !== 'undefined' && (window as any).tiktokEmbedLoad) {
+        (window as any).tiktokEmbedLoad();
+      }
+    };
+
+    document.body.appendChild(script);
+    return () => {
+      document.body.removeChild(script);
+    };
   }, [loadedUrls, showTikTok]);
 
-  // ✅ フックの後に早期 return を入れる（ここが大事）
-  if (!isEditable && !showTikTok) {
-    return null;
-  }
+  if (!isEditable && !showTikTok) return null;
 
-  // 🔽 残りの処理
   const handleSave = async () => {
     const cleaned = urls
       .map(url => url.trim())
@@ -78,10 +102,15 @@ export default function TikTokEmbed({ uid, isEditable }: Props) {
     alert('TikTokリンクを保存しました');
   };
 
-  const extractVideoId = (url: string): string => {
-    const match = url.match(/video\/(\d+)/);
-    return match ? match[1] : '';
-  };
+    const extractVideoId = (url: string): string => {
+      const match = url.match(/video\/(\d+)/);
+      if (!match) {
+        console.warn('⚠ TikTok URLが無効です:', url);
+        return ''; // ← 空文字で明示的にreturn
+      }
+      return match[1];
+    };
+
 
   return (
     <div className="sns-bottom-row">
@@ -102,7 +131,6 @@ export default function TikTokEmbed({ uid, isEditable }: Props) {
                     updated[i] = inputUrl;
                     setUrls(updated);
 
-                    // ✅ 短縮URL（vt.tiktok.com や vm.tiktok.com）を通常URLに変換
                     if (/^https:\/\/(vt|vm)\.tiktok\.com\//.test(inputUrl)) {
                       try {
                         const res = await fetch('/api/resolve-tiktok-url', {
@@ -113,6 +141,7 @@ export default function TikTokEmbed({ uid, isEditable }: Props) {
                         const data = await res.json();
 
                         if (data.resolvedUrl) {
+                          console.log('▶ TikTok展開後URL:', data.resolvedUrl);
                           const updatedResolved = [...urls];
                           updatedResolved[i] = data.resolvedUrl;
                           setUrls(updatedResolved);
@@ -148,8 +177,7 @@ export default function TikTokEmbed({ uid, isEditable }: Props) {
                 </button>
               </div>
             ))}
-
-            {urls.filter((url) => url.trim() !== '').length < 3 && (
+            {urls.filter(url => url.trim() !== '').length < 3 && (
               <button onClick={() => setUrls([...urls, ''])}>＋ 入力欄を追加</button>
             )}
             <button onClick={handleSave} className="auth-only" style={{ marginTop: '10px' }}>
@@ -168,6 +196,8 @@ export default function TikTokEmbed({ uid, isEditable }: Props) {
           <div id="tiktok-container" className="tiktok-grid">
             {loadedUrls.map((url, i) => {
               const videoId = extractVideoId(url);
+              if (!videoId) return null;
+              
               const embedHtml = `
                 <blockquote class="tiktok-embed"
                   cite="${url}"

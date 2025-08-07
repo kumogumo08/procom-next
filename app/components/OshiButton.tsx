@@ -30,7 +30,7 @@ export default function OshiButton({ uid }: { uid: string }) {
     let today = parseInt(localStorage.getItem(todayKey) || '0', 10);
 
     if (today >= MAX_OSHI_PER_DAY) {
-      alert('今日はもう推しすぎです！また明日✨');
+      alert('今日の推し活完了！また明日✨');
       return;
     }
 

@@ -5,6 +5,7 @@ import Header from '@/components/Header';
 import Footer from '@/components/Footer';
 import CategorySlider from '@/components/CategorySlider';
 import Link from 'next/link';
+import NewsList from "@/components/NewsList";
 
 export const metadata = {
   title: 'Procom（プロコム） - SNS・プロフィール・リンク集を1ページに集約',
@@ -49,6 +50,9 @@ export default function TopPage() {
         >
           登録者一覧を見る
         </Link>
+      </div>
+        <div style={{ marginTop: "40px", marginBottom: "40px" }}>
+        <NewsList />
       </div>
       <Footer />
     </main>

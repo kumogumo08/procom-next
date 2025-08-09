@@ -10,6 +10,7 @@ type SessionData = {
   uid?: string;
   username?: string;
   name?: string;
+  isAdmin?: boolean; // ← 管理者判定を追加
 };
 
 export default function Header() {
@@ -27,7 +28,6 @@ export default function Header() {
         setSession({ loggedIn: false });
       }
     }
-
     fetchSession();
   }, []);
 
@@ -57,6 +57,14 @@ export default function Header() {
             </p>
             <div className={styles.authButtons}>
               <Link href={`/user/${session.uid}`} className="mypage-btn">マイページ</Link>
+
+              {/* 管理者専用リンク */}
+              {session.isAdmin && (
+                <Link href="/admin/news" className="mypage-btn" style={{ background: 'orange' }}>
+                  NEWS管理
+                </Link>
+              )}
+
               <form action="/api/logout" method="GET">
                 <button type="submit" className="mypage-btn">ログアウト</button>
               </form>
@@ -123,6 +131,14 @@ export default function Header() {
                   ようこそ、{session.name ?? session.username}さん！
                 </p>
                 <Link href={`/user/${session.uid}`} className={styles.menuLink}>マイページ</Link>
+                
+                {/* 管理者専用リンク（スマホ版） */}
+                {session.isAdmin && (
+                  <Link href="/admin/news" className={styles.menuLink} style={{ color: 'orange' }}>
+                    NEWS管理
+                  </Link>
+                )}
+
                 <Link href="/account" className={styles.menuLink}>⚙ アカウント設定</Link>
                 <form action="/api/logout" method="GET">
                   <button type="submit" className={styles.menuLink}>ログアウト</button>

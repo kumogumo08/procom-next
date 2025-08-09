@@ -5,6 +5,12 @@ import type { SessionOptions } from 'iron-session';
 import type { SessionData } from './session-types';
 import { NextResponse, NextRequest } from 'next/server';
 
+export async function getSessionServer() {
+  // cookies() を await で解決
+  const cookieStore = await cookies();
+  const session = await getIronSession<SessionData>(cookieStore, sessionOptions);
+  return session;
+}
 
 // ✅ セッションオプション
 export const sessionOptions: SessionOptions = {

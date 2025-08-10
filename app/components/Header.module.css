@@ -3,14 +3,6 @@
   padding: 60px 20px;
 }
 
-.title {
-  font-family: 'Segoe UI', 'Helvetica Neue', sans-serif;
-  font-size: 3rem;
-  letter-spacing: 10px;
-  margin: 0 0 15px 0;
-  animation: fadeInDown 1s ease-out;
-}
-
 .link {
   color: inherit;
   text-decoration: none;
@@ -148,8 +140,11 @@
     background-color: #fff;
     border-bottom: 1px solid #ccc;
     padding: 8px 12px;
-    position: relative;
-  }
+    position: sticky;
+    top: 0;
+    z-index: 3000;      /* コンテンツより前に */
+    overflow: visible;  /* ← 重要：メニューを切らない */
+}
 
   .topBar {
     display: flex;
@@ -225,4 +220,194 @@
   width: 24px;
   height: 24px;
   object-fit: contain;
+}
+
+/* Header.module.css */
+
+/* ===== 共通 ===== */
+/* ===== 共通スタイル ===== */
+.pcHeader,
+.mobileHeader {
+  position: relative;
+  color: #fff;
+  text-align: center;
+  overflow: visible;
+  isolation: isolate;
+}
+
+.pcHeader::before,
+.mobileHeader::before {
+  content: "";
+  position: absolute;
+  inset: -2px;
+  z-index: -1;
+  background-size: cover;
+  background-position: center 30%;
+  background-repeat: no-repeat;
+  filter: saturate(110%);
+}
+
+.title {
+  font-family: 'Segoe UI', 'Helvetica Neue', sans-serif;
+  letter-spacing: 0.15em;
+  text-shadow: 0 2px 12px rgba(0, 0, 0, 0.5);
+  margin: 0 0 6px;
+  animation: fadeInDown 1s ease-out;
+}
+
+.link { color: inherit; text-decoration: none; }
+
+.tagline {
+  font-weight: 700;
+  margin: 8px 0 2px;
+  animation: fadeInUp 1.2s ease-out;
+}
+
+.description {
+  max-width: 760px;
+  margin: 0 auto 14px;
+  line-height: 1.8;
+  animation: fadeInUp 1.5s ease-out;
+}
+
+.username {
+  font-weight: bold;
+  margin: 10px 0;
+}
+
+.authUI {
+  margin-top: 20px;
+  border-radius: 8px;
+  padding: 10px;
+  text-align: center;
+}
+
+.authButtons {
+  display: flex;
+  justify-content: center;
+  gap: 10px;
+  margin-bottom: 10px;
+  flex-wrap: wrap;
+}
+
+.searchWrapper { margin-top: 18px; }
+
+.searchForm {
+  display: inline-flex;
+  gap: 8px;
+  align-items: center;
+  border-radius: 999px;
+  backdrop-filter: blur(4px);
+}
+
+.searchInput {
+  flex: 1;
+  background: transparent;
+  border: none;
+  outline: none;
+  color: #fff;
+  padding: 10px 14px;
+  font-size: 16px;
+}
+
+.searchButton {
+  border-radius: 999px;
+  border: none;
+  cursor: pointer;
+  color: #fff;
+  font-weight: 700;
+}
+
+/* ===== PCヘッダー ===== */
+.pcHeader {
+  padding: clamp(56px, 9vh, 120px) 20px 64px; /* 上下の余白を自動調整 */
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-start; /* 中央より少し上に */
+  gap: 14px;                   /* 要素間の一定距離 */
+}
+
+.title,
+.tagline,
+.description,
+.authLink,
+.searchWrapper {
+  max-width: 920px;
+  width: min(92vw, 920px);
+  margin-left: auto;
+  margin-right: auto;
+}
+
+.pcHeader::before {
+  background-image:
+    linear-gradient(180deg, rgba(6, 10, 25, 0.85) 0%, rgba(10, 16, 40, 0.72) 40%, rgba(12, 18, 45, 0.78) 100%),
+    url("/moon.png");
+}
+
+@media (min-width: 1024px) {
+  .pcHeader::before { background-attachment: fixed; }
+}
+
+/* ===== モバイルヘッダー ===== */
+.mobileHeader {
+  padding: 16px 16px 24px;
+}
+
+.mobileHeader::before {
+  background-image:
+    linear-gradient(180deg, rgba(7, 10, 25, 0.92), rgba(12, 18, 45, 0.85)),
+    url("/moon.png");
+  background-position: center 20%;
+}
+
+.topBar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 10px;
+}
+
+.logo {
+  font-size: 22px;
+  font-weight: 800;
+  letter-spacing: .12em;
+}
+
+.iconButtons { display: flex; gap: 8px; }
+.icon {
+  background: rgba(255,255,255,0.12);
+  border: none;
+  border-radius: 10px;
+  width: 40px; height: 40px;
+  display: grid; place-items: center;
+  cursor: pointer;
+}
+.iconImage { width: 22px; height: 22px; filter: invert(1); }
+
+.searchBox, .menuBox {
+  margin-top: 10px;
+  border-radius: 12px;
+  padding: 12px;
+  backdrop-filter: blur(4px);
+}
+
+/* ===== 表示切替 ===== */
+.pcHeader { display: block; }
+.mobileHeader { display: none; }
+
+@media (max-width: 767px) {
+  .pcHeader { display: none !important; }
+  .mobileHeader { display: block !important; }
+}
+
+/* ===== アニメーション ===== */
+@keyframes fadeInDown {
+  from { opacity: 0; transform: translateY(-20px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes fadeInUp {
+  from { opacity: 0; transform: translateY(20px); }
+  to   { opacity: 1; transform: translateY(0); }
 }

@@ -4,136 +4,150 @@ import { useEffect, useState, useRef } from 'react';
 import SnsVisibilityToggle from './SnsVisibilityToggle';
 import SnsHelpTooltip from './SnsHelpTooltip';
 
-interface Props {
-  uid: string;
-  isEditable: boolean;
-}
+type Props = { uid: string; isEditable: boolean };
+
+// URL正規化（OKなら統一URLを返す／NGなら null）
+const normalizeInstagramUrl = (raw: string): string | null => {
+  try {
+    const u = new URL(raw.trim());
+    if (!/^(www\.)?instagram\.com$/.test(u.hostname)) return null;
+
+    const seg = u.pathname.replace(/\/+$/, '').split('/').filter(Boolean);
+    if (seg.length < 2) return null;
+
+    const type = seg[0]; // p | reel | tv
+    const id = seg[1];
+    if (!/^(p|reel|tv)$/.test(type)) return null;
+    if (!/^[a-zA-Z0-9_-]+$/.test(id)) return null;
+
+    return `https://www.instagram.com/${type}/${id}/`;
+  } catch {
+    return null;
+  }
+};
 
 export default function InstagramEmbed({ uid, isEditable }: Props) {
   const [url, setUrl] = useState('');
   const [loadedUrl, setLoadedUrl] = useState('');
   const [showInstagram, setShowInstagram] = useState<boolean | undefined>(undefined);
   const [isLoaded, setIsLoaded] = useState(false);
-  const embedRef = useRef<HTMLDivElement>(null);
 
-  // 🔹 初期データ取得
+  const embedRef = useRef<HTMLDivElement>(null);
+  const embedScriptLoadedRef = useRef(false);
+  const scriptAppendedRef = useRef(false);
+  const lastProcessedUrlRef = useRef<string | null>(null);
+
+  // 初期データ取得
   useEffect(() => {
-    async function fetchData() {
+    (async () => {
       try {
         const res = await fetch(`/api/user/${uid}`);
         const data = await res.json();
         const profile = data.profile || {};
 
         if (profile.instagramPostUrl) {
-          const fixedUrl = profile.instagramPostUrl.endsWith('/')
-            ? profile.instagramPostUrl
-            : profile.instagramPostUrl + '/';
-          setUrl(fixedUrl);
-          setLoadedUrl(fixedUrl);
+          const normalized = normalizeInstagramUrl(profile.instagramPostUrl);
+          if (normalized) {
+            setUrl(normalized);
+            setLoadedUrl(normalized);
+          }
         }
-
         setShowInstagram(profile.settings?.showInstagram ?? true);
-      } catch (err) {
+      } catch {
         console.warn('Instagram情報の取得に失敗しました');
       } finally {
         setIsLoaded(true);
       }
-    }
-    fetchData();
+    })();
   }, [uid]);
 
-  // 🔹 Instagram embed.js 動的読み込み＋埋め込み実行
-  // 🔁 外でフラグを定義（複数実行を防ぐ）
-const embedScriptLoadedRef = useRef(false); 
-const lastProcessedUrlRef = useRef<string | null>(null);
-const scriptAppendedRef = useRef(false); // ✅ scriptが追加されたか判定
+  // 埋め込み処理（保存済みの loadedUrl を使用）
+  useEffect(() => {
+    if (!loadedUrl || !showInstagram) return;
+    if (lastProcessedUrlRef.current === loadedUrl) return;
 
-// 修正後（入力中の url に反応）
-useEffect(() => {
-  if (!url || !showInstagram) return;
-  if (lastProcessedUrlRef.current === url) return;
+    const container = embedRef.current;
+    if (!container) return;
 
-  const container = embedRef.current;
-  if (!container) return;
+    container.innerHTML = '';
+    const block = document.createElement('blockquote');
+    block.className = 'instagram-media';
+    block.setAttribute('data-instgrm-permalink', loadedUrl);
+    block.setAttribute('data-instgrm-version', '14');
+    block.setAttribute('data-instgrm-captioned', '');
+    block.style.width = '100%';
+    block.style.margin = '20px auto';
+    container.appendChild(block);
 
-  container.innerHTML = '';
+    const process = () => {
+      try {
+        (window as any).instgrm?.Embeds?.process();
+        lastProcessedUrlRef.current = loadedUrl;
+      } catch (err) {
+        console.warn('Instagram埋め込み処理エラー:', err);
+      }
+    };
 
-  const block = document.createElement('blockquote');
-  block.className = 'instagram-media';
-  block.setAttribute('data-instgrm-permalink', url);
-  block.setAttribute('data-instgrm-version', '14');
-  block.setAttribute('data-instgrm-captioned', '');
-  block.style.width = '100%';
-  block.style.margin = '20px auto';
-  container.appendChild(block);
+    const available = (window as any).instgrm?.Embeds?.process;
+    if (available) {
+      process();
+    } else if (!embedScriptLoadedRef.current && !scriptAppendedRef.current) {
+      const script = document.createElement('script');
+      script.src = 'https://www.instagram.com/embed.js';
+      script.async = true;
+      script.onload = () => {
+        embedScriptLoadedRef.current = true;
+        process();
+      };
+      document.body.appendChild(script);
+      scriptAppendedRef.current = true;
+    }
 
-  const processEmbed = () => {
+    // クリーンアップ（ページ遷移時に空に）
+    return () => {
+      if (container) container.innerHTML = '';
+    };
+  }, [loadedUrl, showInstagram]);
+
+  // 保存
+  const handleSave = async () => {
     try {
-      (window as any).instgrm?.Embeds?.process();
-      lastProcessedUrlRef.current = url;
+      let normalized: string | '';
+
+      if (url.trim()) {
+        const n = normalizeInstagramUrl(url);
+        if (!n) {
+          alert('⚠️ 正しいInstagram投稿URLを入力してください（例: https://www.instagram.com/p/xxxxx/ または /reel/ /tv/）');
+          return;
+        }
+        normalized = n;
+      } else {
+        normalized = '';
+      }
+
+      const res = await fetch(`/api/user/${uid}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({
+          profile: {
+            instagramPostUrl: normalized,
+            settings: { showInstagram },
+          },
+        }),
+      });
+
+      if (!res.ok) throw new Error('保存失敗');
+      setLoadedUrl(normalized);
+      alert('Instagramリンクを保存しました');
     } catch (err) {
-      console.warn('Instagram埋め込み処理エラー:', err);
+      console.error('保存エラー:', err);
+      alert('保存に失敗しました');
     }
   };
 
-  const isProcessAvailable = (window as any).instgrm?.Embeds?.process;
-
-  if (isProcessAvailable) {
-    processEmbed();
-  } else if (!embedScriptLoadedRef.current && !scriptAppendedRef.current) {
-    const script = document.createElement('script');
-    script.src = 'https://www.instagram.com/embed.js';
-    script.async = true;
-    script.onload = () => {
-      embedScriptLoadedRef.current = true;
-      processEmbed();
-    };
-    document.body.appendChild(script);
-    scriptAppendedRef.current = true;
-  }
-}, [url, showInstagram]); // ✅ url に変更
-
-
-
-const isValidInstagramUrl = (url: string) => {
-  return /^https:\/\/(www\.)?instagram\.com\/p\/[a-zA-Z0-9_-]+\/?$/.test(url);
-};
-
-const handleSave = async () => {
-  try {
-    const fixedUrl = url.endsWith('/') ? url : url + '/';
-
-    // ✅ 入力がある場合のみバリデーション
-    if (url && !isValidInstagramUrl(fixedUrl)) {
-      alert('⚠️ 正しいInstagram投稿URLを入力してください（例: https://www.instagram.com/p/xxxxxx/）');
-      return;
-    }
-
-    const res = await fetch(`/api/user/${uid}`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      credentials: 'include',
-      body: JSON.stringify({
-        profile: {
-          instagramPostUrl: url ? fixedUrl : '',  // 空欄のまま送ることを許容
-          settings: { showInstagram },
-        },
-      }),
-    });
-
-    if (!res.ok) throw new Error('保存失敗');
-    setLoadedUrl(url ? fixedUrl : '');
-    alert('Instagramリンクを保存しました');
-  } catch (err) {
-    console.error('保存エラー:', err);
-    alert('保存に失敗しました');
-  }
-};
-
-  // 🔹 表示制御
-  if (!isEditable && showInstagram === false) {
-    return null;
-  }
+  // 非編集かつ非表示設定なら描画しない
+  if (!isEditable && showInstagram === false) return null;
 
   return (
     <div className="sns-item">
@@ -143,15 +157,15 @@ const handleSave = async () => {
         <>
           <input
             type="text"
-            placeholder="Instagram投稿のURL"
+            placeholder="Instagram投稿のURL（/p/xxxx/ /reel/xxxx/ /tv/xxxx/ のいずれか）"
             value={url}
             onChange={(e) => setUrl(e.target.value)}
-            style={{ width: '100%', marginBottom: '6px' }}
+            style={{ width: '100%', marginBottom: 6 }}
           />
-          <p style={{ fontSize: '12px', color: '#555' }}>
-            お気に入りのインスタ画像URLをご入力ください
+          <p style={{ fontSize: 12, color: '#555' }}>
+            お気に入りのinstagramのURLを入力してください。
           </p>
-          <button onClick={handleSave} style={{ marginTop: '10px' }}>
+          <button onClick={handleSave} style={{ marginTop: 10 }}>
             保存
           </button>
 
@@ -164,10 +178,7 @@ const handleSave = async () => {
         </>
       )}
 
-{isLoaded && loadedUrl && showInstagram && (
-  <div ref={embedRef}></div>
-)}
-
+      {isLoaded && loadedUrl && showInstagram && <div ref={embedRef} />}
     </div>
   );
 }

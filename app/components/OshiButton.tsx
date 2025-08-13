@@ -60,6 +60,9 @@ export default function OshiButton({ uid }: { uid: string }) {
       >
         ❤️ 推す！
       </button>
+        <p style={{ fontSize: '0.9rem', color: '#666', marginTop: '6px' }}>
+      （1日{MAX_OSHI_PER_DAY}回まで押せます）
+        </p>
       <p>✨ 合計推し数：<span>{totalCount}</span></p>
       <p>📅 今日の推し数：<span>{todayCount}</span> / {MAX_OSHI_PER_DAY}</p>
 

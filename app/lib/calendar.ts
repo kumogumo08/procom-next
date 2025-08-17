@@ -2,6 +2,11 @@ let currentDate: Date = new Date();
 
 export let events: Record<string, string[]> = {};
 
+// 🔽 追加：ユーティリティ
+function getEventsFor(dateStr: string): string[] {
+  return Array.isArray(events[dateStr]) ? events[dateStr] : [];
+}
+
 // ✅ Firestore から予定を取得
 async function fetchCalendarEventsFromServer(uid: string) {
   try {
@@ -67,9 +72,9 @@ export async function createCalendar(
   const header = document.createElement('div');
   header.className = 'calendar-header';
   header.innerHTML = `
-    <button id="prev-month">&lt;</button>
+    <button id="prev-month" aria-label="前の月">&lt;</button>
     <span>${year}年 ${month + 1}月</span>
-    <button id="next-month">&gt;</button>
+    <button id="next-month" aria-label="次の月">&gt;</button>
   `;
   calendar.appendChild(header);
 
@@ -99,13 +104,31 @@ export async function createCalendar(
     cell.className = 'calendar-cell';
     cell.textContent = String(day);
 
-    cell.addEventListener('click', () => {
+    // 🔽 追加：属性を付与（React側から拾いやすく）
+    cell.setAttribute('data-date', fullDate);
+    cell.setAttribute('role', 'button');
+    cell.setAttribute('tabindex', '0');
+    cell.setAttribute('aria-label', `${fullDate} の予定を表示`);
+
+    // 🔽 変更：クリックで入力欄セット + カスタムイベント発火
+    const openDay = () => {
       const dateInput = document.getElementById('event-date') as HTMLInputElement | null;
-      if (dateInput) {
-        dateInput.value = fullDate;
+      if (dateInput) dateInput.value = fullDate;
+
+      // カスタムイベントで React 側に通知
+      window.dispatchEvent(
+        new CustomEvent('calendar:dayClick', {
+          detail: { date: fullDate, events: getEventsFor(fullDate) }
+        })
+      );
+    };
+    cell.addEventListener('click', openDay);
+    cell.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter' || e.key === ' ') {
+        e.preventDefault();
+        openDay();
       }
     });
-
 
     if (events[fullDate]) {
       cell.classList.add('event-day');
@@ -113,17 +136,17 @@ export async function createCalendar(
       const popup = document.createElement('div');
       popup.className = 'popup';
 
-      events[fullDate].forEach((e: string, idx: number) => {
+      events[fullDate].forEach((evText: string, idx: number) => {
         const item = document.createElement('div');
-        item.innerHTML = `・${e}`;
+        item.innerHTML = `・${evText}`;
         if (isEditable) {
           const delBtn = document.createElement('button');
           delBtn.textContent = '×';
           delBtn.className = 'delete-btn';
           delBtn.dataset.date = fullDate;
           delBtn.dataset.index = String(idx);
-          delBtn.addEventListener('click', async (e: MouseEvent) => {
-            e.stopPropagation();
+          delBtn.addEventListener('click', async (ev: MouseEvent) => {
+            ev.stopPropagation(); // ← ポップアップ内クリックがセルクリックに伝播しないように
             await deleteEvent(fullDate, idx, isEditable, uid);
           });
           item.appendChild(delBtn);
@@ -193,7 +216,8 @@ async function deleteEvent(date: string, index: number, isEditable: boolean, uid
     await createCalendar(currentDate, isEditable, false, uid); // ✅ reloadEvents = false に
   }
 }
-// ✅ URL から uid を取得
+
+// ✅ URL から uid を取得（未使用なら削除OK）
 function getUidFromURL(): string | null {
   const match = window.location.pathname.match(/\/user\/(.+?)\/?$/);
   return match ? match[1] : null;

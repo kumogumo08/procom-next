@@ -1,104 +1,78 @@
 // app/layout.tsx
-
 import '../styles/globals.css';
 import Analytics from './analytics';
 import { Suspense } from 'react';
-import Script from 'next/script';
+import type { Metadata } from 'next';
 
-export const metadata = {
-  title: 'Procom（プロコム）｜SNSプロフィール＆リンク集プラットフォーム',
+export const metadata: Metadata = {
+  title: 'プロフィール作成 & SNSリンク集なら Procom（プロコム）｜無料で1ページに集約',
   description:
-    'Procom（プロコム）は、あなたのSNSプロフィールとリンク集を1ページにまとめて魅力的に見せる無料サービス。フリーランス、YouTuber、インスタグラマー、ダンサーなど幅広いクリエイターに最適。',
+    'Procom（プロコム）はプロフィール作成とSNSリンク集を無料で作れる国内サービス。写真スライダー・イベント告知・仕事依頼ボタンなど“魅せる”機能を1ページに集約。',
+  metadataBase: new URL('https://procom.jp'),
+  alternates: {
+    canonical: 'https://procom.jp/',
+  },
   icons: { icon: '/favicon.ico' },
   openGraph: {
-    title: 'Procom（プロコム）｜SNSプロフィール＆リンク集を1ページに',
+    title: 'プロフィール作成 & SNSリンク集なら Procom（プロコム）',
     description:
-      'Procom（プロコム）はSNSリンクを一括表示し、プロフィールを魅力的に見せるプラットフォーム。誰でも簡単にSNSリンク集が作成できます。',
+      'プロフィール作成・リンクまとめ・リンクインバイオに最適。Procom（プロコム）は“魅せる”機能を備えた国内プラットフォームです。',
     url: 'https://procom.jp/',
     siteName: 'Procom（プロコム）',
-    images: [
-      {
-        url: 'https://procom.jp/og-image.jpg',
-        width: 1200,
-        height: 630,
-        alt: 'Procom（プロコム）OGP画像',
-      },
-    ],
+    images: [{ url: '/og-image.jpg', width: 1200, height: 630, alt: 'Procom（プロコム）OGP画像' }],
     type: 'website',
+    locale: 'ja_JP',
   },
   twitter: {
     card: 'summary_large_image',
-    title: 'Procom（プロコム）｜SNSプロフィール集約サービス',
+    title: 'プロフィール作成 & SNSリンク集なら Procom（プロコム）',
     description:
-      'Procom（プロコム）は、あなたのSNSリンクをまとめて1ページで表示できる無料プロフィール作成サービス。',
-    images: ['https://procom.jp/og-image.jpg'],
+      'Procom（プロコム）はプロフィール作成とSNSリンク集を無料で作れる国内サービス。リンクまとめ・リンクインバイオにも最適。',
+    images: ['/og-image.jpg'],
+    site: '@Procom_next',
+  },
+  robots: {
+    index: true, follow: true,
   },
 };
 
-export default function RootLayout({
-  children,
-}: {
-  children: React.ReactNode;
-}) {
+export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="ja">
-      <head>
-        <meta name="viewport" content="width=device-width, initial-scale=1" />
-        <meta name="twitter:card" content="summary_large_image" />
-        <meta name="twitter:site" content="@Procom_next" />
-        <meta name="twitter:title" content="Procom（プロコム）｜SNSプロフィール＆リンク集" />
-        <meta
-          name="twitter:description"
-          content="Procom（プロコム）はSNSプロフィールとリンク集をまとめて1ページに表示できる無料プラットフォーム。"
-        />
-        <meta name="twitter:image" content="https://procom.jp/og-image.jpg" />
-
-        <meta property="og:title" content="Procom（プロコム）｜SNSプロフィール集約" />
-        <meta
-          property="og:description"
-          content="Procom（プロコム）はSNSリンクを一括表示し、魅力的なプロフィールページを簡単に作れるプラットフォーム。"
-        />
-        <meta property="og:image" content="https://procom.jp/og-image.jpg" />
-        <meta property="og:url" content="https://procom.jp/" />
-        <meta property="og:type" content="website" />
-
-        <meta
-          name="description"
-          content="Procom（プロコム）は、あなたのSNSプロフィールとリンク集を1ページにまとめる無料サービス。フリーランス・クリエイター・インフルエンサーに最適。"
-        />
-        <meta name="google-site-verification" content="f6A-hc6jAwrweCHOaVCvsk0kyCukcP-BHebE9pCs2yo" />
-
-        <link
-          href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP&display=swap"
-          rel="stylesheet"
-        />
-        <link
-          rel="stylesheet"
-          href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"
-        />
-      </head>
       <body className="antialiased">
         <Suspense fallback={null}>
           <Analytics />
         </Suspense>
 
-        {/* 構造化データにカタカナを追加 */}
-        <Script
-          id="structured-data"
+        {/* JSON-LD（WebSite + SearchAction + Organization） */}
+        <script
           type="application/ld+json"
-          strategy="afterInteractive"
+          suppressHydrationWarning
           dangerouslySetInnerHTML={{
             __html: JSON.stringify({
               '@context': 'https://schema.org',
               '@type': 'WebSite',
               name: 'Procom（プロコム）',
               url: 'https://procom.jp/',
-              description:
-                'Procom（プロコム）は、SNSプロフィールやリンク集をまとめて表示できる無料のプロフィールページ作成サービス。',
+              potentialAction: {
+                '@type': 'SearchAction',
+                target: 'https://procom.jp/search?q={query}',
+                'query-input': 'required name=query',
+              },
               publisher: {
                 '@type': 'Organization',
                 name: 'Procom（プロコム）',
+                url: 'https://procom.jp/',
+                logo: {
+                  '@type': 'ImageObject',
+                  url: 'https://procom.jp/logo.png',
+                },
+                sameAs: [
+                  'https://x.com/Procom_next',
+                  // 他SNSがあれば追加
+                ],
               },
+              inLanguage: 'ja-JP',
             }),
           }}
         />

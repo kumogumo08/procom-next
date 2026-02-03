@@ -87,7 +87,7 @@ export default function BannerLinksBlock({ uid, isEditable }: Props) {
 
       if (!res.ok) throw new Error('保存失敗');
 
-      alert('✅ バナーリンクを保存しました！');
+      alert('✅ リンクを保存しました！');
     } catch (err) {
       console.error('❌ 保存エラー:', err);
       alert('保存に失敗しました');
@@ -233,7 +233,7 @@ export default function BannerLinksBlock({ uid, isEditable }: Props) {
 
   return (
     <div className="banner-section" style={{ maxWidth: '600px', margin: '0 auto', padding: '20px 0' }}>
-      <h3>バナーリンク</h3>
+      <h3>ブログやnoteなどの外部リンク</h3>
 
       {isEditable ? (
         <>

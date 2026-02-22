@@ -1,7 +1,6 @@
 import 'server-only';
 // ローカル開発だけ .env を読む（Render本番はEnvironment Variablesを使う）
 if (process.env.NODE_ENV !== 'production') {
-  // eslint-disable-next-line @typescript-eslint/no-var-requires
   require('dotenv').config();
 }
 

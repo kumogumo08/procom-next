@@ -6,9 +6,9 @@
   "scripts": {
     "dev": "next dev",
     "build": "next build",
-    "start": "next start",
-    "lint": "next lint",
-    "postbuild": "next-sitemap --config next-sitemap.config.cjs"
+    "postbuild": "cp -r .next/static .next/standalone/.next/static && next-sitemap --config next-sitemap.config.cjs",
+    "start": "node .next/standalone/server.js",
+    "lint": "next lint"
   },
   "dependencies": {
     "@dnd-kit/core": "^6.3.1",
@@ -42,6 +42,7 @@
     "eslint": "^9",
     "eslint-config-next": "15.3.3",
     "postcss": "^8.5.4",
+    "shx": "^0.4.0",
     "tailwindcss": "^3.4.17"
   }
 }

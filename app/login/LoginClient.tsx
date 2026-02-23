@@ -82,8 +82,13 @@ export default function LoginPage() {
         alert('ログイン成功！マイページに移動します');
         router.push(`/user/${result.uid}`);
       } else {
-        const msg = await res.text();
-        alert('ログイン失敗: ' + msg);
+        const data = await res.json().catch(async () => ({
+          msg: await res.text()
+        }));
+      
+        console.error('LOGIN FAILED DETAIL:', data);
+      
+        alert(`ログイン失敗: ${JSON.stringify(data)}`);
       }
     } catch {
       alert('通信エラーが発生しました');

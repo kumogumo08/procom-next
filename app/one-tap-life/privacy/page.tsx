@@ -3,7 +3,7 @@ export default function PrivacyPage() {
       <main style={{ padding: 24 }}>
         <h1>ワンタップライフ プライバシーポリシー</h1>
   
-        <p>最終更新日：2026年◯月◯日</p>
+        <p>最終更新日：2026年3月1日</p>
   
         <h2>1. 取得する情報について</h2>
         <p>

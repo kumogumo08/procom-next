@@ -40,7 +40,19 @@ export async function POST(req: NextRequest) {
     return res;
 
   } catch (error: any) {
-    console.error('ログインエラー:', error);
-    return NextResponse.json({ message: 'メールアドレスまたはパスワードが違います' }, { status: 401 });
+    console.error('ログインエラー:', {
+      code: error?.code,
+      message: error?.message,
+      stack: error?.stack,
+    });
+  
+    return NextResponse.json(
+      {
+        message: 'ログイン失敗',
+        code: error?.code ?? 'unknown',
+        detail: error?.message ?? '',
+      },
+      { status: 401 }
+    );
   }
 }

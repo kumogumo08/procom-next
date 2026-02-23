@@ -6,6 +6,8 @@ import Header from '@/components/Header';
 import Footer from 'app/components/Footer';
 import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link'
+import { getAuth, signInWithEmailAndPassword } from 'firebase/auth';
+import { firebaseApp } from '@/lib/firebaseClient';
 
 export default function LoginPage() {
   const [mode, setMode] = useState<'login' | 'register'>('login');
@@ -69,29 +71,37 @@ export default function LoginPage() {
     const form = e.currentTarget;
     const email = (form.email as HTMLInputElement).value.trim();
     const password = (form.password as HTMLInputElement).value;
-
+  
     try {
-      const res = await fetch('/api/login', {
+      // ① クライアントでログイン（Firebase Auth）
+      const auth = getAuth(firebaseApp);
+      const cred = await signInWithEmailAndPassword(auth, email, password);
+  
+      // ② IDトークン取得
+      const idToken = await cred.user.getIdToken();
+  
+      // ③ サーバでセッション発行（iron-session）
+      const res = await fetch('/api/session/login', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email, password }),
+        body: JSON.stringify({ idToken }),
+        credentials: 'include',
       });
-
-      if (res.ok) {
-        const result = await res.json();
-        alert('ログイン成功！マイページに移動します');
-        router.push(`/user/${result.uid}`);
-      } else {
-        const data = await res.json().catch(async () => ({
-          msg: await res.text()
-        }));
-      
-        console.error('LOGIN FAILED DETAIL:', data);
-      
+  
+      if (!res.ok) {
+        const data = await res.json().catch(async () => ({ msg: await res.text() }));
+        console.error('SESSION LOGIN FAILED:', data);
         alert(`ログイン失敗: ${JSON.stringify(data)}`);
+        return;
       }
-    } catch {
-      alert('通信エラーが発生しました');
+  
+      const data = await res.json();
+      alert('ログイン成功！マイページに移動します');
+      router.push(`/user/${data.uid}`);
+    } catch (e: any) {
+      // ここが「本当の」ログイン失敗（パスワード違い等）
+      console.error('FIREBASE LOGIN FAILED:', { code: e?.code, message: e?.message });
+      alert(`ログイン失敗: ${e?.code ?? 'unknown'} ${e?.message ?? ''}`);
     }
   };
 

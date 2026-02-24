@@ -6,7 +6,7 @@
   "scripts": {
     "dev": "next dev",
     "build": "next build",
-    "postbuild": "shx cp -r .next/static .next/standalone/.next/static",
+    "postbuild": "shx cp -r .next/static .next/standalone/.next/static && shx cp -r public .next/standalone/public",
     "start": "node .next/standalone/server.js",
     "lint": "next lint"
   },

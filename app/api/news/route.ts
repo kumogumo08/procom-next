@@ -6,22 +6,40 @@ import { isAdmin } from "@/lib/isAdmin";
 
 export const runtime = "nodejs";
 
+function toISO(v: any): string | null {
+  // Firestore Timestamp 対応
+  if (!v) return null;
+  if (typeof v === "string") return v;
+  if (v?.toDate) return v.toDate().toISOString();
+  return null;
+}
+
 export async function GET(req: NextRequest) {
   try {
     const { searchParams } = new URL(req.url);
     const limit = Number(searchParams.get("limit") || 10);
 
-    // 🔧 where を外す（まずは表示を優先）
     const snap = await db
       .collection("news")
       .orderBy("date", "desc")
       .limit(limit)
       .get();
 
-    // JS側で isPublished を判定（未設定は true 扱いでもOK）
     const items = snap.docs
-      .map(d => ({ id: d.id, ...d.data() }))
-      .filter((n: any) => n.isPublished !== false);
+      .map((d) => {
+        const data: any = d.data();
+        return {
+          id: d.id,
+          title: typeof data.title === "string" ? data.title : "",
+          body: typeof data.body === "string" ? data.body : "",
+          date: typeof data.date === "string" ? data.date : "",
+          isPublished: data.isPublished !== false,
+          isPinned: !!data.isPinned,
+          createdAt: toISO(data.createdAt),
+          updatedAt: toISO(data.updatedAt),
+        };
+      })
+      .filter((n) => n.isPublished);
 
     return NextResponse.json({ items }, { status: 200 });
   } catch (e) {

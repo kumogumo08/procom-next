@@ -12,7 +12,7 @@ export const metadata: Metadata = {
   alternates: {
     canonical: 'https://procom.jp/',
   },
-  icons: { icon: '/favicon.ico' },
+
   openGraph: {
     title: 'プロフィール作成 & SNSリンク集なら Procom（プロコム）',
     description:

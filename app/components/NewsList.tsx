@@ -4,7 +4,6 @@ import { useEffect, useState } from "react";
 type NewsItem = {
   id: string;
   date: string;
-  title?: string;
   body: string;
   isPinned?: boolean;
   createdAt?: string | null;
@@ -53,7 +52,7 @@ export default function NewsList({ limit = 5 }: { limit?: number }) {
     try {
       const res = await fetch(`/api/news/${id}`, { method: "DELETE" });
       if (!res.ok) throw new Error(await res.text());
-    } catch (e) {
+    } catch {
       alert("削除に失敗しました");
       setItems(prev);
     }
@@ -72,49 +71,39 @@ export default function NewsList({ limit = 5 }: { limit?: number }) {
 
       {!loading && items.length > 0 && (
         <ul className="mt-3 divide-y divide-neutral-200/70">
-          {items.map((n) => {
-            const displayTitle =
-              (n.title && n.title.trim())
-                ? n.title.trim()
-                : (n.body || "").trim().slice(0, 28) + (((n.body || "").trim().length > 28) ? "…" : "");
-
-            return (
-              <li key={n.id} className="flex flex-col gap-2 py-3 sm:flex-row sm:items-start sm:gap-4">
-                <div className="flex min-w-[7.2rem] items-center gap-2">
-                  {n.isPinned && (
-                    <span className="rounded border border-neutral-400 px-2 py-[2px] text-[10px] font-semibold text-neutral-600">
-                      PIN
-                    </span>
-                  )}
-                  {isNew(n) && (
-                    <span className="rounded bg-pink-500 px-[6px] py-[2px] text-[10px] font-semibold text-white">
-                      NEW
-                    </span>
-                  )}
-                  <time className="text-[0.85rem] font-semibold text-pink-600">{n.date}</time>
-                </div>
-
-                <div className="flex-1">
-                  <div className="text-[0.95rem] font-bold text-neutral-800">
-                    {displayTitle}
-                  </div>
-                  <div className="mt-1 text-[0.92rem] leading-relaxed text-neutral-700 whitespace-pre-wrap">
-                    {n.body}
-                  </div>
-                </div>
-
-                {isAdmin && (
-                  <button
-                    onClick={() => handleDelete(n.id)}
-                    className="self-start rounded border border-red-300 px-2 py-1 text-[12px] font-semibold text-red-600 hover:bg-red-50"
-                    title="このNEWSを削除"
-                  >
-                    削除
-                  </button>
+          {items.map((n) => (
+            <li key={n.id} className="flex flex-col gap-2 py-3 sm:flex-row sm:items-start sm:gap-4">
+              <div className="flex min-w-[7.2rem] items-center gap-2">
+                {n.isPinned && (
+                  <span className="rounded border border-neutral-400 px-2 py-[2px] text-[10px] font-semibold text-neutral-600">
+                    PIN
+                  </span>
                 )}
-              </li>
-            );
-          })}
+                {isNew(n) && (
+                  <span className="rounded bg-pink-500 px-[6px] py-[2px] text-[10px] font-semibold text-white">
+                    NEW
+                  </span>
+                )}
+                <time className="text-[0.85rem] font-semibold text-pink-600">{n.date}</time>
+              </div>
+
+              <div className="flex-1">
+                <div className="text-[0.92rem] leading-relaxed text-neutral-700 whitespace-pre-wrap">
+                  {n.body}
+                </div>
+              </div>
+
+              {isAdmin && (
+                <button
+                  onClick={() => handleDelete(n.id)}
+                  className="self-start rounded border border-red-300 px-2 py-1 text-[12px] font-semibold text-red-600 hover:bg-red-50"
+                  title="このNEWSを削除"
+                >
+                  削除
+                </button>
+              )}
+            </li>
+          ))}
         </ul>
       )}
     </section>

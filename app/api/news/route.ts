@@ -7,7 +7,6 @@ import { isAdmin } from "@/lib/isAdmin";
 export const runtime = "nodejs";
 
 function toISO(v: any): string | null {
-  // Firestore Timestamp 対応
   if (!v) return null;
   if (typeof v === "string") return v;
   if (v?.toDate) return v.toDate().toISOString();
@@ -30,7 +29,6 @@ export async function GET(req: NextRequest) {
         const data: any = d.data();
         return {
           id: d.id,
-          title: typeof data.title === "string" ? data.title : "",
           body: typeof data.body === "string" ? data.body : "",
           date: typeof data.date === "string" ? data.date : "",
           isPublished: data.isPublished !== false,
@@ -54,13 +52,13 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "unauthorized" }, { status: 403 });
   }
 
-  const { title, body, date, isPublished = true, isPinned = false } = await req.json();
+  const { body, date, isPublished = true, isPinned = false } = await req.json();
+
   if (!body || !date) {
     return NextResponse.json({ error: "date and body are required" }, { status: 400 });
   }
 
   const payload = {
-    title: title || "",
     body,
     date,
     isPublished,

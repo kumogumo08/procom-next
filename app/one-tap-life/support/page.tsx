@@ -2,14 +2,18 @@ export default function SupportPage() {
     return (
       <main style={{ padding: 24, maxWidth: 860, margin: '0 auto', lineHeight: 1.7 }}>
         <h1>ワンタップライフ サポート</h1>
+        <p>
+        本サポートページは「ワンタップライフ」アプリに関するお問い合わせ窓口です。
+        </p>
   
         <p>
           ワンタップライフに関するご質問・不具合報告は、以下のメールアドレスまでご連絡ください。
         </p>
   
         <p>
-          <strong>お問い合わせ先：</strong>
-          <a href="mailto:ebidevlab.app@gmail.com">ebidevlab.app@gmail.com</a>
+        <strong>運営：</strong> EBI Dev Lab<br />
+        <strong>お問い合わせ先：</strong>
+        <a href="mailto:ebidevlab.app@gmail.com">ebidevlab.app@gmail.com</a>
         </p>
   
         <h2>不具合報告の際に教えてほしい情報</h2>
@@ -29,6 +33,9 @@ export default function SupportPage() {
   
         <p style={{ marginTop: 24, opacity: 0.7, fontSize: 12 }}>
           ※ 本ページの内容は必要に応じて更新される場合があります。
+        </p>
+        <p style={{ marginTop: 24, opacity: 0.7, fontSize: 12 }}>
+        © 2026 EBI Dev Lab
         </p>
       </main>
     );

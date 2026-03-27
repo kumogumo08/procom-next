@@ -9,7 +9,7 @@ export default function TermsPage() {
           ユーザーは、本規約に同意のうえ、本アプリを利用するものとします。
         </p>
         <p>
-          These Terms of Service (the "Terms") define the conditions for using the application "Child Emotion Tracker" (the "App").
+          {"These Terms of Service (the \"Terms\") define the conditions for using the application \"Child Emotion Tracker\" (the \"App\")."}
           By using the App, you agree to these Terms.
         </p>
   
@@ -27,7 +27,7 @@ export default function TermsPage() {
           医療行為、診断、治療を目的としたものではありません。
         </p>
         <p>
-          The App records and visualizes children's emotions and provides guidance for parents.
+          The App records and visualizes children&apos;s emotions and provides guidance for parents.
           It is not intended for medical purposes, diagnosis, or treatment.
         </p>
   

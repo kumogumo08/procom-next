@@ -20,15 +20,18 @@ import Script from 'next/script';
 import XShareButton from '@/components/XShareButton';
 import BannerLinksBlock from '@/components/BannerLinksBlock';
 import UserPageClientWrapper from '@/components/UserPageClientWrapper';
+import AppProjectBlock from '@/components/AppProjectBlock';
+import { coerceAppsFromFirestore } from '@/lib/appProjects';
 import type { JSX } from 'react';
 import type { Metadata } from 'next';
+import UserPageSectionsClient from '@/components/UserPageSectionsClient';
 
 export async function generateMetadata({
   params,
 }: {
-  params: { uid: string };
+  params: Promise<{ uid: string }>;
 }): Promise<Metadata> {
-  const { uid } = params;
+  const { uid } = await params;
   const profile = await getProfileFromFirestore(uid);
   const name = profile?.name || 'Procomユーザー';
   const bio = profile?.bio || 'SNSプロフィールとリンク集をまとめたページ';
@@ -65,9 +68,9 @@ export async function generateMetadata({
 export default async function UserPage({
   params,
 }: {
-  params: { uid: string };
+  params: Promise<{ uid: string }>;
 }) {
-  const { uid } = params;
+  const { uid } = await params;
   const session = await getSessionServer();
   const isEditable = session?.uid === uid;
   const profile = await getProfileFromFirestore(uid);
@@ -78,106 +81,45 @@ export default async function UserPage({
       : { url: p.url, position: p.position ?? '50' }
   );
 
-  const sectionOrder: string[] =
-    profile?.settings?.sectionOrder ?? [
-      'YouTube',
-      'X',
-      'Instagram',
-      'TikTok',
-      'Facebook',
-      'BannerLinks',
-      'SNSButtons',
-    ];
+  const DEFAULT_SECTION_ORDER = [
+    'YouTube',
+    'X',
+    'Instagram',
+    'TikTok',
+    'Facebook',
+    'BannerLinks',
+    'AppProjects',
+    'SNSButtons',
+  ] as const;
 
-  const sectionMap: Record<string, JSX.Element> = {
-    YouTube: <YouTubeEmbedBlock uid={uid} isEditable={isEditable} />,
-    X: <XEmbed uid={uid} isEditable={isEditable} />,
-    Instagram: <InstagramEmbed uid={uid} isEditable={isEditable} />,
-    TikTok: <TikTokEmbed uid={uid} isEditable={isEditable} />,
-    Facebook: <FacebookEmbedBlock uid={uid} isEditable={isEditable} />,
-    BannerLinks: <BannerLinksBlock uid={uid} isEditable={isEditable} />,
-    SNSButtons: (
-      <UserPageClientWrapper
-        uid={uid}
-        profile={profile}
-        isEditable={isEditable}
-      />
-    ),
-  };
+  const rawOrder: string[] = profile?.settings?.sectionOrder?.length
+    ? [...profile.settings.sectionOrder]
+    : [...DEFAULT_SECTION_ORDER];
 
-  function renderSections(order: string[]) {
-    const result: JSX.Element[] = [];
-
-    const is1Col = (key: string) =>
-      key === 'X' || key === 'Instagram' || key === 'Facebook' || key === 'BannerLinks';
-
-    const is2Col = (key: string) =>
-      key === 'YouTube' || key === 'TikTok' || key === 'SNSButtons';
-
-    for (let i = 0; i < order.length; i++) {
-      const curr = order[i];
-      const next = order[i + 1];
-
-      // 1カラム要素が連続している場合（横並びにする）
-      if (is1Col(curr) && is1Col(next)) {
-        result.push(
-          <div className="sns-container" key={`group-${i}`}>
-            <div className="sns-box">{sectionMap[curr]}</div>
-            <div className="sns-box">{sectionMap[next]}</div>
-          </div>
-        );
-        i++; // skip next
-      }
-
-      // 単独の1カラム要素（中央に表示）
-      else if (is1Col(curr)) {
-        result.push(
-          <div className="sns-container" key={curr}>
-            <div className="sns-box">{sectionMap[curr]}</div>
-          </div>
-        );
-      }
-
-      // 2カラム要素（単体で中央表示）
-      else if (is2Col(curr)) {
-        result.push(
-          <div className="single-column-wrapper" key={curr}>
-            {sectionMap[curr]}
-          </div>
-        );
-      }
+  /** 既存ユーザーに AppProjects が無い場合は SNSButtons の直前に挿入 */
+  const sectionOrder: string[] = (() => {
+    if (rawOrder.includes('AppProjects')) return rawOrder;
+    const snsIdx = rawOrder.indexOf('SNSButtons');
+    if (snsIdx >= 0) {
+      return [...rawOrder.slice(0, snsIdx), 'AppProjects', ...rawOrder.slice(snsIdx)];
     }
+    return [...rawOrder, 'AppProjects'];
+  })();
 
-    return result;
-  }
+  const appProjectsInitial = coerceAppsFromFirestore(profile?.apps);
 
   return (
     <>
       <Header />
-      {profile?.name && (
-        <h1
-          style={{
-            textAlign: 'center',
-            fontWeight: 'bold',
-            fontSize: '1.8rem',
-            margin: '1em 0',
-          }}
-        >
-          {profile.name}さんのプロフィールページ
-        </h1>
-      )}
 
-      <main>
-        <UserPhotoSliderClient uid={uid} initialPhotos={photos} />
-        <OshiButton uid={uid} />
-        <XShareButton uid={uid} name={profile?.name} />
-        <UserProfileSection uid={uid} isEditable={isEditable} />
-        <UserPageClient uid={uid} profile={profile} isEditable={isEditable} />
-
-        {renderSections(sectionOrder)}
-
-        <QRCodeBlock />
-      </main>
+      <UserPageSectionsClient
+        uid={uid}
+        isEditable={isEditable}
+        initialProfile={profile}
+        initialPhotos={photos}
+        initialSectionOrder={sectionOrder}
+        initialApps={appProjectsInitial}
+      />
 
       <Footer />
 

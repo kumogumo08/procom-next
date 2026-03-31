@@ -3,6 +3,8 @@
 import { useEffect, useState, useRef } from 'react';
 import SnsVisibilityToggle from './SnsVisibilityToggle';
 import SnsHelpTooltip from './SnsHelpTooltip';
+import { fetchUserApi } from '@/lib/userProfileClient';
+import { buttonPrimary, buttonRowRight, cardBase, cardBody, cardTitle, inputBase } from '@/components/ui/cardStyles';
 
 type Props = { uid: string; isEditable: boolean };
 
@@ -26,10 +28,20 @@ const normalizeInstagramUrl = (raw: string): string | null => {
   }
 };
 
-export default function InstagramEmbed({ uid, isEditable }: Props) {
-  const [url, setUrl] = useState('');
-  const [loadedUrl, setLoadedUrl] = useState('');
-  const [showInstagram, setShowInstagram] = useState<boolean | undefined>(undefined);
+export default function InstagramEmbed({
+  uid,
+  isEditable,
+  hasInitialProfile,
+  initialInstagramUrl,
+  initialShowInstagram,
+}: Props & {
+  hasInitialProfile?: boolean;
+  initialInstagramUrl?: string;
+  initialShowInstagram?: boolean | undefined;
+}) {
+  const [url, setUrl] = useState(initialInstagramUrl ?? '');
+  const [loadedUrl, setLoadedUrl] = useState(initialInstagramUrl ?? '');
+  const [showInstagram, setShowInstagram] = useState<boolean | undefined>(initialShowInstagram);
   const [isLoaded, setIsLoaded] = useState(false);
 
   const embedRef = useRef<HTMLDivElement>(null);
@@ -39,10 +51,13 @@ export default function InstagramEmbed({ uid, isEditable }: Props) {
 
   // 初期データ取得
   useEffect(() => {
+    if (hasInitialProfile) {
+      setIsLoaded(true);
+      return;
+    }
     (async () => {
       try {
-        const res = await fetch(`/api/user/${uid}`);
-        const data = await res.json();
+        const data = await fetchUserApi(uid, { caller: 'InstagramEmbed', reason: 'initial load (instagram settings)' });
         const profile = data.profile || {};
 
         if (profile.instagramPostUrl) {
@@ -59,7 +74,7 @@ export default function InstagramEmbed({ uid, isEditable }: Props) {
         setIsLoaded(true);
       }
     })();
-  }, [uid]);
+  }, [uid, hasInitialProfile]);
 
   // 埋め込み処理（保存済みの loadedUrl を使用）
   useEffect(() => {
@@ -150,24 +165,26 @@ export default function InstagramEmbed({ uid, isEditable }: Props) {
   if (!isEditable && showInstagram === false) return null;
 
   return (
-    <div className="sns-item">
-      <h2>Instagram</h2>
+    <div className="sns-item" style={cardBase}>
+      <h2 style={cardTitle}>Instagram</h2>
 
       {isEditable && (
-        <>
+        <div style={cardBody}>
           <input
             type="text"
             placeholder="Instagram投稿のURL（/p/xxxx/ /reel/xxxx/ /tv/xxxx/ のいずれか）"
             value={url}
             onChange={(e) => setUrl(e.target.value)}
-            style={{ width: '100%', marginBottom: 6 }}
+            style={inputBase}
           />
           <p style={{ fontSize: 12, color: '#555' }}>
             お気に入りのinstagramのURLを入力してください。
           </p>
-          <button onClick={handleSave} style={{ marginTop: 10 }}>
-            保存
-          </button>
+          <div style={buttonRowRight}>
+            <button onClick={handleSave} style={buttonPrimary}>
+              保存
+            </button>
+          </div>
 
           <SnsVisibilityToggle
             label="Instagramを表示する"
@@ -175,7 +192,7 @@ export default function InstagramEmbed({ uid, isEditable }: Props) {
             onChange={setShowInstagram}
           />
           <SnsHelpTooltip />
-        </>
+        </div>
       )}
 
       {isLoaded && loadedUrl && showInstagram && <div ref={embedRef} />}

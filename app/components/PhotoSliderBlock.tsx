@@ -12,6 +12,7 @@ type Props = {
   uid: string;
   photos: Photo[];
   setPhotos?: React.Dispatch<React.SetStateAction<Photo[]>>; // optional に変更
+  onSavedPhotos?: (photos: Photo[]) => void;
 };
 
 function resizeImage(file: File, maxWidth = 800): Promise<Blob> {
@@ -40,7 +41,7 @@ function resizeImage(file: File, maxWidth = 800): Promise<Blob> {
   });
 }
 
-export default function PhotoSliderBlock({ uid, photos, setPhotos }: Props) {
+export default function PhotoSliderBlock({ uid, photos, setPhotos, onSavedPhotos }: Props) {
   const [current, setCurrent] = useState(0);
 
   const handlePhotoInput = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -133,6 +134,7 @@ const savePhotos = async () => {
     }
 
     alert('✅ 写真が保存されました');
+    onSavedPhotos?.(uploaded);
   } catch (e) {
     console.error('❌ 保存エラー:', e);
     alert('❌ 写真の保存に失敗しました\n' + (e as Error).message);

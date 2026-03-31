@@ -8,9 +8,13 @@ export const runtime = "nodejs";
 // 更新で許可するフィールドだけ
 const ALLOWED_FIELDS = new Set(["title", "body", "date", "isPublished", "isPinned"]);
 
-export async function PATCH(req: NextRequest, { params }: { params: { id: string } }) {
+export async function PATCH(
+  req: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
+) {
   try {
-    if (!params?.id) return NextResponse.json({ error: "missing id" }, { status: 400 });
+    const { id } = await params;
+    if (!id) return NextResponse.json({ error: "missing id" }, { status: 400 });
 
     const session = await verifySessionFromRequest(req);
     if (!isAdmin(session?.uid)) return NextResponse.json({ error: "unauthorized" }, { status: 403 });
@@ -29,7 +33,7 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
 
     update.updatedAt = FieldValue.serverTimestamp();
 
-    const ref = db.collection("news").doc(params.id);
+    const ref = db.collection("news").doc(id);
     const snap = await ref.get();
     if (!snap.exists) return NextResponse.json({ error: "not_found" }, { status: 404 });
 
@@ -41,14 +45,18 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
   }
 }
 
-export async function DELETE(req: NextRequest, { params }: { params: { id: string } }) {
+export async function DELETE(
+  req: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
+) {
   try {
-    if (!params?.id) return NextResponse.json({ error: "missing id" }, { status: 400 });
+    const { id } = await params;
+    if (!id) return NextResponse.json({ error: "missing id" }, { status: 400 });
 
     const session = await verifySessionFromRequest(req);
     if (!isAdmin(session?.uid)) return NextResponse.json({ error: "unauthorized" }, { status: 403 });
 
-    const ref = db.collection("news").doc(params.id);
+    const ref = db.collection("news").doc(id);
     const snap = await ref.get();
     if (!snap.exists) return NextResponse.json({ error: "not_found" }, { status: 404 });
 

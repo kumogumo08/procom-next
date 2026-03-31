@@ -3,23 +3,32 @@
 import { useEffect, useState } from 'react';
 import SnsVisibilityToggle from './SnsVisibilityToggle';
 import SnsHelpTooltip from './SnsHelpTooltip';
+import { fetchUserApi } from '@/lib/userProfileClient';
+import { buttonPrimary, buttonRowRight, cardBase, cardBody, cardTitle, inputBase } from '@/components/ui/cardStyles';
 
 type Props = {
   uid: string;
   isEditable: boolean;
+  hasInitialProfile?: boolean;
+  initialUrl?: string;
+  initialShowFacebook?: boolean | undefined;
 };
 
-export default function FacebookEmbedBlock({ uid, isEditable }: Props) {
-  const [fbUrl, setFbUrl] = useState('');
-  const [inputValue, setInputValue] = useState('');
-  const [showFacebook, setShowFacebook] = useState<boolean | undefined>(undefined);
+export default function FacebookEmbedBlock({
+  uid,
+  isEditable,
+  hasInitialProfile,
+  initialUrl,
+  initialShowFacebook,
+}: Props) {
+  const [fbUrl, setFbUrl] = useState(initialUrl ?? '');
+  const [inputValue, setInputValue] = useState(initialUrl ?? '');
+  const [showFacebook, setShowFacebook] = useState<boolean | undefined>(initialShowFacebook);
 
   useEffect(() => {
     const fetchFacebookUrl = async () => {
       try {
-        const res = await fetch(`/api/user/${uid}`);
-        if (!res.ok) throw new Error('取得失敗');
-        const data = await res.json();
+        const data = await fetchUserApi(uid, { caller: 'FacebookEmbedBlock', reason: 'initial load (facebook settings)' });
         const url = data.profile?.facebookUrl || '';
         setFbUrl(url);
         setInputValue(url);
@@ -28,8 +37,9 @@ export default function FacebookEmbedBlock({ uid, isEditable }: Props) {
         console.error('❌ Facebook URL取得エラー:', err);
       }
     };
+    if (hasInitialProfile) return;
     fetchFacebookUrl();
-  }, [uid]);
+  }, [uid, hasInitialProfile]);
 
   useEffect(() => {
     if (!document.getElementById('fb-root')) {
@@ -92,50 +102,32 @@ export default function FacebookEmbedBlock({ uid, isEditable }: Props) {
   };
 
  return (
-  <div className="facebook-section">
-    <h3>📘 Facebookページ</h3>
+  <div className="facebook-section" style={cardBase}>
+    <h3 style={cardTitle}>Facebook</h3>
 
     {isEditable && (
-      <>
+      <div style={cardBody}>
         <input
           type="text"
           value={inputValue}
           onChange={(e) => setInputValue(e.target.value)}
           placeholder="https://www.facebook.com/xxxxxx"
-          style={{ width: '100%', padding: '8px' }}
+          style={inputBase}
         />
-        <div
-          style={{
-            display: 'flex',
-            alignItems: 'center',
-            gap: '1rem',
-            marginTop: '10px',
-          }}
-        >
-          <button
-            type="button"
-            onClick={handleSave}
-            style={{
-              background: '#4e73df',
-              color: 'white',
-              border: 'none',
-              borderRadius: '4px',
-              padding: '4px 8px',
-              cursor: 'pointer',
-            }}
-          >
+        <div style={buttonRowRight}>
+          <button type="button" onClick={handleSave} style={buttonPrimary}>
             保存
           </button>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
-            <SnsVisibilityToggle
-              label="Facebookを表示する"
-              checked={showFacebook ?? true}
-              onChange={setShowFacebook}
-            />
-            <SnsHelpTooltip />
-          </div>
         </div>
-      </>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
+          <SnsVisibilityToggle
+            label="Facebookを表示する"
+            checked={showFacebook ?? true}
+            onChange={setShowFacebook}
+          />
+          <SnsHelpTooltip />
+        </div>
+      </div>
     )}
 
       {fbUrl && showFacebook && (

@@ -136,6 +136,7 @@ function getSectionLabel(key: string) {
     TikTok: 'TikTok動画',
     Facebook: 'Facebookページ',
     BannerLinks: 'バナーリンク',
+    AppProjects: 'アプリ紹介',
     SNSButtons: 'SNSボタン',
   };
   return labels[key] || key;

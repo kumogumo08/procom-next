@@ -12,6 +12,11 @@ export default function UserPhotoSliderClient({ uid, initialPhotos }: Props) {
   const [photos, setPhotos] = useState<Photo[]>(initialPhotos);
 
   return (
-    <PhotoSliderBlock uid={uid} photos={photos} setPhotos={setPhotos} />
+    <PhotoSliderBlock
+      uid={uid}
+      photos={photos}
+      setPhotos={setPhotos}
+      onSavedPhotos={(next) => setPhotos(next)}
+    />
   );
 }

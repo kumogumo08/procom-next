@@ -2,8 +2,9 @@
 
 import { useRef } from 'react';
 import QRCodeLib from 'qrcode';
+import { fetchUserApi } from '@/lib/userProfileClient';
 
-export default function QRCodeBlock() {
+export default function QRCodeBlock({ initialName }: { initialName?: string }) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
 
   // ⬇️ QRコード生成（ロゴ付き）
@@ -70,15 +71,20 @@ const handleDownload = async () => {
   const dataUrl = canvas.toDataURL('image/png');
 
   const uid = location.pathname.split('/').pop();
-  let displayName = 'procom-user';
-
-  try {
-    const res = await fetch(`/api/user/${uid}`);
-    const data = await res.json();
-    displayName = data.profile?.name || 'procom-user';
-  } catch (err) {
-    console.warn('⚠ ユーザーデータ取得に失敗:', err);
-  }
+  const displayName =
+    initialName ||
+    (await (async () => {
+      try {
+        const data = await fetchUserApi(uid ?? '', {
+          caller: 'QRCodeBlock',
+          reason: 'download (get displayName)',
+        });
+        return data.profile?.name || 'procom-user';
+      } catch (err) {
+        console.warn('⚠ ユーザーデータ取得に失敗:', err);
+        return 'procom-user';
+      }
+    })());
 
   const sanitizedName = displayName
     .normalize('NFKD')

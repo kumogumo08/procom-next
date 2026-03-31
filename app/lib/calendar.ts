@@ -1,3 +1,5 @@
+import { fetchUserApi } from '@/lib/userProfileClient';
+
 let currentDate: Date = new Date();
 
 export let events: Record<string, string[]> = {};
@@ -10,8 +12,7 @@ function getEventsFor(dateStr: string): string[] {
 // ✅ Firestore から予定を取得
 async function fetchCalendarEventsFromServer(uid: string) {
   try {
-    const res = await fetch(`/api/user/${uid}`);
-    const data = await res.json();
+    const data = await fetchUserApi(uid, { caller: 'calendar', reason: 'reloadEvents' });
     const eventsArray = data.profile?.calendarEvents || [];
     events = {};
     eventsArray.forEach((entry: { date: string; events: string[] }) => {

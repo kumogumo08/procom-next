@@ -3,23 +3,33 @@
 import { useEffect, useState } from 'react';
 import SnsVisibilityToggle from './SnsVisibilityToggle';
 import SnsHelpTooltip from './SnsHelpTooltip';
+import { fetchUserApi } from '@/lib/userProfileClient';
+import { buttonPrimary, buttonRowRight, cardBase, cardBody, cardTitle, inputBase } from '@/components/ui/cardStyles';
 
 type Props = {
   uid: string;
   isEditable: boolean;
+  hasInitialProfile?: boolean;
+  initialUsername?: string;
+  initialShowX?: boolean;
 };
 
-export default function XEmbed({ uid, isEditable }: Props) {
-  const [username, setUsername] = useState('');
-  const [inputValue, setInputValue] = useState('');
-  const [showX, setShowX] = useState<boolean>(true); // 初期値 true に修正
-  const [loading, setLoading] = useState(true);
+export default function XEmbed({
+  uid,
+  isEditable,
+  hasInitialProfile,
+  initialUsername,
+  initialShowX,
+}: Props) {
+  const [username, setUsername] = useState(initialUsername ?? '');
+  const [inputValue, setInputValue] = useState(initialUsername ?? '');
+  const [showX, setShowX] = useState<boolean>(initialShowX ?? true); // 初期値 true
+  const [loading, setLoading] = useState(!hasInitialProfile);
 
   useEffect(() => {
     async function fetchXUsername() {
       try {
-        const res = await fetch(`/api/user/${uid}`);
-        const data = await res.json();
+        const data = await fetchUserApi(uid, { caller: 'XEmbed', reason: 'initial load (x settings)' });
         const profile = data?.profile || {};
         const name = profile.xUsername || '';
         const flag = profile.settings?.showX;
@@ -34,8 +44,9 @@ export default function XEmbed({ uid, isEditable }: Props) {
       }
     }
 
+    if (hasInitialProfile) return;
     fetchXUsername();
-  }, [uid]);
+  }, [uid, hasInitialProfile]);
 
 const handleSave = async () => {
   if (showX && !inputValue.trim()) {
@@ -73,19 +84,21 @@ const handleSave = async () => {
   if (!isEditable && (!username || showX === false)) return null;
 
   return (
-    <div className="sns-item">
-      <h2>X（旧Twitter）</h2>
+    <div className="sns-item" style={cardBase}>
+      <h2 style={cardTitle}>X（旧Twitter）</h2>
 
       {isEditable && (
-        <div style={{ marginBottom: 10 }}>
+        <div style={cardBody}>
           <input
             type="text"
             placeholder="ユーザー名（@なし）"
             value={inputValue}
             onChange={(e) => setInputValue(e.target.value)}
-            style={{ padding: '6px', width: '100%', maxWidth: 400 }}
+            style={{ ...inputBase, maxWidth: 520 }}
           />
-          <button onClick={handleSave} style={{ marginTop: 8 }}>保存</button>
+          <div style={buttonRowRight}>
+            <button onClick={handleSave} style={buttonPrimary}>保存</button>
+          </div>
           <SnsVisibilityToggle
             label="Xを表示する"
             checked={showX}

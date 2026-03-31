@@ -3,23 +3,33 @@
 import { useEffect, useState } from 'react';
 import SnsVisibilityToggle from './SnsVisibilityToggle';
 import SnsHelpTooltip from './SnsHelpTooltip';
+import { fetchUserApi } from '@/lib/userProfileClient';
+import { buttonPrimary, buttonRowRight, cardBase, cardBody, cardTitle, inputBase } from '@/components/ui/cardStyles';
 
 interface Props {
   uid: string;
   isEditable: boolean;
+  hasInitialProfile?: boolean;
+  initialUrls?: string[];
+  initialShowTikTok?: boolean;
 }
 
-export default function TikTokEmbed({ uid, isEditable }: Props) {
-  const [urls, setUrls] = useState<string[]>([]);
-  const [loadedUrls, setLoadedUrls] = useState<string[]>([]);
-  const [showTikTok, setShowTikTok] = useState(true);
+export default function TikTokEmbed({
+  uid,
+  isEditable,
+  hasInitialProfile,
+  initialUrls,
+  initialShowTikTok,
+}: Props) {
+  const [urls, setUrls] = useState<string[]>(initialUrls ?? []);
+  const [loadedUrls, setLoadedUrls] = useState<string[]>(initialUrls ?? []);
+  const [showTikTok, setShowTikTok] = useState(initialShowTikTok ?? true);
 
   // 🔽 データ取得 & 短縮URLの展開処理
   useEffect(() => {
     async function fetchData() {
       try {
-        const res = await fetch(`/api/user/${uid}`);
-        const data = await res.json();
+        const data = await fetchUserApi(uid, { caller: 'TikTokEmbed', reason: 'initial load (tiktok settings)' });
         const profile = data.profile || {};
         const rawUrls = (profile.tiktokUrls || [])
           .map((url: string) => url.trim())
@@ -55,8 +65,9 @@ export default function TikTokEmbed({ uid, isEditable }: Props) {
         console.warn('TikTok情報の取得に失敗しました');
       }
     }
+    if (hasInitialProfile) return;
     fetchData();
-  }, [uid]);
+  }, [uid, hasInitialProfile]);
 
   // 🔽 スクリプト読み込み
   useEffect(() => {
@@ -114,11 +125,11 @@ export default function TikTokEmbed({ uid, isEditable }: Props) {
 
   return (
     <div className="sns-bottom-row">
-      <div className="sns-item" id="tiktok-section">
-        <h2>TikTok動画を登録（最大3つ）</h2>
+      <div className="sns-item" id="tiktok-section" style={cardBase}>
+        <h2 style={cardTitle}>TikTok</h2>
 
         {isEditable && (
-          <div className="sns-section">
+          <div className="sns-section" style={cardBody}>
             {urls.map((url, i) => (
               <div key={i} style={{ display: 'flex', alignItems: 'center', marginBottom: '10px' }}>
                 <input
@@ -154,7 +165,7 @@ export default function TikTokEmbed({ uid, isEditable }: Props) {
                     }
                   }}
                   className="tiktok-input"
-                  style={{ flex: 1 }}
+                  style={{ ...inputBase, flex: 1 }}
                 />
                 <button
                   type="button"
@@ -164,12 +175,15 @@ export default function TikTokEmbed({ uid, isEditable }: Props) {
                     setUrls(updated);
                   }}
                   style={{
-                    marginLeft: '8px',
-                    background: 'red',
-                    color: 'white',
+                    marginLeft: 8,
+                    height: 40,
+                    minWidth: 40,
+                    padding: '0 12px',
+                    borderRadius: 10,
                     border: 'none',
-                    borderRadius: '4px',
-                    padding: '4px 8px',
+                    background: '#ef4444',
+                    color: '#fff',
+                    fontWeight: 800,
                     cursor: 'pointer',
                   }}
                 >
@@ -178,11 +192,15 @@ export default function TikTokEmbed({ uid, isEditable }: Props) {
               </div>
             ))}
             {urls.filter(url => url.trim() !== '').length < 3 && (
-              <button onClick={() => setUrls([...urls, ''])}>＋ 入力欄を追加</button>
+              <button onClick={() => setUrls([...urls, ''])} style={{ ...buttonPrimary, justifySelf: 'start' }}>
+                ＋ 入力欄を追加
+              </button>
             )}
-            <button onClick={handleSave} className="auth-only" style={{ marginTop: '10px' }}>
-              保存
-            </button>
+            <div style={buttonRowRight}>
+              <button onClick={handleSave} className="auth-only" style={buttonPrimary}>
+                保存
+              </button>
+            </div>
             <SnsVisibilityToggle
               label="TikTokを表示する"
               checked={showTikTok}

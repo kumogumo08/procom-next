@@ -3,37 +3,38 @@
 import ProfileEditor from './ProfileEditor';
 import CalendarBlock from './CalendarBlock';
 import ContactButtonBlock from './ContactButtonBlock';
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
+import { cardBase } from '@/components/ui/cardStyles';
 
 export default function UserProfileSection({
   uid,
   isEditable,
+  initialProfile,
 }: {
   uid: string;
   isEditable: boolean;
+  initialProfile?: {
+    name?: string;
+    title?: string;
+    bio?: string;
+    emailForContact?: string | null;
+  };
 }) {
-  const [emailForContact, setEmailForContact] = useState<string | null>(null);
-
-  useEffect(() => {
-    async function fetchEmail() {
-      try {
-        const res = await fetch(`/api/user/${uid}`);
-        const data = await res.json();
-        const email = data?.profile?.emailForContact ?? null;
-        setEmailForContact(email);
-      } catch (err) {
-        console.error('連絡先メールの取得に失敗:', err);
-      }
-    }
-
-    fetchEmail();
-  }, [uid]);
+  const [emailForContact] = useState<string | null>(
+    initialProfile?.emailForContact ?? null
+  );
 
   return (
-    <section className="profile">
+    <section className="profile" style={{ ...cardBase, marginBottom: 24 }}>
       <div className="profile-wrapper" style={{ display: 'flex', gap: '2rem' }}>
         <div className="profile-info">
-          <ProfileEditor uid={uid} isEditable={isEditable} />
+          <ProfileEditor
+            uid={uid}
+            isEditable={isEditable}
+            initialName={initialProfile?.name}
+            initialTitle={initialProfile?.title}
+            initialBio={initialProfile?.bio}
+          />
         </div>
         <div id="calendar-container">
           {/* ✅ カレンダーの上に移動！ */}

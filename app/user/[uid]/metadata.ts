@@ -4,9 +4,9 @@ import type { Metadata } from 'next';
 type Params = { uid: string };
 
 export async function generateMetadata(
-  { params }: { params: Params }
+  { params }: { params: Promise<Params> }
 ): Promise<Metadata> {
-  const { uid } = params;                       // ← Promise は不要
+  const { uid } = await params;
   const profile = await getProfileFromFirestore(uid);
 
   const name = (profile?.name || 'ユーザー').toString();

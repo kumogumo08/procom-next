@@ -4,9 +4,12 @@ export const runtime = 'nodejs';
 
 import { NextRequest, NextResponse } from 'next/server';
 
-export async function GET(req: NextRequest, context: any): Promise<NextResponse> {
+export async function GET(
+  req: NextRequest,
+  context: { params: Promise<{ channelId: string }> }
+): Promise<NextResponse> {
   try {
-    const { channelId } = context.params;
+    const { channelId } = await context.params;
 
     if (!channelId) {
       return NextResponse.json({ error: 'channelId が指定されていません' }, { status: 400 });

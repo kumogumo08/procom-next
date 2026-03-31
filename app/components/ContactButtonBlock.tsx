@@ -6,9 +6,15 @@ type Props = {
   uid: string;
   isEditable: boolean;
   initialEmail?: string;
+  onSavedEmail?: (email: string) => void;
 };
 
-export default function ContactButtonBlock({ uid, isEditable, initialEmail }: Props) {
+export default function ContactButtonBlock({
+  uid,
+  isEditable,
+  initialEmail,
+  onSavedEmail,
+}: Props) {
   const [email, setEmail] = useState(initialEmail || '');
   const [savedEmail, setSavedEmail] = useState(initialEmail || '');
   const [saving, setSaving] = useState(false);
@@ -30,6 +36,7 @@ export default function ContactButtonBlock({ uid, isEditable, initialEmail }: Pr
       });
       if (res.ok) {
         setSavedEmail(email);
+        onSavedEmail?.(email);
         alert('お仕事用メールアドレスを保存しました');
       } else {
         throw new Error();

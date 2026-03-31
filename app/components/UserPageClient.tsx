@@ -48,15 +48,36 @@ type Props = {
   uid: string;
   profile: Profile;
   isEditable: boolean;
+  onSectionOrderSaved?: (nextOrder: string[]) => void;
 };
 
-const DEFAULT_ORDER = ['YouTube', 'X', 'Instagram', 'TikTok', 'Facebook', 'BannerLinks', 'SNSButtons'];
+const DEFAULT_ORDER = [
+  'YouTube',
+  'X',
+  'Instagram',
+  'TikTok',
+  'Facebook',
+  'BannerLinks',
+  'AppProjects',
+  'SNSButtons',
+];
 
-const UserPageClient = ({ uid, profile, isEditable }: Props) => {
+function ensureAppProjectsInOrder(order: string[]): string[] {
+  if (order.includes('AppProjects')) return order;
+  const snsIdx = order.indexOf('SNSButtons');
+  if (snsIdx >= 0) {
+    return [...order.slice(0, snsIdx), 'AppProjects', ...order.slice(snsIdx)];
+  }
+  return [...order, 'AppProjects'];
+}
+
+const UserPageClient = ({ uid, profile, isEditable, onSectionOrderSaved }: Props) => {
   const lastInstagramUrlRef = useRef<string | null>(null);
   const lastFacebookUrlRef = useRef<string | null>(null);
   const [isReorderMode, setIsReorderMode] = useState(false);
-  const [sectionOrder, setSectionOrder] = useState<string[]>(profile.settings?.sectionOrder ?? DEFAULT_ORDER);
+  const [sectionOrder, setSectionOrder] = useState<string[]>(() =>
+    ensureAppProjectsInOrder(profile.settings?.sectionOrder ?? DEFAULT_ORDER)
+  );
 
     // --- 並び順保存 ---
 const saveOrderToServer = async () => {
@@ -77,7 +98,8 @@ const saveOrderToServer = async () => {
 
     if (res.ok) {
       alert('並び順を保存しました');
-      window.location.reload(); 
+      onSectionOrderSaved?.(sectionOrder);
+      setIsReorderMode(false);
     } else {
       throw new Error();
     }

@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef } from 'react';
 
 const TEN_QUESTIONS_TEMPLATE = `＼＼ 10の質問 ／／
 
@@ -54,30 +54,6 @@ export default function ProfileEditor({
     title: initialTitle,
     bio: initialBio,
   });
-
-
-  useEffect(() => {
-    const fetchProfile = async () => {
-      try {
-        const res = await fetch(`/api/user/${uid}`);
-        if (!res.ok) throw new Error('取得失敗');
-        const { profile } = await res.json();
-        if (profile?.name) setName(profile.name);
-        if (profile?.title) setTitle(profile.title);
-        if (profile?.bio) setBio(profile.bio);
-          
-        // 📌 取得した最新プロフィールを保存しておく
-        latestProfileRef.current = {
-          name: profile?.name ?? '',
-          title: profile?.title ?? '',
-          bio: profile?.bio ?? '',
-        };
-      } catch (err) {
-        console.error('❌ プロフィール取得エラー:', err);
-      }
-    };
-    fetchProfile();
-  }, [uid]);
 
   const handleSave = async () => {
     const isNameEmpty = nameCleared.current || name.trim() === '';

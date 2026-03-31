@@ -5,24 +5,39 @@ import { ReactNode } from 'react';
 import SnsVisibilityToggle from './SnsVisibilityToggle';
 import SnsHelpTooltip from './SnsHelpTooltip';
 import YouTubeHelpTooltip from '@/components/YouTubeHelpTooltip';
+import { fetchUserApi } from '@/lib/userProfileClient';
+import { buttonDanger, buttonPrimary, buttonRowRight, cardBase, cardBody, cardTitle, inputBase } from '@/components/ui/cardStyles';
 
 type Props = {
   uid: string;
   isEditable: boolean;
+  hasInitialProfile?: boolean;
+  initialMode?: 'latest' | 'manual';
+  initialChannelId?: string;
+  initialManualUrls?: string[];
+  initialShowYouTube?: boolean | undefined;
 };
 
-export default function YouTubeEmbedBlock({ uid, isEditable }: Props) {
-  const [mode, setMode] = useState<'latest' | 'manual'>('latest');
-  const [channelId, setChannelId] = useState('');
-  const [manualUrls, setManualUrls] = useState<string[]>([]);
+export default function YouTubeEmbedBlock({
+  uid,
+  isEditable,
+  hasInitialProfile,
+  initialMode,
+  initialChannelId,
+  initialManualUrls,
+  initialShowYouTube,
+}: Props) {
+  const [mode, setMode] = useState<'latest' | 'manual'>(initialMode ?? 'latest');
+  const [channelId, setChannelId] = useState(initialChannelId ?? '');
+  const [manualUrls, setManualUrls] = useState<string[]>(initialManualUrls ?? []);
   const [videoElements, setVideoElements] = useState<ReactNode[]>([]);
-  const [showYouTube, setShowYouTube] = useState<boolean | undefined>(undefined);
+  const [showYouTube, setShowYouTube] = useState<boolean | undefined>(initialShowYouTube);
   // 初期化
   useEffect(() => {
+    if (hasInitialProfile) return;
     async function fetchData() {
       try {
-        const res = await fetch(`/api/user/${uid}`);
-        const data = await res.json();
+        const data = await fetchUserApi(uid, { caller: 'YouTubeEmbedBlock', reason: 'initial load (youtube settings)' });
         const profile = data.profile || {};
         setMode(profile.youtubeMode || 'latest');
         setChannelId(profile.youtubeChannelId || '');
@@ -33,7 +48,7 @@ export default function YouTubeEmbedBlock({ uid, isEditable }: Props) {
       }
     }
     fetchData();
-  }, [uid]);
+  }, [uid, hasInitialProfile]);
 
   // 表示更新
   useEffect(() => {
@@ -117,12 +132,12 @@ export default function YouTubeEmbedBlock({ uid, isEditable }: Props) {
       }
 
   return (
-    <div className="sns-item" id="youtube-section">
-      <h2>YouTube動画表示設定</h2>
+    <div className="sns-item" id="youtube-section" style={cardBase}>
+      <h2 style={cardTitle}>YouTube</h2>
 
       {/* 🔘 表示モード切替 */}
       {isEditable && (
-        <div className="sns-section">
+        <div className="sns-section" style={cardBody}>
           <label>
             <input
               type="radio"
@@ -156,12 +171,13 @@ export default function YouTubeEmbedBlock({ uid, isEditable }: Props) {
             value={channelId}
             onChange={(e) => setChannelId(e.target.value)}
             placeholder="チャンネルID（UC〜）"
+            style={inputBase}
           />
         </div>
       )}
 
       {isEditable && mode === 'manual' && (
-        <div className="sns-section">
+        <div className="sns-section" style={cardBody}>
           {manualUrls.map((url, i) => (
           <div key={i} style={{ display: 'flex', alignItems: 'center', marginBottom: '8px' }}>
             <input
@@ -173,7 +189,7 @@ export default function YouTubeEmbedBlock({ uid, isEditable }: Props) {
                 updated[i] = e.target.value;
                 setManualUrls(updated);
               }}
-              style={{ flex: 1 }}
+              style={{ ...inputBase, flex: 1 }}
             />
             <button
               type="button"
@@ -182,22 +198,14 @@ export default function YouTubeEmbedBlock({ uid, isEditable }: Props) {
                 updated.splice(i, 1);
                 setManualUrls(updated);
               }}
-              style={{
-                marginLeft: '8px',
-                background: 'red',
-                color: 'white',
-                border: 'none',
-                borderRadius: '4px',
-                padding: '4px 8px',
-                cursor: 'pointer',
-              }}
+              style={{ ...buttonDanger, marginLeft: 8, height: 40, minWidth: 40, padding: '0 12px', borderRadius: 10 }}
             >
               ×
             </button>
           </div>
         ))}
           {manualUrls.length < 4 && (
-            <button type="button" onClick={() => setManualUrls([...manualUrls, ''])}>
+            <button type="button" onClick={() => setManualUrls([...manualUrls, ''])} style={{ ...buttonPrimary, justifySelf: 'start' }}>
               ＋ 入力欄を追加
             </button>
           )}
@@ -205,10 +213,11 @@ export default function YouTubeEmbedBlock({ uid, isEditable }: Props) {
       )}
 
       {isEditable && (
-        <button type="button" onClick={handleSave}>
-          保存
-        </button>
-        
+        <div style={buttonRowRight}>
+          <button type="button" onClick={handleSave} style={buttonPrimary}>
+            保存
+          </button>
+        </div>
       )}
         {isEditable && (
           <SnsVisibilityToggle

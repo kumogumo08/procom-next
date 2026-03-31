@@ -11,6 +11,14 @@ import { sessionOptions } from '@/lib/session';
 import type { SessionData } from '@/lib/session-types';
 import admin from 'firebase-admin';
 import { normalizeInstagramUrl } from '@/lib/sns';
+import {
+  coerceAppsFromFirestore,
+  sanitizeAppsArray,
+  validateAppsHaveAtLeastOneStoreUrl,
+  validateAppStoreUrlFields,
+  validateRawAppsPayloadForProfile,
+} from '@/lib/appProjects';
+import { enrichAppsWithStoreIcons } from '@/lib/appIcons';
 
 initializeFirebaseAdmin();
 const db = getFirestore();
@@ -35,9 +43,12 @@ function cleanData(obj: Record<string, any>) {
 }
 
 // --- GET: プロフィール情報取得 ---
-export async function GET(req: NextRequest, context: any) {
+export async function GET(
+  req: NextRequest,
+  context: { params: Promise<{ uid: string }> }
+) {
   try {
-    const { uid } = context.params;
+    const { uid } = await context.params;
 
     if (!uid) {
       return NextResponse.json({ error: 'uidが指定されていません' }, { status: 400 });
@@ -85,6 +96,7 @@ export async function GET(req: NextRequest, context: any) {
       settings: rawProfile.settings ?? {},
       bannerLinks: rawProfile.bannerLinks ?? [],
       emailForContact: rawProfile.emailForContact ?? '',
+      apps: coerceAppsFromFirestore(rawProfile.apps),
     };
 
     return NextResponse.json({
@@ -115,6 +127,7 @@ export async function POST(req: NextRequest, props: { params: Promise<{ uid: str
 
     const incoming = await req.json();
     const profile = incoming.profile;
+    const skipStoreUrlValidation = incoming.skipStoreUrlValidation === true;
 
     if (!profile || typeof profile !== 'object') {
       return NextResponse.json({ error: 'プロフィール情報が正しくありません' }, { status: 400 });
@@ -223,7 +236,55 @@ export async function POST(req: NextRequest, props: { params: Promise<{ uid: str
         profile.instagramPostUrl = ''; // 無効なURLなら空文字にしておく
       }
     }
-    // 🔄 プロフィール保存
+    const appsFromPayload = Object.prototype.hasOwnProperty.call(profile, 'apps');
+    const rawAppsForSanitize = appsFromPayload
+      ? Array.isArray(profile.apps)
+        ? profile.apps
+        : profile.apps === null
+          ? []
+          : existingProfile.apps ?? []
+      : existingProfile.apps ?? [];
+
+    if (process.env.NODE_ENV !== 'production') {
+      console.log('[user POST] profile.apps (incoming)', {
+        appsFromPayload,
+        incomingLen: Array.isArray(profile.apps) ? profile.apps.length : 'n/a',
+      });
+    }
+
+    if (appsFromPayload && Array.isArray(profile.apps)) {
+      const rawAppsErr = validateRawAppsPayloadForProfile(profile.apps);
+      if (rawAppsErr) {
+        return NextResponse.json({ error: rawAppsErr }, { status: 400 });
+      }
+    }
+
+    const mergedApps = sanitizeAppsArray(rawAppsForSanitize, existingProfile.apps);
+
+    if (process.env.NODE_ENV !== 'production') {
+      console.log('[user POST] mergedApps.length after sanitize', mergedApps.length);
+    }
+
+    if (!skipStoreUrlValidation) {
+      const appsStoreErr = validateAppsHaveAtLeastOneStoreUrl(mergedApps);
+      if (appsStoreErr) {
+        return NextResponse.json({ error: appsStoreErr }, { status: 400 });
+      }
+      const shapeErr = validateAppStoreUrlFields(mergedApps);
+      if (shapeErr) {
+        return NextResponse.json({ error: shapeErr }, { status: 400 });
+      }
+    }
+
+    let appsForSave = mergedApps;
+    try {
+      appsForSave = await enrichAppsWithStoreIcons(mergedApps);
+    } catch (e) {
+      console.warn('[user POST] enrichAppsWithStoreIcons failed, saving without icon updates', e);
+      appsForSave = mergedApps;
+    }
+
+    // 🔄 プロフィール保存（cleanData は空配列を落とすため apps は後付け）
     const cleanedProfile = cleanData({
       name: profile.name ?? existingProfile.name ?? '',
       title: profile.title ?? existingProfile.title ?? '',
@@ -246,13 +307,18 @@ export async function POST(req: NextRequest, props: { params: Promise<{ uid: str
       }
     });
 
-await userRef.set(
-  { profile: cleanedProfile },
-  { merge: true }
-);
-    return NextResponse.json({ message: 'User profile updated' });
+    cleanedProfile.apps = appsForSave;
+
+    if (process.env.NODE_ENV !== 'production') {
+      console.log('[user POST] cleanedProfile.apps.length before Firestore', appsForSave.length);
+    }
+
+    await userRef.set({ profile: cleanedProfile }, { merge: true });
+    return NextResponse.json({ message: 'User profile updated', apps: appsForSave });
   } catch (err) {
+    const message = err instanceof Error ? err.message : String(err);
     console.error('🔥 Firestore保存エラー:', err);
+    console.error('[user POST] exception message:', message);
     return NextResponse.json({ error: 'Firestore保存に失敗しました' }, { status: 500 });
   }
 }

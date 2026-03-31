@@ -10,9 +10,9 @@ const db = getFirestore();
 
 export async function POST(
   req: NextRequest,
-  context: any // ✅ 型を any にすることで params.uid にアクセス可能
+  context: { params: Promise<{ uid: string }> }
 ) {
-  const uid = context.params?.uid;
+  const { uid } = await context.params;
   if (!uid) {
     return NextResponse.json({ error: 'Missing UID' }, { status: 400 });
   }
@@ -35,9 +35,9 @@ export async function POST(
 
 export async function GET(
   req: NextRequest,
-  context: any // ✅ 同様に any 型で params を使う
+  context: { params: Promise<{ uid: string }> }
 ) {
-  const uid = context.params?.uid;
+  const { uid } = await context.params;
   if (!uid) {
     return NextResponse.json({ error: 'Missing UID' }, { status: 400 });
   }

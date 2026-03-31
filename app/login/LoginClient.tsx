@@ -6,6 +6,7 @@ import Header from '@/components/Header';
 import Footer from 'app/components/Footer';
 import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link'
+import { FirebaseError } from 'firebase/app';
 import { getAuth, signInWithEmailAndPassword } from 'firebase/auth';
 import { firebaseApp } from '@/lib/firebaseClient';
 
@@ -77,34 +78,91 @@ export default function LoginPage() {
     const email = (form.email as HTMLInputElement).value.trim();
     const password = (form.password as HTMLInputElement).value;
   
+    /** 調査用: どの段階で失敗したか（catch で出力） */
+    let loginStep = 'start';
+
     try {
       // ① クライアントでログイン（Firebase Auth）
+      loginStep = 'getAuth';
       const auth = getAuth(firebaseApp);
+      console.log('[LOGIN] firebaseApp.name:', firebaseApp?.name);
+      console.log('[LOGIN] AUTH INSTANCE:', auth);
+      console.log('[LOGIN] AUTH APP NAME:', auth?.app?.name);
+
+      loginStep = 'signInWithEmailAndPassword';
+      console.log('[LOGIN] before signInWithEmailAndPassword');
       const cred = await signInWithEmailAndPassword(auth, email, password);
-  
+      console.log('[LOGIN] signInWithEmailAndPassword OK, uid:', cred?.user?.uid);
+
       // ② IDトークン取得
+      loginStep = 'getIdToken';
+      console.log('[LOGIN] before getIdToken');
       const idToken = await cred.user.getIdToken();
-  
+      console.log('[LOGIN] getIdToken OK, token length:', idToken?.length ?? 0);
+
       // ③ サーバでセッション発行（iron-session）
+      loginStep = 'fetch /api/session/login';
+      console.log('[LOGIN] before fetch /api/session/login');
       const res = await fetch('/api/session/login', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ idToken }),
         credentials: 'include',
       });
-  
+      console.log('[LOGIN] after fetch, status:', res.status, 'ok:', res.ok);
+
       if (!res.ok) {
+        loginStep = 'parse error body (res not ok)';
         const data = await res.json().catch(async () => ({ msg: await res.text() }));
-        console.error('SESSION LOGIN FAILED:', data);
+        console.error('[LOGIN] SESSION LOGIN FAILED (API not ok):', data);
         alert(`ログイン失敗: ${JSON.stringify(data)}`);
         return;
       }
-  
-      const data = await res.json();
+
+      loginStep = 'res.json() session response';
+      let data: { uid?: string; ok?: boolean };
+      try {
+        data = await res.json();
+      } catch (parseErr) {
+        loginStep = 'res.json() threw';
+        console.error('[LOGIN] res.json() failed despite res.ok:', parseErr);
+        throw parseErr;
+      }
+      console.log('[LOGIN] session JSON ok, keys:', data ? Object.keys(data) : [], 'uid:', data?.uid);
+
+      loginStep = 'router.push';
+      if (!data?.uid) {
+        console.error('[LOGIN] missing uid in session response:', data);
+        alert('ログイン失敗: セッション応答に uid がありません');
+        return;
+      }
       router.push(`/user/${data.uid}`);
-    } catch (e: any) {
-      console.error('FIREBASE LOGIN FAILED:', { code: e?.code, message: e?.message });
-      alert(`ログイン失敗: ${e?.code ?? 'unknown'} ${e?.message ?? ''}`);
+    } catch (e: unknown) {
+      console.error('[LOGIN] FAILED at step:', loginStep);
+
+      let errCode = 'unknown';
+      let errMessage = '';
+
+      if (e instanceof FirebaseError) {
+        errCode = e.code;
+        errMessage = e.message;
+        console.error('FIREBASE LOGIN FAILED code:', e.code);
+        console.error('FIREBASE LOGIN FAILED message:', e.message);
+      } else {
+        const loose = e as { code?: string; message?: string };
+        errCode = typeof loose?.code === 'string' ? loose.code : 'unknown';
+        errMessage =
+          typeof loose?.message === 'string'
+            ? loose.message
+            : e instanceof Error
+              ? e.message
+              : String(e);
+        console.error('FIREBASE LOGIN FAILED (non-FirebaseError) raw:', e);
+        console.error('FIREBASE LOGIN FAILED code:', errCode);
+        console.error('FIREBASE LOGIN FAILED message:', errMessage);
+      }
+
+      alert(`ログイン失敗 [${loginStep}] ${errCode} ${errMessage}`);
     } finally {
       setIsLoading(false);
     }

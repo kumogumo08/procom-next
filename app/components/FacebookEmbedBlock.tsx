@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react';
 import SnsVisibilityToggle from './SnsVisibilityToggle';
 import SnsHelpTooltip from './SnsHelpTooltip';
 import { fetchUserApi } from '@/lib/userProfileClient';
-import { buttonPrimary, buttonRowRight, cardBase, cardBody, cardTitle, inputBase } from '@/components/ui/cardStyles';
+import { buttonPrimary, buttonRowRight, cardActions, cardBody, cardPreviewArea, cardTitle, emptyStateBox, inputBase, snsCardBase } from '@/components/ui/cardStyles';
 
 type Props = {
   uid: string;
@@ -102,7 +102,7 @@ export default function FacebookEmbedBlock({
   };
 
  return (
-  <div className="facebook-section" style={cardBase}>
+  <div className="facebook-section" style={snsCardBase}>
     <h3 style={cardTitle}>Facebook</h3>
 
     {isEditable && (
@@ -119,17 +119,10 @@ export default function FacebookEmbedBlock({
             保存
           </button>
         </div>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
-          <SnsVisibilityToggle
-            label="Facebookを表示する"
-            checked={showFacebook ?? true}
-            onChange={setShowFacebook}
-          />
-          <SnsHelpTooltip />
-        </div>
       </div>
     )}
 
+    <div style={{ flex: 1 }}>
       {fbUrl && showFacebook && (
         <>
           {/* 埋め込み：ページURL（/profile.php含まない場合）のみ表示 */}
@@ -137,8 +130,9 @@ export default function FacebookEmbedBlock({
             <div
               id="fbEmbedContainer"
               style={{
-                marginTop: '20px',
-                maxWidth: '500px',
+                ...cardPreviewArea,
+                marginTop: 0,
+                maxWidth: 520,
                 width: '100%',
                 marginLeft: 'auto',
                 marginRight: 'auto',
@@ -183,6 +177,24 @@ export default function FacebookEmbedBlock({
           </div>
         </>
       )}
+
+      {(!fbUrl || showFacebook === false) && (
+        <div style={emptyStateBox}>未設定（URLを入力するとここに表示されます）</div>
+      )}
+    </div>
+
+    {isEditable && (
+      <div style={cardActions}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
+          <SnsVisibilityToggle
+            label="Facebookを表示する"
+            checked={showFacebook ?? true}
+            onChange={setShowFacebook}
+          />
+          <SnsHelpTooltip />
+        </div>
+      </div>
+    )}
   </div>
 );
 }

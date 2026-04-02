@@ -36,6 +36,7 @@ type Profile = {
   calendarEvents?: { date: string; events: string[] }[];
   settings?: {
     showX?: boolean;
+    showApps?: boolean;
     showInstagram?: boolean;
     showTikTok?: boolean;
     showFacebook?: boolean;

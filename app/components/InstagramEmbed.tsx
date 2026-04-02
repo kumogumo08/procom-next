@@ -4,7 +4,7 @@ import { useEffect, useState, useRef } from 'react';
 import SnsVisibilityToggle from './SnsVisibilityToggle';
 import SnsHelpTooltip from './SnsHelpTooltip';
 import { fetchUserApi } from '@/lib/userProfileClient';
-import { buttonPrimary, buttonRowRight, cardBase, cardBody, cardTitle, inputBase } from '@/components/ui/cardStyles';
+import { buttonPrimary, buttonRowRight, cardActions, cardBody, cardPreviewArea, cardTitle, emptyStateBox, inputBase, snsCardBase } from '@/components/ui/cardStyles';
 
 type Props = { uid: string; isEditable: boolean };
 
@@ -165,7 +165,7 @@ export default function InstagramEmbed({
   if (!isEditable && showInstagram === false) return null;
 
   return (
-    <div className="sns-item" style={cardBase}>
+    <div className="sns-item" style={snsCardBase}>
       <h2 style={cardTitle}>Instagram</h2>
 
       {isEditable && (
@@ -185,17 +185,31 @@ export default function InstagramEmbed({
               保存
             </button>
           </div>
-
-          <SnsVisibilityToggle
-            label="Instagramを表示する"
-            checked={showInstagram ?? true}
-            onChange={setShowInstagram}
-          />
-          <SnsHelpTooltip />
         </div>
       )}
 
-      {isLoaded && loadedUrl && showInstagram && <div ref={embedRef} />}
+      <div style={{ flex: 1 }}>
+        {isLoaded && loadedUrl && showInstagram ? (
+          <div style={cardPreviewArea}>
+            <div ref={embedRef} />
+          </div>
+        ) : (
+          <div style={emptyStateBox}>未設定（URLを入力するとここに表示されます）</div>
+        )}
+      </div>
+
+      {isEditable && (
+        <div style={cardActions}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
+            <SnsVisibilityToggle
+              label="Instagramを表示する"
+              checked={showInstagram ?? true}
+              onChange={setShowInstagram}
+            />
+            <SnsHelpTooltip />
+          </div>
+        </div>
+      )}
     </div>
   );
 }

@@ -10,6 +10,13 @@ export const cardBase: CSSProperties = {
   boxShadow: '0 4px 12px rgba(15, 23, 42, 0.06)',
 };
 
+export const snsCardBase: CSSProperties = {
+  ...cardBase,
+  display: 'flex',
+  flexDirection: 'column',
+  height: '100%',
+};
+
 export const cardTitle: CSSProperties = {
   margin: 0,
   marginBottom: 12,
@@ -22,6 +29,36 @@ export const cardTitle: CSSProperties = {
 export const cardBody: CSSProperties = {
   display: 'grid',
   gap: 14,
+};
+
+export const cardActions: CSSProperties = {
+  marginTop: 'auto',
+  paddingTop: 14,
+  display: 'grid',
+  gap: 10,
+};
+
+export const cardPreviewArea: CSSProperties = {
+  minHeight: 220,
+  borderRadius: 12,
+  border: '1px solid #eef2f7',
+  background: '#fafbfc',
+  padding: 12,
+  overflow: 'hidden',
+};
+
+export const emptyStateBox: CSSProperties = {
+  minHeight: 220,
+  borderRadius: 12,
+  border: '1px dashed #e5e7eb',
+  background: '#fafbfc',
+  color: '#64748b',
+  display: 'grid',
+  placeItems: 'center',
+  padding: 12,
+  textAlign: 'center',
+  fontSize: 13,
+  lineHeight: 1.6,
 };
 
 export const inputBase: CSSProperties = {

@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react';
 import SnsVisibilityToggle from './SnsVisibilityToggle';
 import SnsHelpTooltip from './SnsHelpTooltip';
 import { fetchUserApi } from '@/lib/userProfileClient';
-import { buttonPrimary, buttonRowRight, cardBase, cardBody, cardTitle, inputBase } from '@/components/ui/cardStyles';
+import { buttonPrimary, buttonRowRight, cardActions, cardBody, cardPreviewArea, cardTitle, emptyStateBox, inputBase, snsCardBase } from '@/components/ui/cardStyles';
 
 interface Props {
   uid: string;
@@ -125,7 +125,7 @@ export default function TikTokEmbed({
 
   return (
     <div className="sns-bottom-row">
-      <div className="sns-item" id="tiktok-section" style={cardBase}>
+      <div className="sns-item" id="tiktok-section" style={snsCardBase}>
         <h2 style={cardTitle}>TikTok</h2>
 
         {isEditable && (
@@ -201,37 +201,50 @@ export default function TikTokEmbed({
                 保存
               </button>
             </div>
-            <SnsVisibilityToggle
-              label="TikTokを表示する"
-              checked={showTikTok}
-              onChange={setShowTikTok}
-            />
-            <SnsHelpTooltip />
           </div>
         )}
 
-        {showTikTok && (
-          <div id="tiktok-container" className="tiktok-grid">
-            {loadedUrls.map((url, i) => {
-              const videoId = extractVideoId(url);
-              if (!videoId) return null;
-              
-              const embedHtml = `
-                <blockquote class="tiktok-embed"
-                  cite="${url}"
-                  data-video-id="${videoId}"
-                  style="max-width: 325px; min-width: 325px;">
-                  <section>Loading...</section>
-                </blockquote>
-              `;
-              return (
-                <div
-                  key={i}
-                  className="tiktok-wrapper"
-                  dangerouslySetInnerHTML={{ __html: embedHtml }}
-                />
-              );
-            })}
+        <div style={{ flex: 1 }}>
+          {showTikTok && loadedUrls.length > 0 ? (
+            <div style={cardPreviewArea}>
+              <div id="tiktok-container" className="tiktok-grid">
+                {loadedUrls.map((url, i) => {
+                  const videoId = extractVideoId(url);
+                  if (!videoId) return null;
+
+                  const embedHtml = `
+                    <blockquote class="tiktok-embed"
+                      cite="${url}"
+                      data-video-id="${videoId}"
+                      style="max-width: 325px; min-width: 325px;">
+                      <section>Loading...</section>
+                    </blockquote>
+                  `;
+                  return (
+                    <div
+                      key={i}
+                      className="tiktok-wrapper"
+                      dangerouslySetInnerHTML={{ __html: embedHtml }}
+                    />
+                  );
+                })}
+              </div>
+            </div>
+          ) : (
+            <div style={emptyStateBox}>未設定（URLを入力するとここに表示されます）</div>
+          )}
+        </div>
+
+        {isEditable && (
+          <div style={cardActions}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
+              <SnsVisibilityToggle
+                label="TikTokを表示する"
+                checked={showTikTok}
+                onChange={setShowTikTok}
+              />
+              <SnsHelpTooltip />
+            </div>
           </div>
         )}
       </div>

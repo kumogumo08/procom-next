@@ -3,6 +3,8 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { v4 as uuidv4 } from 'uuid';
 import type { AppProject, AppProjectReleaseStatus } from '@/lib/appProjects';
+import SnsVisibilityToggle from '@/components/SnsVisibilityToggle';
+import SnsHelpTooltip from '@/components/SnsHelpTooltip';
 import {
   filterAppsForPublicView,
   isValidAppStoreUrl,
@@ -10,7 +12,7 @@ import {
   MAX_APP_PROJECTS_PER_PROFILE,
 } from '@/lib/appProjects';
 import { formatStoreDescription } from '@/lib/storeDescriptionDisplay';
-import { cardBase } from '@/components/ui/cardStyles';
+import { cardActions, cardBase } from '@/components/ui/cardStyles';
 
 type AppFieldErrors = {
   title?: string;
@@ -67,8 +69,11 @@ function buildAppFieldErrors(apps: AppProject[]): FieldErrorsByApp {
 type Props = {
   uid: string;
   initialApps?: AppProject[];
+  initialShowApps?: boolean;
   isEditable: boolean;
   onChange?: (apps: AppProject[]) => void;
+  /** persist 成功時に親の profile.settings.showApps を同期する（Facebook 等と同様、保存後の巻き戻り防止） */
+  onShowAppsSaved?: (showApps: boolean) => void;
 };
 
 function releaseStatusLabel(s: AppProjectReleaseStatus | undefined): string {
@@ -143,10 +148,18 @@ function StoreLink({
   );
 }
 
-export default function AppProjectBlock({ uid, initialApps = [], isEditable, onChange }: Props) {
+export default function AppProjectBlock({
+  uid,
+  initialApps = [],
+  initialShowApps,
+  isEditable,
+  onChange,
+  onShowAppsSaved,
+}: Props) {
   const [apps, setApps] = useState<AppProject[]>(initialApps);
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
+  const [showApps, setShowApps] = useState<boolean>(initialShowApps ?? true);
   const [editingAppId, setEditingAppId] = useState<string | null>(null);
   const [editSnapshot, setEditSnapshot] = useState<AppProject | null>(null);
   const [fieldErrors, setFieldErrors] = useState<FieldErrorsByApp>({});
@@ -184,7 +197,7 @@ export default function AppProjectBlock({ uid, initialApps = [], isEditable, onC
       }
 
       const payload = {
-        profile: { apps: next },
+        profile: { apps: next, settings: { showApps } },
         ...(opts?.skipStoreValidation ? { skipStoreUrlValidation: true as const } : {}),
       };
       if (process.env.NODE_ENV !== 'production') {
@@ -234,6 +247,7 @@ export default function AppProjectBlock({ uid, initialApps = [], isEditable, onC
           setEditSnapshot(null);
         }
         setMessage('保存しました');
+        onShowAppsSaved?.(showApps);
       } catch {
         opts?.rollback?.();
         setMessage('保存に失敗しました');
@@ -241,7 +255,7 @@ export default function AppProjectBlock({ uid, initialApps = [], isEditable, onC
         setSaving(false);
       }
     },
-    [uid, onChange]
+    [uid, onChange, showApps, onShowAppsSaved]
   );
 
   const cloneApp = (a: AppProject): AppProject => structuredClone(a);
@@ -328,7 +342,6 @@ export default function AppProjectBlock({ uid, initialApps = [], isEditable, onC
     const next: AppProject = {
       id: `app_${uuidv4()}`,
       title: '',
-      isPublic: true,
       displayOrder: apps.length,
       releaseStatus: 'published',
       createdAt: now,
@@ -402,7 +415,7 @@ export default function AppProjectBlock({ uid, initialApps = [], isEditable, onC
     void persist(apps, { closeEditorOnSuccess: true });
   };
 
-  if (!isEditable && displayApps.length === 0) {
+  if (!isEditable && (showApps === false || displayApps.length === 0)) {
     return null;
   }
 
@@ -742,14 +755,6 @@ export default function AppProjectBlock({ uid, initialApps = [], isEditable, onC
                         <br />
                         アイコンと説明文の冒頭はストア情報から自動取得されます（反映まで少し時間がかかる場合があります）。
                       </p>
-                      <label style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                        <input
-                          type="checkbox"
-                          checked={app.isPublic !== false}
-                          onChange={(e) => updateApp(app.id, { isPublic: e.target.checked })}
-                        />
-                        <span style={{ fontSize: 13 }}>公開する</span>
-                      </label>
                       <label style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
                         <span style={{ fontSize: 12 }}>リリース状態（将来拡張・表示用）</span>
                         <select
@@ -849,6 +854,15 @@ export default function AppProjectBlock({ uid, initialApps = [], isEditable, onC
           );
         })}
       </div>
+
+      {isEditable && (
+        <div style={cardActions}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
+            <SnsVisibilityToggle label="アプリを表示する" checked={showApps} onChange={setShowApps} />
+            <SnsHelpTooltip />
+          </div>
+        </div>
+      )}
     </section>
   );
 }

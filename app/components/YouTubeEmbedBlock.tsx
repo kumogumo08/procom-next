@@ -6,7 +6,7 @@ import SnsVisibilityToggle from './SnsVisibilityToggle';
 import SnsHelpTooltip from './SnsHelpTooltip';
 import YouTubeHelpTooltip from '@/components/YouTubeHelpTooltip';
 import { fetchUserApi } from '@/lib/userProfileClient';
-import { buttonDanger, buttonPrimary, buttonRowRight, cardBase, cardBody, cardTitle, inputBase } from '@/components/ui/cardStyles';
+import { buttonDanger, buttonPrimary, buttonRowRight, cardActions, cardBody, cardPreviewArea, cardTitle, emptyStateBox, inputBase, snsCardBase } from '@/components/ui/cardStyles';
 
 type Props = {
   uid: string;
@@ -132,7 +132,7 @@ export default function YouTubeEmbedBlock({
       }
 
   return (
-    <div className="sns-item" id="youtube-section" style={cardBase}>
+    <div className="sns-item" id="youtube-section" style={snsCardBase}>
       <h2 style={cardTitle}>YouTube</h2>
 
       {/* 🔘 表示モード切替 */}
@@ -212,25 +212,33 @@ export default function YouTubeEmbedBlock({
         </div>
       )}
 
+      <div style={{ flex: 1 }}>
+        {videoElements.length > 0 ? (
+          <div id="videoContainer" className="video-container" style={cardPreviewArea}>
+            {videoElements}
+          </div>
+        ) : (
+          <div style={emptyStateBox}>未設定（チャンネルID / URL を入力するとここに表示されます）</div>
+        )}
+      </div>
+
       {isEditable && (
-        <div style={buttonRowRight}>
-          <button type="button" onClick={handleSave} style={buttonPrimary}>
-            保存
-          </button>
+        <div style={cardActions}>
+          <div style={buttonRowRight}>
+            <button type="button" onClick={handleSave} style={buttonPrimary}>
+              保存
+            </button>
+          </div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
+            <SnsVisibilityToggle
+              label="YouTubeを表示する"
+              checked={showYouTube ?? true}
+              onChange={setShowYouTube}
+            />
+            <SnsHelpTooltip />
+          </div>
         </div>
       )}
-        {isEditable && (
-          <SnsVisibilityToggle
-            label="YouTubeを表示する"
-            checked={showYouTube ?? true}
-            onChange={setShowYouTube}
-          />
-        )}
-        {isEditable && <SnsHelpTooltip />}
-      {/* 🔽 表示 */}
-      <div id="videoContainer" className="video-container">
-        {videoElements}
-      </div>
     </div>
   );
 }

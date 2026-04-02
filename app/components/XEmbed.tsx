@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react';
 import SnsVisibilityToggle from './SnsVisibilityToggle';
 import SnsHelpTooltip from './SnsHelpTooltip';
 import { fetchUserApi } from '@/lib/userProfileClient';
-import { buttonPrimary, buttonRowRight, cardBase, cardBody, cardTitle, inputBase } from '@/components/ui/cardStyles';
+import { buttonPrimary, buttonRowRight, cardActions, cardBody, cardTitle, emptyStateBox, inputBase, snsCardBase } from '@/components/ui/cardStyles';
 
 type Props = {
   uid: string;
@@ -84,7 +84,7 @@ const handleSave = async () => {
   if (!isEditable && (!username || showX === false)) return null;
 
   return (
-    <div className="sns-item" style={cardBase}>
+    <div className="sns-item" style={snsCardBase}>
       <h2 style={cardTitle}>X（旧Twitter）</h2>
 
       {isEditable && (
@@ -99,36 +99,51 @@ const handleSave = async () => {
           <div style={buttonRowRight}>
             <button onClick={handleSave} style={buttonPrimary}>保存</button>
           </div>
-          <SnsVisibilityToggle
-            label="Xを表示する"
-            checked={showX}
-            onChange={setShowX}
-          />
-          <SnsHelpTooltip />
         </div>
       )}
 
       {username && showX && (
-        <div style={{ textAlign: 'center', marginTop: '10px' }}>
-          <a
-            href={profileUrl}
-            target="_blank"
-            rel="noopener noreferrer"
-            style={{ display: 'block', fontWeight: 'bold', marginBottom: 8 }}
-          >
-            @{username} さんのXプロフィールを見る
-          </a>
-          <a href={profileUrl} target="_blank" rel="noopener noreferrer">
-            <img
-              src={`https://unavatar.io/x/${username}`}
-              alt={`${username} のプロフィール画像`}
-              style={{
-                width: '100%',
-                maxWidth: 500,
-                borderRadius: 12,
-              }}
-            />
-          </a>
+        <div style={{ flex: 1, display: 'grid', gap: 12 }}>
+          <div style={{ textAlign: 'center' }}>
+            <a
+              href={profileUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              style={{ display: 'block', fontWeight: 700, marginBottom: 8 }}
+            >
+              @{username} さんのXプロフィールを見る
+            </a>
+          </div>
+          <div style={{ minHeight: 220, borderRadius: 12, overflow: 'hidden', background: '#fafbfc', border: '1px solid #eef2f7', padding: 12 }}>
+            <a href={profileUrl} target="_blank" rel="noopener noreferrer" style={{ display: 'block' }}>
+              <img
+                src={`https://unavatar.io/x/${username}`}
+                alt={`${username} のプロフィール画像`}
+                style={{
+                  width: '100%',
+                  maxWidth: 520,
+                  borderRadius: 12,
+                  display: 'block',
+                  margin: '0 auto',
+                }}
+              />
+            </a>
+          </div>
+        </div>
+      )}
+
+      {isEditable && (!username || showX === false) && (
+        <div style={{ flex: 1 }}>
+          <div style={emptyStateBox}>未設定（ユーザー名を入力するとここに表示されます）</div>
+        </div>
+      )}
+
+      {isEditable && (
+        <div style={cardActions}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
+            <SnsVisibilityToggle label="Xを表示する" checked={showX} onChange={setShowX} />
+            <SnsHelpTooltip />
+          </div>
         </div>
       )}
     </div>

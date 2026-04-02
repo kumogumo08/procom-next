@@ -24,6 +24,7 @@ export type AppProject = {
   iconUrl?: string;
   screenshotUrls?: string[];
   showQrCode?: boolean;
+  /** @deprecated 旧データ互換のみ。UI・表示・新規保存では使用しない（ブロックは showApps で制御） */
   isPublic?: boolean;
   displayOrder?: number;
   releaseStatus?: AppProjectReleaseStatus;
@@ -247,7 +248,6 @@ export function sanitizeAppProject(
       ? { screenshotUrls: screenshotUrlsRead }
       : {}),
     showQrCode: o.showQrCode !== false,
-    isPublic: o.isPublic !== false,
     displayOrder: typeof o.displayOrder === 'number' && Number.isFinite(o.displayOrder) ? o.displayOrder : index,
     releaseStatus,
     createdAt,
@@ -348,10 +348,10 @@ export function coerceAppsFromFirestore(raw: unknown): AppProject[] {
   return out;
 }
 
-/** 他人向け: 公開アプリのみ（isPublic === false は除外） */
+/** 他人向け: 全件（アプリ単位の非公開は廃止。ブロック表示は showApps で制御） */
 export function filterAppsForPublicView(apps: AppProject[] | undefined | null): AppProject[] {
   if (!Array.isArray(apps)) return [];
-  return apps.filter((a) => a.isPublic !== false);
+  return [...apps];
 }
 
 /** QR に使う URL（優先: App Store → Google Play → 公式） */

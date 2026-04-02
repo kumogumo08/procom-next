@@ -19,6 +19,7 @@ interface Profile {
   customLinks?: CustomSNSLink[];
   settings?: {
     showX?: boolean;
+    showApps?: boolean;
     showInstagram?: boolean;
     showTikTok?: boolean;
     showFacebook?: boolean;

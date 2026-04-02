@@ -39,6 +39,7 @@ type Profile = {
   settings?: {
     showYouTube?: boolean;
     showX?: boolean;
+    showApps?: boolean;
     showInstagram?: boolean;
     showTikTok?: boolean;
     showFacebook?: boolean;
@@ -89,6 +90,13 @@ export default function UserPageSectionsClient({
   const onAppsChange = useCallback((next: AppProject[]) => {
     setApps(next);
     setProfile((prev) => ({ ...prev, apps: next }));
+  }, []);
+
+  const onShowAppsSaved = useCallback((showApps: boolean) => {
+    setProfile((prev) => ({
+      ...prev,
+      settings: { ...(prev.settings ?? {}), showApps },
+    }));
   }, []);
 
   const sectionMap: Record<string, JSX.Element> = useMemo(
@@ -142,11 +150,18 @@ export default function UserPageSectionsClient({
       ),
       BannerLinks: <BannerLinksBlock uid={uid} isEditable={isEditable} />,
       AppProjects: (
-        <AppProjectBlock uid={uid} initialApps={apps} isEditable={isEditable} onChange={onAppsChange} />
+        <AppProjectBlock
+          uid={uid}
+          initialApps={apps}
+          initialShowApps={profile?.settings?.showApps}
+          isEditable={isEditable}
+          onChange={onAppsChange}
+          onShowAppsSaved={onShowAppsSaved}
+        />
       ),
       SNSButtons: <UserPageClientWrapper uid={uid} profile={profile} isEditable={isEditable} />,
     }),
-    [apps, isEditable, onAppsChange, profile, uid]
+    [apps, isEditable, onAppsChange, onShowAppsSaved, profile, uid]
   );
 
   const renderedSections = useMemo(() => {
@@ -162,9 +177,17 @@ export default function UserPageSectionsClient({
 
       if (is1Col(curr) && is1Col(next)) {
         out.push(
-          <div className="sns-container" key={`group-${i}`}>
-            <div className="sns-box">{sectionMap[curr]}</div>
-            <div className="sns-box">{sectionMap[next]}</div>
+          <div
+            className="sns-container"
+            key={`group-${i}`}
+            style={{ display: 'flex', gap: 24, alignItems: 'stretch' }}
+          >
+            <div className="sns-box" style={{ flex: 1, display: 'flex' }}>
+              {sectionMap[curr]}
+            </div>
+            <div className="sns-box" style={{ flex: 1, display: 'flex' }}>
+              {sectionMap[next]}
+            </div>
           </div>
         );
         i++;

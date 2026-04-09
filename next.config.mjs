@@ -7,7 +7,13 @@ const nextConfig = {
     FIREBASE_KEY_PATH: process.env.FIREBASE_KEY_PATH,
   },
   images: {
-    domains: ['firebasestorage.googleapis.com'],
+    remotePatterns: [
+      {
+        protocol: 'https',
+        hostname: 'firebasestorage.googleapis.com',
+        pathname: '/**',
+      },
+    ],
   },
   experimental: {
     // 必要があればここに書く

@@ -89,7 +89,10 @@ export default function TopPage() {
       </section>
 
       <div className={styles.newsWrap}>
-        <NewsList />
+        <NewsList limit={3} />
+        <p className={styles.newsViewAll}>
+          <Link href="/news">お知らせ一覧を見る</Link>
+        </p>
       </div>
 
       <Footer />

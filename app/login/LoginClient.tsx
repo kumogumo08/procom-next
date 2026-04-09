@@ -10,11 +10,28 @@ import { FirebaseError } from 'firebase/app';
 import { getAuth, signInWithEmailAndPassword } from 'firebase/auth';
 import { firebaseApp } from '@/lib/firebaseClient';
 
+/** ユーザー向け（Firebase の code / 英語メッセージは出さない） */
+const LOGIN_FAIL_TITLE = 'ログインに失敗しました';
+const LOGIN_FAIL_CREDENTIAL_DETAIL = 'メールアドレスまたはパスワードをご確認ください';
+const LOGIN_FAIL_GENERIC_DETAIL = 'しばらく時間をおいて再度お試しください';
+
+/** メール／パスワード誤り等に寄せる（レート制限・内部エラーは含めない） */
+function isFirebaseAuthCredentialError(code: string): boolean {
+  return (
+    code === 'auth/invalid-credential' ||
+    code === 'auth/wrong-password' ||
+    code === 'auth/user-not-found' ||
+    code === 'auth/invalid-email' ||
+    code === 'auth/invalid-login-credentials'
+  );
+}
+
 export default function LoginPage() {
   const [mode, setMode] = useState<'login' | 'register'>('login');
   const [showLoginPassword, setShowLoginPassword] = useState(false);
   const [showRegisterPassword, setShowRegisterPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const [loginError, setLoginError] = useState<{ title: string; detail: string } | null>(null);
 
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -27,6 +44,7 @@ export default function LoginPage() {
   }, [searchParams]);
 
   const toggleMode = () => {
+    setLoginError(null);
     setMode(mode === 'login' ? 'register' : 'login');
   };
 
@@ -71,7 +89,8 @@ export default function LoginPage() {
   const handleLogin = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     if (isLoading) return;
-  
+
+    setLoginError(null);
     setIsLoading(true);
   
     const form = e.currentTarget;
@@ -115,7 +134,7 @@ export default function LoginPage() {
         loginStep = 'parse error body (res not ok)';
         const data = await res.json().catch(async () => ({ msg: await res.text() }));
         console.error('[LOGIN] SESSION LOGIN FAILED (API not ok):', data);
-        alert(`ログイン失敗: ${JSON.stringify(data)}`);
+        setLoginError({ title: LOGIN_FAIL_TITLE, detail: LOGIN_FAIL_GENERIC_DETAIL });
         return;
       }
 
@@ -133,36 +152,30 @@ export default function LoginPage() {
       loginStep = 'router.push';
       if (!data?.uid) {
         console.error('[LOGIN] missing uid in session response:', data);
-        alert('ログイン失敗: セッション応答に uid がありません');
+        setLoginError({ title: LOGIN_FAIL_TITLE, detail: LOGIN_FAIL_GENERIC_DETAIL });
         return;
       }
       router.push(`/user/${data.uid}`);
     } catch (e: unknown) {
-      console.error('[LOGIN] FAILED at step:', loginStep);
-
-      let errCode = 'unknown';
-      let errMessage = '';
+      console.error('[LOGIN] FAILED at step:', loginStep, e);
 
       if (e instanceof FirebaseError) {
-        errCode = e.code;
-        errMessage = e.message;
-        console.error('FIREBASE LOGIN FAILED code:', e.code);
-        console.error('FIREBASE LOGIN FAILED message:', e.message);
+        console.error('[LOGIN] FirebaseError code:', e.code, 'message:', e.message);
+        const detail =
+          e.code.startsWith('auth/') && isFirebaseAuthCredentialError(e.code)
+            ? LOGIN_FAIL_CREDENTIAL_DETAIL
+            : LOGIN_FAIL_GENERIC_DETAIL;
+        setLoginError({ title: LOGIN_FAIL_TITLE, detail });
       } else {
-        const loose = e as { code?: string; message?: string };
-        errCode = typeof loose?.code === 'string' ? loose.code : 'unknown';
-        errMessage =
-          typeof loose?.message === 'string'
-            ? loose.message
-            : e instanceof Error
-              ? e.message
+        const msg =
+          e instanceof Error
+            ? e.message
+            : typeof (e as { message?: string })?.message === 'string'
+              ? (e as { message: string }).message
               : String(e);
-        console.error('FIREBASE LOGIN FAILED (non-FirebaseError) raw:', e);
-        console.error('FIREBASE LOGIN FAILED code:', errCode);
-        console.error('FIREBASE LOGIN FAILED message:', errMessage);
+        console.error('[LOGIN] non-Firebase error:', msg);
+        setLoginError({ title: LOGIN_FAIL_TITLE, detail: LOGIN_FAIL_GENERIC_DETAIL });
       }
-
-      alert(`ログイン失敗 [${loginStep}] ${errCode} ${errMessage}`);
     } finally {
       setIsLoading(false);
     }
@@ -186,12 +199,22 @@ export default function LoginPage() {
             <div id="loginForm">
               <h2 className="text-xl font-bold text-center mb-4">ログイン</h2>
               <form onSubmit={handleLogin} className="space-y-4">
+                {loginError && (
+                  <div
+                    role="alert"
+                    className="rounded border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-900"
+                  >
+                    <p className="font-semibold">{loginError.title}</p>
+                    <p className="mt-1 leading-snug">{loginError.detail}</p>
+                  </div>
+                )}
                 <input
                   type="email"
                   name="email"
                   placeholder="メールアドレス"
                   required
                   className="w-full p-2 border rounded"
+                  onChange={() => loginError && setLoginError(null)}
                 />
                 <div className="relative">
                   <input
@@ -200,6 +223,7 @@ export default function LoginPage() {
                     placeholder="パスワード"
                     required
                     className="w-full p-2 border rounded"
+                    onChange={() => loginError && setLoginError(null)}
                   />
                   <i
                     className={`fa-solid ${showLoginPassword ? 'fa-eye-slash' : 'fa-eye'} absolute right-3 top-3 cursor-pointer`}

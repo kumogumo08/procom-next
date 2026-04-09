@@ -128,11 +128,89 @@
 }
 
 .bentoCell {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
   border-radius: 20px;
   padding: clamp(1.35rem, 3.5vw, 1.75rem);
   background: #ffffff;
   border: 1px solid rgba(31, 31, 46, 0.08);
   box-shadow: 0 8px 24px rgba(0, 0, 0, 0.05);
+}
+
+.bentoCardBody {
+  min-width: 0;
+}
+
+/* 画像枠：共通（比率・フィットは種別クラスで上書き） */
+.bentoCardMedia {
+  position: relative;
+  width: 100%;
+  border-radius: 14px;
+  overflow: hidden;
+  background: #f0f1f8;
+  border: 1px solid rgba(31, 31, 46, 0.06);
+  flex-shrink: 0;
+}
+
+.bentoCardMediaImg {
+  object-fit: cover;
+  object-position: center;
+}
+
+/* 上段ワイド：横長バナー・複合イラスト向け（16:9 一律＋contain によるスカスカを避ける） */
+.bentoCardMediaWide {
+  aspect-ratio: 2.15 / 1;
+}
+
+.bentoCardMediaWide .bentoCardMediaImg {
+  object-fit: cover;
+  object-position: center 42%;
+}
+
+/* 「動画や写真」— 右列下の横長帯向け（ワイド列で 21:9 が自然に収まる） */
+.bentoCardMediaTall {
+  aspect-ratio: 21 / 9;
+}
+
+.bentoCardMediaTall .bentoCardMediaImg {
+  object-fit: cover;
+  object-position: center 45%;
+}
+
+/* 「検索から」— 横長UI（右列は幅広めに配分） */
+.bentoCardMediaSearch {
+  aspect-ratio: 2.35 / 1;
+}
+
+.bentoCardMediaSearch .bentoCardMediaImg {
+  object-fit: cover;
+  object-position: center 40%;
+}
+
+/* 「スマホでも」— 左タール列の縦長スクリーンショット（9:16） */
+.bentoCardMediaMobile {
+  --mob-frame-h: min(400px, 72vw);
+  width: min(100%, calc(var(--mob-frame-h) * 9 / 16));
+  height: var(--mob-frame-h);
+  aspect-ratio: 9 / 16;
+  margin-inline: auto;
+}
+
+.bentoCardMediaMobile .bentoCardMediaImg {
+  object-fit: cover;
+  object-position: top center;
+}
+
+@media (min-width: 768px) {
+  .bentoCardMediaWide {
+    aspect-ratio: 2.2 / 1;
+  }
+
+  /* 左列タールに縦長UIを置く：高めの枠でスマホ画面感を出す */
+  .bentoTall .bentoCardMediaMobile {
+    --mob-frame-h: min(460px, 58vh);
+  }
 }
 
 .bentoWide {
@@ -155,22 +233,34 @@
     gap: 1rem;
   }
 
+  /* 左：縦長スマホ向け（やや狭め） / 右：検索＋動画の横長向け（広め） */
   .bentoTall {
-    flex: 1.15;
+    flex: 0.92;
     min-height: 0;
+    min-width: 0;
     display: flex;
     flex-direction: column;
-    justify-content: center;
+    justify-content: flex-start;
   }
 
   .bentoStack {
-    flex: 1;
+    flex: 1.18;
+    min-width: 0;
     display: flex;
     flex-direction: column;
     gap: 1rem;
   }
 
   .bentoCompact {
+    min-height: 0;
+  }
+
+  /* 検索カードを縦方向もやや優先（横長画像の見せ場を確保） */
+  .bentoCompactSearch {
+    flex: 1.12;
+  }
+
+  .bentoCompactVideo {
     flex: 1;
   }
 }
@@ -257,4 +347,21 @@
   padding: 24px clamp(16px, 3vw, 24px) clamp(2rem, 4vw, 2.75rem);
   box-sizing: border-box;
   background: #ffffff;
+}
+
+.newsViewAll {
+  margin: 1rem 0 0;
+  text-align: center;
+}
+
+.newsViewAll a {
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: #0a0d59;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+.newsViewAll a:hover {
+  color: #05063f;
 }

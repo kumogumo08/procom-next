@@ -1,86 +1,260 @@
-  /* top.module.css */
-  
- .container {
-  background: linear-gradient(to bottom, #0f2027, #203a43, #2c5364);
-  color: white;
-  padding-bottom: 40px;
+/* TOP LP — 単一世界観（ヒーローは Header 内） */
+
+.page {
+  background: linear-gradient(180deg, rgba(10, 13, 89, 0.07) 0%, rgba(245, 246, 252, 0.98) 38%, #f0f1f8 100%);
 }
 
-.header {
-  text-align: center;
-  padding: 20px 20px;
-}
-
-.title {
-  font-size: 3rem;
-  margin-bottom: 10px;
-  cursor: pointer;
-}
-
-.title:hover {
-  text-decoration: underline;
-}
-
-.tagline {
-  font-size: 1.2rem;
-  color: #ddd;
-}
-
-.nav {
-  text-align: center;
-  margin-top: 20px;
-}
-
-.nav a {
-  color: #fff;
-  margin: 0 10px;
-  text-decoration: none;
-  border: 1px solid #fff;
-  padding: 8px 16px;
-  border-radius: 4px;
-}
-
-.searchBox {
-  text-align: center;
-  margin: 30px auto;
-}
-
-.searchBox input {
-  padding: 10px;
-  width: 60%;
-  max-width: 400px;
-  border: none;
-  border-radius: 6px;
-}
-
-.userList {
-  display: flex;
-  flex-wrap: wrap;
-  justify-content: center;
-  gap: 20px;
-  padding: 20px;
-}
-
-.userCard {
-  background: white;
-  color: #333;
-  border-radius: 12px;
-  padding: 20px;
-  width: 200px;
-  text-align: center;
-  box-shadow: 0 4px 12px rgba(0,0,0,0.3);
-}
-
-.userCard img {
+/**
+ * TOP ヒーロー枠：レイアウトのみ（/top の page.tsx で topHeroBackground と併用）
+ */
+.heroStrip {
+  position: relative;
   width: 100%;
-  border-radius: 8px;
+  max-width: none;
+  margin: 0;
+  padding: 0;
+  overflow-x: clip;
+  overflow-y: visible;
+  isolation: isolate;
+  border-bottom: 2px solid #ff4f81;
+  box-shadow:
+    0 1px 0 rgba(255, 255, 255, 0.06),
+    inset 0 -1px 0 rgba(0, 0, 0, 0.15);
 }
 
-.userCard a {
+/**
+ * TOP ヒーロー専用：背景画像＋薄い暗幕（他ページには未使用）
+ */
+.topHeroBackground {
+  background-image: url('/images/backgrounds/bg-procom-hero.png');
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+}
+
+.topHeroBackground::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  background: rgba(0, 0, 0, 0.28);
+  pointer-events: none;
+}
+
+.heroStrip > * {
+  position: relative;
+  z-index: 1;
+}
+
+/* ③ Procomとは — 軽量 */
+.aboutSection {
+  padding: clamp(3rem, 7vw, 4.5rem) 1.25rem;
+  background: #ffffff;
+}
+
+.aboutInner {
+  max-width: 720px;
+  margin: 0 auto;
+  text-align: center;
+}
+
+.aboutTitle {
+  font-size: clamp(1.1rem, 2.5vw, 1.25rem);
+  font-weight: 800;
+  color: #1f1f2e;
+  margin: 0 0 0.75rem;
+  letter-spacing: -0.02em;
+}
+
+.aboutOneLiner {
+  font-size: clamp(0.95rem, 2.2vw, 1.05rem);
+  color: #4a4a5c;
+  line-height: 1.75;
+  margin: 0 0 1.75rem;
+}
+
+.aboutPoints {
+  display: flex;
+  flex-direction: column;
+  gap: 0.85rem;
+  text-align: left;
+  max-width: 480px;
+  margin: 0 auto;
+}
+
+.aboutPoint {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.75rem;
+  font-size: 0.92rem;
+  color: #3d3d50;
+  line-height: 1.55;
+}
+
+.aboutPointIcon {
+  flex-shrink: 0;
+  width: 6px;
+  height: 6px;
+  margin-top: 0.55em;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #0a0d59, #05063f);
+}
+
+/* ④ Bento */
+.bentoSection {
+  padding: clamp(2.5rem, 6vw, 4rem) 1.25rem clamp(3.5rem, 8vw, 5rem);
+  background: #ffffff;
+}
+
+.bentoInner {
+  max-width: 920px;
+  margin: 0 auto;
+}
+
+.bentoTitle {
+  font-size: clamp(1.35rem, 3vw, 1.6rem);
+  font-weight: 800;
+  color: #1f1f2e;
+  text-align: center;
+  margin: 0 0 0.5rem;
+  letter-spacing: -0.02em;
+}
+
+.bentoLead {
+  text-align: center;
+  color: #6b6b80;
+  font-size: 0.92rem;
+  margin: 0 0 2rem;
+}
+
+.bentoCell {
+  border-radius: 20px;
+  padding: clamp(1.35rem, 3.5vw, 1.75rem);
+  background: #ffffff;
+  border: 1px solid rgba(31, 31, 46, 0.08);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.05);
+}
+
+.bentoWide {
+  margin-bottom: 1rem;
+  background: #ffffff;
+  border-color: rgba(255, 79, 129, 0.22);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.05);
+}
+
+.bentoSplit {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+@media (min-width: 768px) {
+  .bentoSplit {
+    flex-direction: row;
+    align-items: stretch;
+    gap: 1rem;
+  }
+
+  .bentoTall {
+    flex: 1.15;
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+  }
+
+  .bentoStack {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+  }
+
+  .bentoCompact {
+    flex: 1;
+  }
+}
+
+.bentoCellTitle {
+  font-size: clamp(1.02rem, 2.2vw, 1.15rem);
+  font-weight: 800;
+  color: #1f1f2e;
+  margin: 0 0 0.5rem;
+  line-height: 1.4;
+  letter-spacing: -0.02em;
+}
+
+.bentoCellDesc {
+  font-size: 0.88rem;
+  color: #5c5c72;
+  line-height: 1.7;
+  margin: 0;
+}
+
+/* ⑤ CTA */
+.ctaSection {
+  padding: clamp(3rem, 8vw, 4.5rem) 1.25rem;
+  background: linear-gradient(135deg, #0a0d59, #05063f);
+  color: #fff;
+  text-align: center;
+}
+
+.ctaInner {
+  max-width: 480px;
+  margin: 0 auto;
+}
+
+.ctaTitle {
+  font-size: clamp(1.35rem, 3.5vw, 1.65rem);
+  font-weight: 800;
+  margin: 0 0 1.5rem;
+  line-height: 1.35;
+  letter-spacing: -0.02em;
+}
+
+.ctaBtn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 16px 36px;
+  border-radius: 999px;
+  background: linear-gradient(135deg, #ff4f81, #e11d48);
+  color: #fff;
+  font-weight: 800;
+  font-size: 1.05rem;
   text-decoration: none;
-  color: #1f1f1f;
-  display: block;
-  margin-top: 10px;
-  font-weight: bold;
+  box-shadow: 0 12px 36px rgba(255, 79, 129, 0.35);
+  transition: filter 0.15s ease, transform 0.15s ease;
 }
 
+.ctaBtn:hover {
+  filter: brightness(1.08);
+  transform: translateY(-2px);
+  color: #fff;
+}
+
+.ctaSub {
+  margin: 1.25rem 0 0;
+  font-size: 0.82rem;
+  color: rgba(255, 255, 255, 0.55);
+}
+
+.ctaSub a {
+  color: rgba(255, 255, 255, 0.85);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+.ctaSub a:hover {
+  color: #fff;
+}
+
+/* お知らせ（内側カードは NewsList の max-width と揃えて広めに） */
+.newsWrap {
+  width: 100%;
+  max-width: 960px;
+  margin: 0 auto;
+  padding: 24px clamp(16px, 3vw, 24px) clamp(2rem, 4vw, 2.75rem);
+  box-sizing: border-box;
+  background: #ffffff;
+}

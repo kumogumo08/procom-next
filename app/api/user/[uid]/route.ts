@@ -19,6 +19,7 @@ import {
   validateRawAppsPayloadForProfile,
 } from '@/lib/appProjects';
 import { enrichAppsWithStoreIcons } from '@/lib/appIcons';
+import { clampPhotoPositionY } from '@/lib/photoPosition';
 
 initializeFirebaseAdmin();
 const db = getFirestore();
@@ -67,14 +68,17 @@ export async function GET(
 
     const photos = Array.isArray(rawProfile.photos)
       ? rawProfile.photos
-          .map((p: any) =>
-            typeof p === 'string'
-              ? { url: p, position: '50' }
-              : p?.url
-              ? { url: p.url, position: p.position || '50' }
-              : null
-          )
-          .filter(Boolean) as { url: string; position?: string }[]
+          .map((p: any) => {
+            if (typeof p === 'string') return { url: p, position: clampPhotoPositionY(undefined) };
+            if (p?.url) {
+              return {
+                url: p.url,
+                position: clampPhotoPositionY(p.position),
+              };
+            }
+            return null;
+          })
+          .filter(Boolean) as { url: string; position: number }[]
       : [];
 
     // 🔧 instagramPostUrl の正規化
@@ -218,13 +222,20 @@ export async function POST(req: NextRequest, props: { params: Promise<{ uid: str
 
         profile.photos = uploadedPhotoUrls.map((url, i) => ({
           url,
-          position: base64Photos[i]?.position ?? '50',
+          position: clampPhotoPositionY(existingProfile.photos?.[i]?.position),
         }));
       } else {
-        profile.photos = nonBase64Photos.map((photo: any) => ({
-          url: photo.url,
-          position: photo.position ?? '50',
-        }));
+        profile.photos = nonBase64Photos.map((photo: any, i: number) => {
+          const url = photo.url;
+          let y = photo.position;
+          if (typeof y !== 'number' || Number.isNaN(y)) {
+            const ex = existingProfile.photos?.[i];
+            if (ex && typeof ex === 'object' && typeof (ex as any).position === 'number') {
+              y = (ex as any).position;
+            }
+          }
+          return { url, position: clampPhotoPositionY(y) };
+        });
       }
     }
 

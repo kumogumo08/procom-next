@@ -19,7 +19,7 @@ declare global {
 
 type Photo = {
   url: string;
-  position?: string;
+  position?: number;
 };
 
 type Profile = {
@@ -197,27 +197,6 @@ if (profile.youtubeMode === 'manual') {
       });
       localStorage.setItem('calendarEvents', JSON.stringify(events));
       window.createCalendar?.(new Date(), own);
-    }
-
-    // お気に入りボタン
-    const favBtn = document.getElementById('favoriteBtn');
-    if (!own && favBtn) {
-      favBtn.style.display = 'inline-block';
-      favBtn.onclick = async () => {
-        const res = await fetch(`/api/favorites/${uid}`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' }
-        });
-        if (res.ok) {
-          alert('お気に入りに追加しました');
-          (favBtn as HTMLButtonElement).disabled = true;
-        } else {
-          alert('ログインしてください');
-          window.location.href = '/login';
-        }
-      };
-    } else if (favBtn) {
-      favBtn.style.display = 'none';
     }
 
     // 写真保存ボタン

@@ -1,0 +1,179 @@
+/**
+ * ユーザーページ専用ナビ（濃い紫グラデは .userPagePcHeader と同一トーン）
+ * 背景: linear-gradient(135deg, #1f1f2e, #38385a)
+ * アクセント下線: #ff4f81
+ */
+
+.bar {
+  position: sticky;
+  top: 0;
+  z-index: 1000;
+  background: linear-gradient(135deg, #1f1f2e, #38385a);
+  border-bottom: 4px solid #ff4f81;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+}
+
+.inner {
+  max-width: 1100px;
+  margin: 0 auto;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 10px 16px;
+  min-height: 52px;
+  box-sizing: border-box;
+}
+
+.logo {
+  flex-shrink: 0;
+  font-weight: 800;
+  font-size: clamp(17px, 3.5vw, 20px);
+  letter-spacing: 0.08em;
+  color: #fff;
+  text-decoration: none;
+  text-shadow: 0 1px 8px rgba(0, 0, 0, 0.35);
+}
+
+.logo:hover {
+  opacity: 0.92;
+}
+
+.center {
+  flex: 1;
+  display: flex;
+  justify-content: center;
+  min-width: 0;
+  max-width: 420px;
+}
+
+.searchForm {
+  width: 100%;
+  max-width: 380px;
+}
+
+.searchInput {
+  width: 100%;
+  box-sizing: border-box;
+  border: 1px solid rgba(255, 255, 255, 0.22);
+  border-radius: 20px;
+  background: rgba(255, 255, 255, 0.12);
+  padding: 8px 16px;
+  font-size: 14px;
+  outline: none;
+  color: #fff;
+}
+
+.searchInput::placeholder {
+  color: rgba(255, 255, 255, 0.6);
+}
+
+.userArea {
+  position: relative;
+  flex-shrink: 0;
+  align-self: stretch;
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+}
+
+.loginBtn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 8px 14px;
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.15);
+  border: 1px solid rgba(255, 255, 255, 0.35);
+  color: #fff;
+  font-size: 14px;
+  font-weight: 700;
+  text-decoration: none;
+}
+
+.loginBtn:hover {
+  background: rgba(255, 255, 255, 0.22);
+}
+
+.mypageBtn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 8px 12px;
+  border: none;
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.15);
+  border: 1px solid rgba(255, 255, 255, 0.35);
+  color: #fff;
+  font-size: 14px;
+  font-weight: 700;
+  cursor: pointer;
+  font-family: inherit;
+}
+
+.mypageBtn:hover {
+  background: rgba(255, 255, 255, 0.22);
+}
+
+.dropdown {
+  position: absolute;
+  right: 0;
+  top: 100%;
+  width: 220px;
+  margin-top: 4px;
+  background: #fff;
+  border-radius: 12px;
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.15);
+  padding: 8px;
+  z-index: 1001;
+}
+
+.dropdownItem {
+  display: block;
+  width: 100%;
+  padding: 10px 12px;
+  border-radius: 8px;
+  font-size: 15px;
+  color: #1f1f2e;
+  text-decoration: none;
+  text-align: left;
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-family: inherit;
+  box-sizing: border-box;
+}
+
+.dropdownItem:hover {
+  background: #f0f2f5;
+}
+
+.dropdownItemForm {
+  margin: 0;
+}
+
+@media (max-width: 639px) {
+  .inner {
+    padding: 8px 12px;
+    gap: 8px;
+  }
+
+  .center {
+    max-width: none;
+  }
+
+  .searchForm {
+    max-width: 140px;
+  }
+
+  .searchInput {
+    padding: 7px 10px;
+    font-size: 13px;
+  }
+
+  .mypageBtn,
+  .loginBtn {
+    padding: 7px 10px;
+    font-size: 13px;
+  }
+}

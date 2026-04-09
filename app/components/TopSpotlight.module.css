@@ -1,0 +1,173 @@
+/* ギャラリー風・利用者スポットライト */
+
+.section {
+  padding: clamp(3.5rem, 8vw, 5.5rem) 1.25rem;
+  background: linear-gradient(180deg, rgba(10, 13, 89, 0.09) 0%, rgba(10, 13, 89, 0.04) 50%, rgba(245, 246, 252, 0.95) 100%);
+}
+
+.inner {
+  max-width: 1120px;
+  margin: 0 auto;
+}
+
+.kicker {
+  font-size: 0.72rem;
+  letter-spacing: 0.28em;
+  text-transform: uppercase;
+  color: rgba(31, 31, 46, 0.45);
+  margin: 0 0 0.5rem;
+  text-align: center;
+}
+
+.title {
+  font-size: clamp(1.35rem, 3.2vw, 1.75rem);
+  font-weight: 800;
+  color: #1f1f2e;
+  text-align: center;
+  margin: 0 0 0.65rem;
+  letter-spacing: -0.02em;
+}
+
+.lead {
+  text-align: center;
+  color: #5c5c72;
+  font-size: 0.95rem;
+  line-height: 1.65;
+  margin: 0 auto 2rem;
+  max-width: 28rem;
+}
+
+.track {
+  display: flex;
+  flex-wrap: nowrap;
+  gap: clamp(14px, 2.5vw, 22px);
+  overflow-x: auto;
+  overflow-y: hidden;
+  padding: 8px 4px 20px;
+  margin: 0 -4px;
+  -webkit-overflow-scrolling: touch;
+  scroll-snap-type: x mandatory;
+  scroll-padding-inline: 8px;
+}
+
+.track::-webkit-scrollbar {
+  height: 5px;
+}
+
+.track::-webkit-scrollbar-thumb {
+  background: rgba(31, 31, 46, 0.15);
+  border-radius: 999px;
+}
+
+.card {
+  flex: 0 0 auto;
+  scroll-snap-align: start;
+  text-decoration: none;
+  color: inherit;
+  border-radius: 20px;
+  overflow: hidden;
+  background: #ffffff;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.05);
+  border: 1px solid rgba(31, 31, 46, 0.08);
+  transition: transform 0.25s ease, box-shadow 0.25s ease;
+}
+
+.card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 16px 40px rgba(0, 0, 0, 0.08);
+}
+
+.cardFeatured {
+  width: min(72vw, 280px);
+  border: 1px solid rgba(255, 79, 129, 0.35);
+  box-shadow:
+    0 8px 24px rgba(0, 0, 0, 0.05),
+    0 4px 16px rgba(255, 79, 129, 0.1);
+}
+
+.cardFeatured:hover {
+  box-shadow:
+    0 16px 40px rgba(0, 0, 0, 0.08),
+    0 8px 24px rgba(255, 79, 129, 0.14);
+}
+
+.cardStandard {
+  width: min(58vw, 200px);
+}
+
+.thumbWrap {
+  aspect-ratio: 3 / 4;
+  background: rgba(10, 13, 89, 0.1);
+  overflow: hidden;
+}
+
+.cardFeatured .thumbWrap {
+  aspect-ratio: 4 / 5;
+}
+
+.thumb {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: center top;
+  display: block;
+}
+
+.thumbPlaceholder {
+  width: 100%;
+  height: 100%;
+  min-height: 140px;
+  background: linear-gradient(160deg, rgba(10, 13, 89, 0.12) 0%, rgba(10, 13, 89, 0.06) 100%);
+}
+
+.meta {
+  padding: 14px 14px 16px;
+}
+
+.cardFeatured .meta {
+  padding: 16px 16px 18px;
+}
+
+.name {
+  font-size: 0.92rem;
+  font-weight: 800;
+  color: #1f1f2e;
+  margin: 0 0 4px;
+  line-height: 1.35;
+  letter-spacing: -0.02em;
+}
+
+.cardFeatured .name {
+  font-size: 1.05rem;
+}
+
+.job {
+  font-size: 0.78rem;
+  color: #6b6b80;
+  margin: 0;
+  line-height: 1.45;
+  font-weight: 500;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.cardFeatured .job {
+  font-size: 0.82rem;
+}
+
+.badge {
+  display: inline-block;
+  font-size: 0.62rem;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  color: #ff4f81;
+  margin-bottom: 8px;
+}
+
+.muted {
+  text-align: center;
+  color: #888;
+  font-size: 0.9rem;
+}

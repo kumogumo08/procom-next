@@ -17,7 +17,7 @@ type CalendarEvent = {
 
 type Photo = {
   url: string;
-  position?: string;
+  position?: number;
 };
 
 type Profile = {

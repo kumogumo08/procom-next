@@ -6,8 +6,10 @@ const linkClass: string = "text-white hover:underline mx-1";
 
 const Footer: React.FC = () => {
   return (
-    <footer className="bg-gradient-to-br from-[#1f1f2e] to-[#38385a] text-white text-center py-8 px-5 mt-16 border-t-4 border-[#ff4f81] shadow-md">
-      <p className="text-sm">&copy; 2025 Procom</p>
+    <footer className="bg-gradient-to-br from-[#0a0d59] to-[#05063f] text-white text-center py-8 px-5 mt-16 border-t-4 border-[#ff4f81] shadow-md">
+      <p className="text-xs opacity-80">
+        &copy; {new Date().getFullYear()} Procom
+      </p>
 
       {/* 🔽 トップに戻るボタン */}
       <div className="my-4">

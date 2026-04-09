@@ -1,0 +1,61 @@
+/* 下部カルーセル（PhotoSlider 専用）— globals に置かない */
+.wrapper {
+  position: relative;
+  z-index: 100;
+  margin: 0 auto;
+  max-width: 600px;
+}
+
+.track {
+  perspective: 1000px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  position: relative;
+  height: 320px;
+  transform-style: preserve-3d;
+  transition: all 0.3s ease;
+}
+
+.slide {
+  position: absolute;
+  transform: rotateY(calc(var(--i) * 45deg)) translateZ(400px);
+  transition: transform 0.5s ease, opacity 0.5s ease;
+  opacity: 0.6;
+  border-radius: 12px;
+  box-shadow: 0 6px 15px rgba(0, 0, 0, 0.15);
+  overflow: hidden;
+  width: 280px;
+  height: 180px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  transform-origin: center center;
+}
+
+.slideActive {
+  transform: rotateY(0deg) translateZ(500px);
+  opacity: 1;
+  z-index: 10;
+  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.3);
+}
+
+.frame {
+  width: 100%;
+  height: 100%;
+  background: #f3f4f6;
+  border-radius: 18px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+}
+
+.img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  object-position: center center;
+  display: block;
+}

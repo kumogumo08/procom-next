@@ -1,30 +1,3 @@
-.header {
-  text-align: center;
-  padding: 60px 20px;
-}
-
-.link {
-  color: inherit;
-  text-decoration: none;
-}
-
-.tagline {
-  font-size: 1.3rem;
-  font-style: italic;
-  color: #ffdede;
-  margin-bottom: 10px;
-  animation: fadeInUp 1.2s ease-out;
-}
-
-.description {
-  font-size: 1rem;
-  max-width: 600px;
-  margin: 0 auto;
-  color: #e0e0e0;
-  line-height: 1.6;
-  animation: fadeInUp 1.5s ease-out;
-}
-
 .authLink {
   text-align: center;
   margin-top: 20px;
@@ -79,54 +52,10 @@
   background-color: #2e59d9;
 }
 
-/* アニメーション */
-@keyframes fadeInDown {
-  from { opacity: 0; transform: translateY(-20px); }
-  to   { opacity: 1; transform: translateY(0); }
-}
-
-@keyframes fadeInUp {
-  from { opacity: 0; transform: translateY(20px); }
-  to   { opacity: 1; transform: translateY(0); }
-}
-
-/* Header.module.css に追記してOK */
-
-.username {
-  font-size: 1.5rem;
-  font-weight: bold;
-  margin: 10px 0;
-  color: #fff; /* 必要なら明るめの色に */
-}
-
-.authUI {
-  margin-top: 20px;
-  background: (135deg, #1f1f2e, #38385a);
-  border-radius: 8px;
-  padding: 10px;
-  text-align: center;
-}
-
-.authButtons {
-  display: flex;
-  justify-content: center;
-  gap: 10px;
-  margin-bottom: 10px;
-  flex-wrap: wrap;
-}
 .authGreeting {
   font-weight: bold;
   margin-bottom: 8px;
   color: white;
-}
-
-/* PC版を表示、スマホでは非表示 */
-.pcHeader {
-  display: block;
-}
-
-.mobileHeader {
-  display: none;
 }
 
 /* スマホ用スタイル */
@@ -155,8 +84,21 @@
   .logo {
     font-size: 20px;
     font-weight: bold;
-    color: #eee;
+    /* ヒーロー（星空）上では白＋影で視認性を確保（#1a1a2e は暗背景と重なる） */
+    color: #fff;
+    text-shadow: 0 2px 10px rgba(0, 0, 0, 0.55);
     text-decoration: none;
+  }
+
+  .mobileTagline {
+    flex: 1 1 auto;
+    min-width: 0;
+    text-align: center;
+    font-size: 0.72rem;
+    font-weight: 600;
+    color: #444;
+    line-height: 1.25;
+    padding: 0 6px;
   }
 
   .iconButtons {
@@ -249,6 +191,8 @@
 
 .title {
   font-family: 'Segoe UI', 'Helvetica Neue', sans-serif;
+  font-size: clamp(1.75rem, 5vw, 3rem);
+  font-weight: 700;
   letter-spacing: 0.15em;
   text-shadow: 0 2px 12px rgba(0, 0, 0, 0.5);
   margin: 0 0 6px;
@@ -258,25 +202,33 @@
 .link { color: inherit; text-decoration: none; }
 
 .tagline {
+  font-size: clamp(1rem, 2.5vw, 1.3rem);
+  font-style: italic;
+  color: #ffdede;
   font-weight: 700;
   margin: 8px 0 2px;
   animation: fadeInUp 1.2s ease-out;
 }
 
 .description {
+  font-size: clamp(0.9rem, 2vw, 1rem);
   max-width: 760px;
   margin: 0 auto 14px;
+  color: #e0e0e0;
   line-height: 1.8;
   animation: fadeInUp 1.5s ease-out;
 }
 
 .username {
+  font-size: clamp(1.1rem, 2.8vw, 1.5rem);
   font-weight: bold;
   margin: 10px 0;
+  color: #fff;
 }
 
 .authUI {
   margin-top: 20px;
+  background: linear-gradient(135deg, #1f1f2e, #38385a);
   border-radius: 8px;
   padding: 10px;
   text-align: center;
@@ -342,7 +294,7 @@
 .pcHeader::before {
   background-image:
     linear-gradient(180deg, rgba(6, 10, 25, 0.85) 0%, rgba(10, 16, 40, 0.72) 40%, rgba(12, 18, 45, 0.78) 100%),
-    url("/moon.png");
+    url("/images/backgrounds/bg-procom-hero.png");
 }
 
 @media (min-width: 1024px) {
@@ -357,7 +309,7 @@
 .mobileHeader::before {
   background-image:
     linear-gradient(180deg, rgba(7, 10, 25, 0.92), rgba(12, 18, 45, 0.85)),
-    url("/moon.png");
+    url("/images/backgrounds/bg-procom-hero.png");
   background-position: center 20%;
 }
 
@@ -372,9 +324,11 @@
   font-size: 22px;
   font-weight: 800;
   letter-spacing: .12em;
+  color: #fff;
+  text-shadow: 0 2px 12px rgba(0, 0, 0, 0.5);
 }
 
-.iconButtons { display: flex; gap: 8px; }
+.iconButtons { display: flex; gap: 8px; align-items: center; }
 .icon {
   background: rgba(255,255,255,0.12);
   border: none;
@@ -382,6 +336,73 @@
   width: 40px; height: 40px;
   display: grid; place-items: center;
   cursor: pointer;
+  color: #fff;
+  font-size: 1.1rem;
+  line-height: 1;
+}
+/* モバイル：虫眼鏡のみ表示 → タップでその場に検索欄展開（Font Awesome / globals.css） */
+.searchIconBtn {
+  background: rgba(255, 255, 255, 0.12);
+  border: none;
+  border-radius: 10px;
+  width: 40px;
+  height: 40px;
+  display: grid;
+  place-items: center;
+  cursor: pointer;
+  padding: 0;
+  color: #fff;
+  font-size: 1rem;
+  line-height: 1;
+}
+
+.searchIconBtn i {
+  font-size: 1.05rem;
+  opacity: 0.95;
+}
+
+.mobileSearchExpand {
+  margin-top: 4px;
+  margin-bottom: 2px;
+  padding: 0 2px;
+}
+
+.mobileInlineSearchForm {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  width: 100%;
+  background: #fff;
+  padding: 10px 12px;
+  border-radius: 12px;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.2);
+}
+
+.mobileInlineSearchInput {
+  flex: 1;
+  min-width: 0;
+  padding: 10px 12px;
+  font-size: 16px;
+  border: 1px solid #ccc;
+  border-radius: 8px;
+  color: #1a1a2e;
+  background: #fff;
+}
+
+.mobileInlineSearchSubmit {
+  flex-shrink: 0;
+  background-color: #4e73df;
+  color: #fff;
+  padding: 10px 14px;
+  font-size: 0.95rem;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  font-weight: 700;
+}
+
+.mobileInlineSearchSubmit:hover {
+  background-color: #2e59d9;
 }
 .iconImage { width: 22px; height: 22px; filter: invert(1); }
 
@@ -393,12 +414,32 @@
 }
 
 /* ===== 表示切替 ===== */
-.pcHeader { display: block; }
+/* .pcHeader は上段で display:flex — ここで display:block にすると flex が無効化され TOP が崩れる */
 .mobileHeader { display: none; }
 
 @media (max-width: 767px) {
   .pcHeader { display: none !important; }
   .mobileHeader { display: block !important; }
+}
+
+/* ユーザーページ PC 用（旧 globals の header 相当）— TOP の Header コンポーネントとは別 */
+.userPagePcHeader {
+  background: linear-gradient(135deg, #1f1f2e, #38385a);
+  padding: 60px 20px;
+  text-align: center;
+  color: #fff;
+  border-bottom: 4px solid #ff4f81;
+  box-shadow: 0 8px 15px rgba(0, 0, 0, 0.2);
+  position: relative;
+}
+
+.userPagePcHeader h1 {
+  font-family: 'Segoe UI', 'Helvetica Neue', sans-serif;
+  font-size: clamp(1.5rem, 4vw, 3rem);
+  font-weight: 700;
+  letter-spacing: 10px;
+  margin: 0 0 15px 0;
+  animation: fadeInDown 1s ease-out;
 }
 
 /* ===== アニメーション ===== */
@@ -411,3 +452,55 @@
   from { opacity: 0; transform: translateY(20px); }
   to   { opacity: 1; transform: translateY(0); }
 }
+
+/* ヒーロー内検索（PC・モバイル共通。既存の .searchForm 上書きと分離して白い検索バーを維持） */
+.heroSearchWrapper {
+  margin-top: 10px;
+  margin-bottom: 4px;
+  display: flex;
+  justify-content: center;
+  width: min(92vw, 920px);
+  margin-left: auto;
+  margin-right: auto;
+  padding: 0 12px;
+}
+
+.heroSearchForm {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  width: 100%;
+  max-width: 600px;
+  background: #fff;
+  padding: 10px 14px;
+  border-radius: 999px;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.18);
+}
+
+.heroSearchInput {
+  flex: 1;
+  min-width: 0;
+  padding: 10px 12px;
+  font-size: 1rem;
+  border: 1px solid #ccc;
+  border-radius: 8px;
+  color: #1a1a2e;
+  background: #fff;
+}
+
+.heroSearchButton {
+  flex-shrink: 0;
+  background-color: #4e73df;
+  color: #fff;
+  padding: 10px 18px;
+  font-size: 1rem;
+  border: none;
+  border-radius: 999px;
+  cursor: pointer;
+  font-weight: 700;
+}
+
+.heroSearchButton:hover {
+  background-color: #2e59d9;
+}
+

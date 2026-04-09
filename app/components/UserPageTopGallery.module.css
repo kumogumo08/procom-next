@@ -1,0 +1,446 @@
+/* ユーザーページ最上部の写真ヒーロー（.user-page-section の外・全幅） */
+.root {
+  width: 100%;
+  max-width: 100%;
+  background: #0f172a;
+  border-bottom: 1px solid #e2e8f0;
+  padding: 0 0 10px;
+  box-sizing: border-box;
+}
+
+.viewport {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  width: 100%;
+  max-width: none;
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+  overflow: visible;
+}
+
+.arrow {
+  flex-shrink: 0;
+  width: 40px;
+  height: 40px;
+  border: none;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.95);
+  color: #334155;
+  font-size: 1.75rem;
+  line-height: 1;
+  cursor: pointer;
+  box-shadow: 0 2px 8px rgba(15, 23, 42, 0.12);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding-bottom: 4px;
+}
+
+.arrow:hover {
+  background: #fff;
+  color: #0f172a;
+}
+
+.arrowSpacer {
+  width: 40px;
+  flex-shrink: 0;
+}
+
+.stage {
+  flex: 1;
+  min-width: 0;
+  max-width: 100%;
+  overflow: visible;
+}
+
+.singleWrap {
+  width: 100%;
+  max-width: none;
+  margin: 0;
+  min-height: 200px;
+  max-height: 420px;
+  height: clamp(280px, min(40vw, 44vh), 420px);
+  background: #1e293b;
+  border-radius: 0;
+  box-shadow: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  box-sizing: border-box;
+}
+
+.singleImg {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: center center;
+  display: block;
+}
+
+.dragArea {
+  touch-action: none;
+  cursor: ns-resize;
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+/*
+ * 最大5枚：farPrev / prev / active / next / farNext を absolute で重ねる
+ * --gallery-overlap: 中央と内側左右の重なり
+ * --gallery-overlap-far: 内側と外側（far）の重なり
+ *
+ * 【中央だけ顔が切れる原因】
+ * 全スライド共通の高さに対し、中央だけ幅（--gallery-center-w）が大きいと
+ * 「枠の縦横比」だけ横長になり、object-fit:cover の拡大率が左右と変わる（ポートレートほど上下トリミングが強くなる）。
+ * さらに .slideActive だけ scale(>1) が乗ると、見た目のズーム差がさらに開く。
+ * → 中央幅を左右に寄せる + 中央の scale を控えめにして、見え方の差を縮める。
+ */
+.track {
+  --gallery-center-w: 68%;
+  --gallery-side-w: 54%;
+  --gallery-far-w: 40%;
+  --gallery-overlap: 18%;
+  --gallery-overlap-far: 12%;
+  position: relative;
+  width: 100%;
+  min-height: 200px;
+  max-height: 420px;
+  height: clamp(280px, min(40vw, 44vh), 420px);
+  box-sizing: border-box;
+  overflow: visible;
+  isolation: isolate;
+}
+
+.slide {
+  position: absolute;
+  top: 0;
+  padding: 0;
+  border: none;
+  margin: 0;
+  overflow: hidden;
+  background: #1e293b;
+  box-sizing: border-box;
+  height: 100%;
+  appearance: none;
+  transition:
+    transform 0.28s ease,
+    opacity 0.28s ease,
+    filter 0.28s ease,
+    box-shadow 0.28s ease;
+}
+
+/* 左外：さらに奥・小さめ */
+.slideFarPrev {
+  left: calc(
+    50% - var(--gallery-center-w) / 2 - var(--gallery-side-w) - var(--gallery-far-w) +
+      var(--gallery-overlap) + var(--gallery-overlap-far)
+  );
+  width: var(--gallery-far-w);
+  border-radius: 12px;
+  cursor: pointer;
+  z-index: 0;
+  opacity: 0.82;
+  transform: translateY(10px) scale(0.74);
+  transform-origin: right center;
+  filter: brightness(0.55);
+  box-shadow: 0 2px 10px rgba(15, 23, 42, 0.5);
+}
+
+.slideFarPrev:hover {
+  opacity: 0.92;
+  filter: brightness(0.66);
+  transform: translateY(9px) scale(0.76);
+}
+
+/* 左内：中央のすぐ後ろ・やや大きめ */
+.slidePrev {
+  left: calc(
+    50% - var(--gallery-center-w) / 2 - var(--gallery-side-w) + var(--gallery-overlap)
+  );
+  width: var(--gallery-side-w);
+  border-radius: 12px;
+  cursor: pointer;
+  z-index: 2;
+  opacity: 0.9;
+  transform: translateY(4px) scale(0.84);
+  transform-origin: right center;
+  filter: brightness(0.68);
+  box-shadow: 0 4px 14px rgba(15, 23, 42, 0.45);
+}
+
+.slidePrev:hover {
+  opacity: 0.98;
+  filter: brightness(0.78);
+  transform: translateY(3px) scale(0.86);
+}
+
+.slideActive {
+  left: 50%;
+  width: var(--gallery-center-w);
+  border-radius: 16px;
+  z-index: 5;
+  cursor: default;
+  /* 左右より強い scale は cover の「アップ感」を増やすため 1 に近づける */
+  transform: translateX(-50%) translateY(-4px) scale(1);
+  transform-origin: center center;
+  filter: none;
+  box-shadow:
+    0 10px 28px rgba(15, 23, 42, 0.35),
+    0 28px 64px rgba(15, 23, 42, 0.42),
+    0 0 0 1px rgba(255, 255, 255, 0.06);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.slideActive.dragArea {
+  cursor: ns-resize;
+}
+
+/* 右内 */
+.slideNext {
+  left: calc(50% + var(--gallery-center-w) / 2 - var(--gallery-overlap));
+  width: var(--gallery-side-w);
+  border-radius: 12px;
+  cursor: pointer;
+  z-index: 2;
+  opacity: 0.9;
+  transform: translateY(4px) scale(0.84);
+  transform-origin: left center;
+  filter: brightness(0.68);
+  box-shadow: 0 4px 14px rgba(15, 23, 42, 0.45);
+}
+
+.slideNext:hover {
+  opacity: 0.98;
+  filter: brightness(0.78);
+  transform: translateY(3px) scale(0.86);
+}
+
+/* 右外 */
+.slideFarNext {
+  left: calc(
+    50% + var(--gallery-center-w) / 2 - var(--gallery-overlap) + var(--gallery-side-w) -
+      var(--gallery-overlap-far)
+  );
+  width: var(--gallery-far-w);
+  border-radius: 12px;
+  cursor: pointer;
+  z-index: 0;
+  opacity: 0.82;
+  transform: translateY(10px) scale(0.74);
+  transform-origin: left center;
+  filter: brightness(0.55);
+  box-shadow: 0 2px 10px rgba(15, 23, 42, 0.5);
+}
+
+.slideFarNext:hover {
+  opacity: 0.92;
+  filter: brightness(0.66);
+  transform: translateY(9px) scale(0.76);
+}
+
+.slideImg {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: center center;
+  display: block;
+}
+
+.dots {
+  display: flex;
+  justify-content: center;
+  gap: 8px;
+  margin-top: 10px;
+}
+
+.dot,
+.dotActive {
+  width: 8px;
+  height: 8px;
+  border-radius: 999px;
+  border: none;
+  padding: 0;
+  cursor: pointer;
+  background: #cbd5e1;
+}
+
+.dotActive {
+  background: #3b82f6;
+  transform: scale(1.15);
+}
+
+.empty {
+  height: clamp(280px, min(40vw, 44vh), 420px);
+  min-height: 200px;
+  max-height: 420px;
+  margin: 0;
+  border-radius: 0;
+  background: linear-gradient(145deg, #1e293b, #334155);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.emptyText {
+  margin: 0;
+  font-size: 0.9375rem;
+  color: #cbd5e1;
+  font-weight: 600;
+}
+
+@media (min-width: 768px) and (max-width: 1023px) {
+  .track {
+    --gallery-center-w: 67%;
+    --gallery-side-w: 52%;
+    --gallery-far-w: 38%;
+    --gallery-overlap: 17%;
+    --gallery-overlap-far: 11%;
+    min-height: 280px;
+    max-height: 420px;
+    height: clamp(320px, min(40vw, 44vh), 420px);
+  }
+}
+
+@media (min-width: 1024px) {
+  .stage {
+    max-width: min(100%, 1180px);
+    margin-inline: auto;
+    padding-block: 10px;
+  }
+
+  .track {
+    --gallery-center-w: 67%;
+    --gallery-side-w: 54%;
+    --gallery-far-w: 40%;
+    --gallery-overlap: 22%;
+    --gallery-overlap-far: 15%;
+    min-height: 420px;
+    max-height: 560px;
+    height: clamp(460px, min(32vw, 52vh), 560px);
+  }
+
+  .slideFarPrev,
+  .slideFarNext {
+    transform: translateY(12px) scale(0.72);
+    opacity: 0.85;
+    filter: brightness(0.52);
+  }
+
+  .slideFarPrev:hover,
+  .slideFarNext:hover {
+    transform: translateY(11px) scale(0.74);
+  }
+
+  .slidePrev,
+  .slideNext {
+    transform: translateY(6px) scale(0.82);
+    opacity: 0.88;
+    filter: brightness(0.62);
+  }
+
+  .slidePrev:hover,
+  .slideNext:hover {
+    transform: translateY(5px) scale(0.84);
+  }
+
+  .slideActive {
+    transform: translateX(-50%) translateY(-6px) scale(1.01);
+    box-shadow:
+      0 14px 36px rgba(15, 23, 42, 0.4),
+      0 36px 80px rgba(15, 23, 42, 0.48),
+      0 0 0 1px rgba(255, 255, 255, 0.08);
+  }
+
+  .singleWrap {
+    min-height: 420px;
+    max-height: 560px;
+    height: clamp(460px, min(32vw, 52vh), 560px);
+  }
+
+  .empty {
+    min-height: 420px;
+    max-height: 560px;
+    height: clamp(460px, min(32vw, 52vh), 560px);
+  }
+}
+
+@media (max-width: 767px) {
+  .root {
+    padding: 0 0 8px;
+  }
+
+  .arrow {
+    width: 34px;
+    height: 34px;
+    font-size: 1.4rem;
+  }
+
+  .arrowSpacer {
+    width: 34px;
+  }
+
+  .singleWrap {
+    min-height: 200px;
+    max-height: 300px;
+    height: clamp(220px, min(58vw, 42vh), 300px);
+    border-radius: 0;
+  }
+
+  .track {
+    --gallery-center-w: 74%;
+    --gallery-side-w: 46%;
+    --gallery-far-w: 34%;
+    --gallery-overlap: 16%;
+    --gallery-overlap-far: 10%;
+    min-height: 200px;
+    max-height: 300px;
+    height: clamp(220px, min(58vw, 42vh), 300px);
+  }
+
+  .slideFarPrev,
+  .slideFarNext {
+    transform: translateY(6px) scale(0.78);
+    filter: brightness(0.58);
+  }
+
+  .slideFarPrev:hover,
+  .slideFarNext:hover {
+    transform: translateY(5px) scale(0.8);
+  }
+
+  .slidePrev,
+  .slideNext {
+    border-radius: 10px;
+    transform: translateY(2px) scale(0.88);
+    filter: brightness(0.66);
+  }
+
+  .slidePrev:hover,
+  .slideNext:hover {
+    transform: translateY(1px) scale(0.9);
+  }
+
+  .slideActive {
+    transform: translateX(-50%) translateY(-2px) scale(1);
+    border-radius: 12px;
+    box-shadow:
+      0 8px 22px rgba(15, 23, 42, 0.38),
+      0 18px 40px rgba(15, 23, 42, 0.35);
+  }
+
+  .dots {
+    margin-top: 8px;
+  }
+
+  .empty {
+    min-height: 200px;
+    max-height: 300px;
+    height: clamp(220px, min(58vw, 42vh), 300px);
+  }
+}

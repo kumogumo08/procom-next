@@ -26,7 +26,7 @@ export default function UserProfileSection({
 
   return (
     <section className="profile" style={{ ...cardBase, marginBottom: 24 }}>
-      <div className="profile-wrapper" style={{ display: 'flex', gap: '2rem' }}>
+      <div className="profile-wrapper">
         <div className="profile-info">
           <ProfileEditor
             uid={uid}

@@ -2,38 +2,21 @@ function updatePhotoSlider(photoData = [], isOwnPage = false) {
   carousel.innerHTML = '';
   slides = [];
 
-  photoData.forEach((photo, index) => {
+  photoData.forEach((photo) => {
     const slideDiv = document.createElement('div');
     slideDiv.classList.add('slide');
 
     const photoUrl = typeof photo === 'string' ? photo : photo.url;
-    const position = typeof photo === 'object' && photo.position ? photo.position : '50';
 
     const img = document.createElement('img');
     img.src = photoUrl;
-    img.classList.add('carousel-image');
-    img.style.objectPosition = `center ${position}%`;
+    img.style.width = '100%';
+    img.style.height = '100%';
+    img.style.objectFit = 'contain';
+    img.style.objectPosition = 'center center';
+    img.style.display = 'block';
 
     slideDiv.appendChild(img);
-
-    if (typeof isOwnPage !== 'undefined' && isOwnPage) {
-      const slider = document.createElement('input');
-      slider.type = 'range';
-      slider.min = '0';
-      slider.max = '100';
-      slider.value = position;
-      slider.classList.add('position-slider');
-      slider.dataset.index = index;
-      slider.style.position = 'absolute';
-      slider.style.bottom = '10px';
-      slider.style.left = '10%';
-      slider.style.width = '80%';
-      slider.style.zIndex = '10';
-      slider.addEventListener('input', () => {
-        img.style.objectPosition = `center ${slider.value}%`;
-      });
-      slideDiv.appendChild(slider);
-    }
 
     carousel.appendChild(slideDiv);
   });

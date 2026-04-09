@@ -59,10 +59,10 @@ export default function NewsList({ limit = 5 }: { limit?: number }) {
   };
 
   return (
-    <section className="mx-auto max-w-4xl rounded-2xl bg-[rgba(250,250,250,0.9)] shadow-[0_6px_20px_rgba(0,0,0,.06)] px-5 py-6">
+    <section className="mx-auto w-full max-w-[960px] rounded-2xl border border-neutral-200/90 bg-white shadow-[0_8px_24px_rgba(0,0,0,0.05)] px-6 py-6">
       <h2 className="text-center text-[1.05rem] font-bold tracking-wide text-neutral-800">
         NEWS
-        <span className="mx-auto mt-2 block h-[3px] w-14 rounded bg-gradient-to-r from-pink-500 to-amber-300" />
+        <span className="mx-auto mt-2 block h-[3px] w-14 rounded bg-gradient-to-r from-[#0a0d59] to-[#05063f]" />
       </h2>
 
       {!loading && !items.length && (

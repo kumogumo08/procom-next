@@ -19,7 +19,9 @@ export async function POST(req: NextRequest) {
         profile: {
           photos: photos.map((p: any) => ({
             url: p.url,
-            position: p.position ?? '50',
+            ...(typeof p.position === 'number' && !Number.isNaN(p.position)
+              ? { position: Math.min(100, Math.max(0, p.position)) }
+              : {}),
           })),
         },
       },

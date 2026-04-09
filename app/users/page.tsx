@@ -1,19 +1,20 @@
-// app/users/page.tsx
-import Header from '@/components/Header';
-import Footer from '@/components/Footer';
-import UserSearchClientWrapper from '@/components/UserSearchClientWrapper';
 import { Suspense } from 'react';
+
+import UsersPageClient from './UsersPageClient';
+
+export const metadata = {
+  title: 'ユーザー検索・一覧 | Procom',
+  description: 'Procomに登録されているユーザーを名前・肩書きで検索できます。',
+};
 
 export default function UsersPage() {
   return (
-    <>
-      <Header />
-      <main style={{ padding: '20px' }}>
-        <Suspense fallback={<div>読み込み中...</div>}>
-          <UserSearchClientWrapper />
-        </Suspense>
-      </main>
-      <Footer />
-    </>
+    <Suspense
+      fallback={
+        <div style={{ padding: '48px 20px', textAlign: 'center', color: '#555' }}>読み込み中…</div>
+      }
+    >
+      <UsersPageClient />
+    </Suspense>
   );
 }

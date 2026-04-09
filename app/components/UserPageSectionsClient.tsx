@@ -2,7 +2,6 @@
 
 import type { JSX } from 'react';
 import { useCallback, useMemo, useState } from 'react';
-import UserPhotoSliderClient from '@/components/UserPhotoSliderClient';
 import OshiButton from '@/components/OshiButton';
 import XShareButton from '@/components/XShareButton';
 import UserProfileSection from '@/components/UserProfileSection';
@@ -18,7 +17,7 @@ import UserPageClientWrapper from '@/components/UserPageClientWrapper';
 import AppProjectBlock from '@/components/AppProjectBlock';
 import type { AppProject } from '@/lib/appProjects';
 
-type Photo = { url: string; position?: string };
+type Photo = { url: string; position?: number };
 
 type Profile = {
   name?: string;
@@ -58,14 +57,12 @@ export default function UserPageSectionsClient({
   uid,
   isEditable,
   initialProfile,
-  initialPhotos,
   initialSectionOrder,
   initialApps,
 }: {
   uid: string;
   isEditable: boolean;
   initialProfile: Profile;
-  initialPhotos: Photo[];
   initialSectionOrder: string[];
   initialApps: AppProject[];
 }) {
@@ -164,67 +161,36 @@ export default function UserPageSectionsClient({
     [apps, isEditable, onAppsChange, onShowAppsSaved, profile, uid]
   );
 
+  /** Phase1: 常にワンカラム縦積み（PC で隣接セクションを横並びにしない） */
   const renderedSections = useMemo(() => {
-    const out: JSX.Element[] = [];
-    const is1Col = (key: string) =>
-      key === 'X' || key === 'Instagram' || key === 'Facebook' || key === 'BannerLinks';
-    const is2Col = (key: string) =>
-      key === 'YouTube' || key === 'TikTok' || key === 'SNSButtons' || key === 'AppProjects';
-
-    for (let i = 0; i < sectionOrder.length; i++) {
-      const curr = sectionOrder[i];
-      const next = sectionOrder[i + 1];
-
-      if (is1Col(curr) && is1Col(next)) {
-        out.push(
-          <div
-            className="sns-container"
-            key={`group-${i}`}
-            style={{ display: 'flex', gap: 24, alignItems: 'stretch' }}
-          >
-            <div className="sns-box" style={{ flex: 1, display: 'flex' }}>
-              {sectionMap[curr]}
-            </div>
-            <div className="sns-box" style={{ flex: 1, display: 'flex' }}>
-              {sectionMap[next]}
-            </div>
-          </div>
-        );
-        i++;
-      } else if (is1Col(curr)) {
-        out.push(
-          <div className="sns-container" key={curr}>
-            <div className="sns-box">{sectionMap[curr]}</div>
-          </div>
-        );
-      } else if (is2Col(curr)) {
-        out.push(
-          <div className="single-column-wrapper" key={curr}>
-            {sectionMap[curr]}
-          </div>
-        );
-      }
-    }
-    return out;
+    return sectionOrder.map((key) => {
+      const node = sectionMap[key];
+      if (!node) return null;
+      return (
+        <div className="user-page-section" key={key}>
+          {node}
+        </div>
+      );
+    });
   }, [sectionMap, sectionOrder]);
 
   return (
     <>
       {profile?.name && (
-        <h1
+        <h2
           style={{
             textAlign: 'center',
             fontWeight: 'bold',
-            fontSize: '1.8rem',
-            margin: '1em 0',
+            fontSize: 'clamp(1rem, 2.8vw, 1.25rem)',
+            margin: '0.5em 0 0.45em',
+            color: '#0f172a',
           }}
         >
           {profile.name}さんのプロフィールページ
-        </h1>
+        </h2>
       )}
 
       <main>
-        <UserPhotoSliderClient uid={uid} initialPhotos={initialPhotos} />
         <OshiButton uid={uid} />
         <XShareButton uid={uid} name={profile?.name} />
 

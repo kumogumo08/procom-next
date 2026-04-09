@@ -1,7 +1,7 @@
 // global.d.ts の上部に Photo を定義（または import して）：
 type Photo = {
   url: string;
-  position?: string;
+  position?: number;
 };
 
 interface Window {

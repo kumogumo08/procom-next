@@ -1,0 +1,459 @@
+/* 上部ギャラリー直下の写真編集カード（max-width はギャラリー .viewport に合わせる） */
+.wrapper {
+  width: 100%;
+  max-width: 1100px;
+  margin: 0 auto;
+  padding: 8px 12px 20px;
+  box-sizing: border-box;
+}
+
+.card {
+  background: #fff;
+  border-radius: 18px;
+  box-shadow: 0 4px 24px rgba(15, 23, 42, 0.08), 0 1px 3px rgba(15, 23, 42, 0.06);
+  border: 1px solid rgba(226, 232, 240, 0.9);
+  padding: 20px 22px;
+  box-sizing: border-box;
+}
+
+.title {
+  margin: 0 0 6px;
+  font-size: 1.0625rem;
+  font-weight: 700;
+  color: #0f172a;
+  letter-spacing: -0.02em;
+}
+
+.desc {
+  margin: 0 0 18px;
+  font-size: 0.8125rem;
+  color: #666;
+  line-height: 1.5;
+}
+
+.reorderSection {
+  margin: 0 0 18px;
+  padding: 14px 14px 16px;
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 14px;
+  box-sizing: border-box;
+}
+
+.reorderTitle {
+  margin: 0 0 6px;
+  font-size: 0.8125rem;
+  font-weight: 700;
+  color: #0f172a;
+}
+
+.reorderHint {
+  margin: 0 0 12px;
+  font-size: 0.6875rem;
+  color: #64748b;
+  line-height: 1.45;
+}
+
+.reorderList {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.reorderRow {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 10px;
+  background: #fff;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  box-sizing: border-box;
+}
+
+.reorderIndex {
+  flex-shrink: 0;
+  min-width: 22px;
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: #64748b;
+  text-align: center;
+}
+
+.reorderThumbWrap {
+  flex-shrink: 0;
+  width: 52px;
+  height: 40px;
+  border-radius: 8px;
+  overflow: hidden;
+  background: #e2e8f0;
+}
+
+.reorderThumb {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.reorderMeta {
+  flex: 1;
+  min-width: 120px;
+}
+
+.mainBadge {
+  display: inline-flex;
+  align-items: center;
+  padding: 6px 12px;
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: #1d4ed8;
+  background: #eff6ff;
+  border-radius: 999px;
+  border: 1px solid #bfdbfe;
+}
+
+.mainBtn {
+  padding: 6px 12px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: #1d4ed8;
+  background: #fff;
+  border: 1px solid #93c5fd;
+  border-radius: 10px;
+  cursor: pointer;
+}
+
+.mainBtn:hover {
+  background: #eff6ff;
+}
+
+.reorderMove {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-left: auto;
+}
+
+.moveBtn {
+  padding: 6px 10px;
+  font-size: 0.6875rem;
+  font-weight: 600;
+  color: #334155;
+  background: #f1f5f9;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  cursor: pointer;
+}
+
+.moveBtn:hover:not(:disabled) {
+  background: #e2e8f0;
+}
+
+.moveBtn:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.actions {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  align-items: stretch;
+}
+
+@media (min-width: 640px) {
+  .actions {
+    flex-direction: row;
+    align-items: flex-end;
+    flex-wrap: wrap;
+    gap: 12px;
+  }
+
+  .dropZone {
+    flex: 1;
+    min-width: 200px;
+  }
+
+  .saveBtn {
+    flex-shrink: 0;
+    align-self: flex-end;
+  }
+}
+
+.dropZone {
+  border: 2px dashed #cbd5e1;
+  border-radius: 14px;
+  padding: 16px 14px;
+  text-align: center;
+  background: linear-gradient(180deg, #fafbfc 0%, #f1f5f9 100%);
+  transition: border-color 0.2s, background 0.2s, box-shadow 0.2s;
+  cursor: pointer;
+}
+
+.dropZone:hover,
+.dropZone:focus-within {
+  border-color: #4f7cf7;
+  background: linear-gradient(180deg, #f8fafc 0%, #eff6ff 100%);
+  box-shadow: 0 0 0 3px rgba(79, 124, 247, 0.12);
+}
+
+.dropZone.dragOver {
+  border-color: #3b5bdb;
+  background: #eff6ff;
+  box-shadow: 0 0 0 3px rgba(79, 124, 247, 0.2);
+}
+
+.dropHint {
+  margin: 0 0 10px;
+  font-size: 0.75rem;
+  color: #64748b;
+  line-height: 1.4;
+}
+
+.chooseBtn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 10px 20px;
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: #fff;
+  border: none;
+  border-radius: 12px;
+  cursor: pointer;
+  pointer-events: none;
+  background: linear-gradient(135deg, #4f7cf7 0%, #3b5bdb 100%);
+  box-shadow: 0 2px 8px rgba(79, 124, 247, 0.35);
+  transition: filter 0.2s, transform 0.15s, box-shadow 0.2s;
+}
+
+.dropZone:hover .chooseBtn,
+.dropZone:focus-within .chooseBtn {
+  filter: brightness(1.05);
+  box-shadow: 0 4px 14px rgba(79, 124, 247, 0.4);
+}
+
+.dropZone:active .chooseBtn {
+  transform: scale(0.98);
+}
+
+.visuallyHidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+.status {
+  margin-top: 12px;
+  font-size: 0.75rem;
+  line-height: 1.45;
+  color: #64748b;
+  min-height: 1.45em;
+}
+
+.statusStrong {
+  color: #334155;
+  font-weight: 600;
+}
+
+.statusOk {
+  color: #0d9488;
+  font-weight: 600;
+}
+
+.saveBtn {
+  width: 100%;
+  padding: 12px 22px;
+  font-size: 0.9375rem;
+  font-weight: 700;
+  color: #fff;
+  background: #4f7cf7;
+  border: none;
+  border-radius: 12px;
+  cursor: pointer;
+  transition: background 0.2s, transform 0.15s;
+  box-shadow: 0 2px 10px rgba(79, 124, 247, 0.3);
+}
+
+.saveBtn:hover {
+  background: #3b5bdb;
+}
+
+.saveBtn:active {
+  transform: scale(0.99);
+}
+
+.saveBtn:disabled {
+  cursor: not-allowed;
+  transform: none;
+}
+
+/* ログインボタンに近い保存中スタイル（LoginClient の isLoading 時と同系） */
+.saveBtnBusy {
+  background: #94a3b8 !important;
+  box-shadow: none;
+}
+
+.saveBtnBusy:hover {
+  background: #94a3b8 !important;
+}
+
+.saveBtnInner {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}
+
+.saveBtnSpinner {
+  flex-shrink: 0;
+  width: 16px;
+  height: 16px;
+  border: 2px solid rgba(255, 255, 255, 0.95);
+  border-top-color: transparent;
+  border-radius: 50%;
+  animation: photoSaveSpin 0.7s linear infinite;
+}
+
+@keyframes photoSaveSpin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@media (min-width: 640px) {
+  .saveBtn {
+    width: auto;
+    min-width: 160px;
+  }
+}
+
+/* 旧カルーセル併用時は余白だけ抑える */
+.wrapperLegacy {
+  max-width: 640px;
+  padding-top: 16px;
+}
+
+/* ギャラリー直下（ヒーロー編集モード） */
+.positionStrip {
+  width: 100%;
+  max-width: 1100px;
+  margin: 0 auto;
+  padding: 12px 16px 16px;
+  box-sizing: border-box;
+  background: #f8fafc;
+  border-bottom: 1px solid #e2e8f0;
+}
+
+.positionEditingBadge {
+  margin-left: 6px;
+  font-weight: 600;
+  color: #2563eb;
+  font-size: 0.8125rem;
+}
+
+.dragHint {
+  margin: 0 0 10px;
+  font-size: 0.75rem;
+  color: #64748b;
+  line-height: 1.4;
+}
+
+.positionBlock {
+  margin-top: 18px;
+  padding-top: 16px;
+  border-top: 1px solid #e2e8f0;
+}
+
+.positionTitle {
+  margin: 0 0 10px;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  color: #334155;
+}
+
+.photoIndexRow {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-bottom: 12px;
+}
+
+.idxBtn,
+.idxActive {
+  min-width: 36px;
+  padding: 6px 10px;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  border-radius: 8px;
+  border: 1px solid #cbd5e1;
+  background: #fff;
+  color: #475569;
+  cursor: pointer;
+}
+
+.idxActive {
+  border-color: #4f7cf7;
+  background: #eff6ff;
+  color: #1d4ed8;
+}
+
+.positionRow {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-bottom: 10px;
+}
+
+.positionLabel {
+  font-size: 0.75rem;
+  color: #64748b;
+}
+
+.positionRange {
+  width: 100%;
+  accent-color: #4f7cf7;
+}
+
+.positionPresets {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+
+.presetBtn {
+  flex: 1;
+  min-width: 72px;
+  padding: 8px 12px;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  color: #334155;
+  background: #f1f5f9;
+  border: 1px solid #e2e8f0;
+  border-radius: 10px;
+  cursor: pointer;
+}
+
+.presetBtn:hover {
+  background: #e2e8f0;
+}
+
+.positionHint {
+  margin: 0;
+  font-size: 0.6875rem;
+  color: #94a3b8;
+  line-height: 1.4;
+}

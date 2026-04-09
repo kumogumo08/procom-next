@@ -5,7 +5,6 @@ import { getProfileFromFirestore } from '@/lib/getProfile';
 import { getSessionServer } from '@/lib/getSessionServer';
 import Header from '@/components/Headerlogin';
 import Footer from '@/components/Footer';
-import UserPhotoSliderClient from '@/components/UserPhotoSliderClient';
 import AuthUI from '@/components/AuthUI';
 import UserProfileSection from '@/components/UserProfileSection';
 import UserPageClient from '@/components/UserPageClient';
@@ -25,6 +24,7 @@ import { coerceAppsFromFirestore } from '@/lib/appProjects';
 import type { JSX } from 'react';
 import type { Metadata } from 'next';
 import UserPageSectionsClient from '@/components/UserPageSectionsClient';
+import { clampPhotoPositionY } from '@/lib/photoPosition';
 
 export async function generateMetadata({
   params,
@@ -75,11 +75,13 @@ export default async function UserPage({
   const isEditable = session?.uid === uid;
   const profile = await getProfileFromFirestore(uid);
 
-  const photos = (profile?.photos || []).map((p: any) =>
-    typeof p === 'string'
-      ? { url: p, position: '50' }
-      : { url: p.url, position: p.position ?? '50' }
-  );
+  const photos = (profile?.photos || [])
+    .map((p: any) => {
+      if (typeof p === 'string') return { url: p, position: clampPhotoPositionY(undefined) };
+      if (p?.url) return { url: p.url, position: clampPhotoPositionY(p.position) };
+      return null;
+    })
+    .filter(Boolean) as { url: string; position: number }[];
 
   const DEFAULT_SECTION_ORDER = [
     'YouTube',
@@ -110,13 +112,17 @@ export default async function UserPage({
 
   return (
     <>
-      <Header />
+      <Header
+        topGalleryPhotos={photos.slice(0, 5)}
+        showPhotoEditor={isEditable}
+        photoEditorUid={uid}
+        photoEditorPhotos={photos}
+      />
 
       <UserPageSectionsClient
         uid={uid}
         isEditable={isEditable}
         initialProfile={profile}
-        initialPhotos={photos}
         initialSectionOrder={sectionOrder}
         initialApps={appProjectsInitial}
       />

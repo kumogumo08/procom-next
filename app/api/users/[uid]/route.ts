@@ -15,9 +15,9 @@ export async function POST(req: NextRequest, props: { params: Promise<{ uid: str
   if (Array.isArray(data.profile.photos)) {
     for (const photo of data.profile.photos) {
       if (
-        !photo.url || typeof photo.url !== 'string' ||
-        !photo.url.startsWith('https://') ||
-        typeof photo.position !== 'string'
+        !photo.url ||
+        typeof photo.url !== 'string' ||
+        !photo.url.startsWith('https://')
       ) {
         return NextResponse.json({ error: '写真データが不正です' }, { status: 400 });
       }

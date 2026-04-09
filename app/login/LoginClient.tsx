@@ -26,8 +26,13 @@ function isFirebaseAuthCredentialError(code: string): boolean {
   );
 }
 
-export default function LoginPage() {
-  const [mode, setMode] = useState<'login' | 'register'>('login');
+type LoginPageProps = {
+  /** /register などから開いたときの初期表示（未指定時はログイン） */
+  initialMode?: 'login' | 'register';
+};
+
+export default function LoginPage({ initialMode }: LoginPageProps) {
+  const [mode, setMode] = useState<'login' | 'register'>(initialMode ?? 'login');
   const [showLoginPassword, setShowLoginPassword] = useState(false);
   const [showRegisterPassword, setShowRegisterPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);

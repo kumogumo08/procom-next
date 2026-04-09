@@ -12,6 +12,19 @@ export async function getSessionServer() {
   return session;
 }
 
+/**
+ * /api/session GET の `uid` / `loggedIn` と同じ基準で UID を返す（RSC から利用）
+ */
+export async function getLoggedInUid(): Promise<string | null> {
+  try {
+    const session = await getSessionServer();
+    const uid = session?.uid ?? null;
+    return typeof uid === 'string' && uid.length > 0 ? uid : null;
+  } catch {
+    return null;
+  }
+}
+
 // ✅ セッションオプション
 export const sessionOptions: SessionOptions = {
   cookieName: 'procom_session',

@@ -33,6 +33,8 @@ export default function UserPageTopGallery({
   const index = controlled ? activeIndexProp! : internalIndex;
 
   const dragRef = useRef<{ startY: number; startPos: number; height: number } | null>(null);
+  /** スマホ横スワイプ（touchstart → touchend のみ。縦スクロールと誤爆しにくくする） */
+  const swipeTouchRef = useRef<{ x: number; y: number } | null>(null);
 
   const setIndexTo = useCallback(
     (i: number) => {
@@ -120,6 +122,41 @@ export default function UserPageTopGallery({
     setIndexTo(farNextIdx);
   }, [farNextIdx, setIndexTo]);
 
+  const handleSwipeTouchStart = useCallback(
+    (e: React.TouchEvent) => {
+      if (n <= 1) return;
+      if (e.touches.length !== 1) return;
+      swipeTouchRef.current = { x: e.touches[0].clientX, y: e.touches[0].clientY };
+    },
+    [n]
+  );
+
+  const handleSwipeTouchEnd = useCallback(
+    (e: React.TouchEvent) => {
+      if (n <= 1) return;
+      if (!swipeTouchRef.current || e.changedTouches.length !== 1) {
+        swipeTouchRef.current = null;
+        return;
+      }
+      const t = e.changedTouches[0];
+      const dx = t.clientX - swipeTouchRef.current.x;
+      const dy = t.clientY - swipeTouchRef.current.y;
+      swipeTouchRef.current = null;
+
+      const absDx = Math.abs(dx);
+      const absDy = Math.abs(dy);
+      const SWIPE_MIN = 48;
+      const HORIZONTAL_RATIO = 1.2;
+
+      if (absDx < SWIPE_MIN) return;
+      if (absDx < absDy * HORIZONTAL_RATIO) return;
+
+      if (dx < 0) goNext();
+      else goPrev();
+    },
+    [n, goNext, goPrev]
+  );
+
   const handlePointerDown = (e: React.PointerEvent) => {
     if (!enableDragPosition || !onDragPositionY) return;
     e.preventDefault();
@@ -186,7 +223,11 @@ export default function UserPageTopGallery({
           <span className={styles.arrowSpacer} aria-hidden />
         )}
 
-        <div className={styles.stage}>
+        <div
+          className={styles.stage}
+          onTouchStart={handleSwipeTouchStart}
+          onTouchEnd={handleSwipeTouchEnd}
+        >
           {n === 1 ? (
             <div
               className={`${styles.singleWrap} ${enableDragPosition ? styles.dragArea : ''}`}

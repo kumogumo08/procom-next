@@ -373,6 +373,16 @@
 @media (max-width: 767px) {
   .root {
     padding: 0 0 8px;
+    overflow-x: clip;
+  }
+
+  .viewport {
+    overflow-x: clip;
+  }
+
+  .stage {
+    overflow: hidden;
+    touch-action: pan-y;
   }
 
   .arrow {

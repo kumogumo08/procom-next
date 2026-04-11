@@ -6,6 +6,34 @@ import { useEffect, useState } from 'react';
 import { resolveFirstPhotoUrl, type CategoryUser } from '@/components/TopCategoryUserCards';
 import styles from './TopSpotlight.module.css';
 
+function SpotlightUserThumb({ photoUrl }: { photoUrl: string }) {
+  const [imgFailed, setImgFailed] = useState(false);
+
+  useEffect(() => {
+    setImgFailed(false);
+  }, [photoUrl]);
+
+  const showPlaceholder = !photoUrl || imgFailed;
+
+  if (showPlaceholder) {
+    return (
+      <div className={styles.thumbPlaceholder} aria-hidden>
+        <span className={styles.thumbSilhouette} />
+      </div>
+    );
+  }
+
+  return (
+    // eslint-disable-next-line @next/next/no-img-element -- 外部ストレージ URL
+    <img
+      src={photoUrl}
+      alt=""
+      className={styles.thumb}
+      onError={() => setImgFailed(true)}
+    />
+  );
+}
+
 /**
  * 「こんな人が使っています」— /api/category-users?category=new（ランダム最大12件）
  */
@@ -62,12 +90,7 @@ export default function TopSpotlightUsers() {
                 className={`${styles.card} ${featured ? styles.cardFeatured : styles.cardStandard}`}
               >
                 <div className={styles.thumbWrap}>
-                  {photoUrl ? (
-                    // eslint-disable-next-line @next/next/no-img-element -- 外部ストレージ URL
-                    <img src={photoUrl} alt="" className={styles.thumb} />
-                  ) : (
-                    <div className={styles.thumbPlaceholder} aria-hidden />
-                  )}
+                  <SpotlightUserThumb photoUrl={photoUrl} />
                 </div>
                 <div className={styles.meta}>
                   {featured ? <span className={styles.badge}>PICK UP</span> : null}

@@ -13,6 +13,11 @@ export const metadata: Metadata = {
     canonical: 'https://procom.jp/',
   },
 
+  icons: {
+    icon: '/favicon.ico',
+    apple: '/apple-touch-icon-180x180.png',
+  },
+
   openGraph: {
     title: 'プロフィール作成 & SNSリンク集なら Procom（プロコム）',
     description:

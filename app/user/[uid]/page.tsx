@@ -41,6 +41,9 @@ export async function generateMetadata({
   return {
     title: `${name} | Procom`,
     description: bio,
+    alternates: {
+      canonical: `/user/${uid}`,
+    },
     openGraph: {
       title: `${name} | Procom`,
       description: bio,

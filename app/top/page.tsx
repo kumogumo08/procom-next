@@ -14,6 +14,9 @@ export const metadata = {
   title: 'Procom（プロコム） - SNS・プロフィール・リンク集を1ページに集約',
   description:
     'クリエイター向けのプロフィールページ。SNSと実績をひとつのURLに。無料で始められます。',
+  alternates: {
+    canonical: '/top',
+  },
   openGraph: {
     title: 'Procom（プロコム） - あなたの活動を、1ページに',
     description:

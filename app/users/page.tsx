@@ -5,6 +5,9 @@ import UsersPageClient from './UsersPageClient';
 export const metadata = {
   title: 'ユーザー検索・一覧 | Procom',
   description: 'Procomに登録されているユーザーを名前・肩書きで検索できます。',
+  alternates: {
+    canonical: '/users',
+  },
 };
 
 export default function UsersPage() {

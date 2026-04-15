@@ -17,9 +17,13 @@ module.exports = {
     const t = setTimeout(() => controller.abort(), 10_000);
 
     try {
+      const secret = process.env.ALL_UIDS_EXPORT_SECRET;
       const res = await fetch(`${baseUrl}/api/all-uids`, {
         signal: controller.signal,
-        headers: { 'accept': 'application/json' },
+        headers: {
+          accept: 'application/json',
+          ...(secret ? { Authorization: `Bearer ${secret}` } : {}),
+        },
       });
 
       if (!res.ok) {

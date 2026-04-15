@@ -5,6 +5,9 @@ import NewsList from '@/components/NewsList';
 export const metadata = {
   title: 'お知らせ - Procom（プロコム）',
   description: 'Procomからのお知らせ・更新情報の一覧です。',
+  alternates: {
+    canonical: '/news',
+  },
 };
 
 /** 一覧は公開NEWSを新しい順。件数上限は API / Firestore の実用上限（通常十分） */

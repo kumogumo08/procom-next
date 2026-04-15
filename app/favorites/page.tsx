@@ -3,6 +3,9 @@ import Footer from '@/components/Footer';
 
 export const metadata = {
   title: 'お気に入り - Procom',
+  alternates: {
+    canonical: '/favorites',
+  },
 };
 
 export default function FavoritesPage() {

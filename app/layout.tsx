@@ -9,9 +9,6 @@ export const metadata: Metadata = {
   description:
     'Procom（プロコム）はプロフィール作成とSNSリンク集を無料で作れる国内サービス。写真スライダー・イベント告知・仕事依頼ボタンなど“魅せる”機能を1ページに集約。',
   metadataBase: new URL('https://procom.jp'),
-  alternates: {
-    canonical: 'https://procom.jp/',
-  },
 
   icons: {
     icon: '/favicon.ico',

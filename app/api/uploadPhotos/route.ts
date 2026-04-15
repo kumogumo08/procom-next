@@ -2,7 +2,6 @@
 export const runtime = 'nodejs'; // ⬅️ 必ず入れる！
 
 import { NextRequest, NextResponse } from 'next/server';
-import { getSession } from '@/lib/getSession';
 import { getIronSession, SessionOptions } from 'iron-session';
 import type { SessionData } from '@/lib/session-types';
 import { cookies } from 'next/headers';
@@ -22,7 +21,6 @@ const sessionOptions: SessionOptions = {
 export async function POST(req: NextRequest) {
   const cookieStore = await cookies(); // ✅ await 必須（Next.js 15以降）
   const session = await getIronSession<SessionData>(cookieStore, sessionOptions);
-  console.log('📦 セッション確認:', session);
 
   if (!session.uid) {
     return NextResponse.json({ error: '未ログインです' }, { status: 401 });
@@ -36,8 +34,9 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: '画像配列が不正です' }, { status: 400 });
     }
 
-    console.log('📦 受信した画像数:', base64Images.length);
-    console.log('📷 最初の画像の先頭:', base64Images[0]?.slice(0, 50));
+    if (process.env.NODE_ENV !== 'production') {
+      console.log('[uploadPhotos]', { uid, imageCount: base64Images.length });
+    }
 
     // 🔁 古い画像を削除
     const [files] = await bucket.getFiles({ prefix: `photos/${uid}/` });
@@ -49,7 +48,7 @@ export async function POST(req: NextRequest) {
       try {
         const matches = base64.match(/^data:(image\/[^;]+);base64,(.+)$/);
         if (!matches) {
-          console.warn('⚠️ 無効なbase64形式:', base64.slice(0, 30));
+          console.warn('[uploadPhotos] invalid base64 item skipped');
           continue;
         }
 
@@ -58,8 +57,6 @@ export async function POST(req: NextRequest) {
         const ext = contentType.split('/')[1];
         const fileName = `photos/${uid}/${uuidv4()}.${ext}`;
         const token = uuidv4();
-
-        console.log('📝 保存開始:', fileName);
 
         await bucket.file(fileName).save(buffer, {
           metadata: {

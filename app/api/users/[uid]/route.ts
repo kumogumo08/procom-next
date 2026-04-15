@@ -1,10 +1,21 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { db } from '@/lib/firebase'; // dbインスタンスの型はlibに応じて調整
-// import { admin } from '@/lib/firebase-admin'; // 必要なら
+import { db } from '@/lib/firebase';
+import { getSessionUID } from '@/lib/session';
 
+/** リポジトリ内に fetch 呼び出し元なし。/api/user/[uid] へ統合済みなら削除候補 */
 export async function POST(req: NextRequest, props: { params: Promise<{ uid: string }> }) {
+  const sessionUid = await getSessionUID(req);
+  if (!sessionUid) {
+    return NextResponse.json({ error: 'ログインが必要です' }, { status: 401 });
+  }
+
   const params = await props.params;
   const { uid } = params;
+
+  if (sessionUid !== uid) {
+    return NextResponse.json({ error: '権限がありません' }, { status: 403 });
+  }
+
   const data = await req.json();
 
   if (!data.profile || typeof data.profile !== 'object') {

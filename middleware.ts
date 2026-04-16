@@ -28,8 +28,8 @@ export function middleware(request: NextRequest) {
 
   const redirectUrl = request.nextUrl.clone();
   redirectUrl.protocol = 'https:';
-  redirectUrl.host = PRODUCTION_HOST;
-
+  redirectUrl.hostname = 'procom.jp';
+  redirectUrl.port = '';
   return NextResponse.redirect(redirectUrl, 301);
 }
 

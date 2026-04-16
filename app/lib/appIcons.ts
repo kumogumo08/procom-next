@@ -50,7 +50,7 @@ export async function fetchAppStoreLookup(appStoreUrl: string): Promise<AppStore
     console.warn('[fetchAppStoreLookup] could not extract app id from URL');
     return { iconUrl: null, description: null };
   }
-  const lookupUrl = `https://itunes.apple.com/lookup?id=${encodeURIComponent(id)}`;
+  const lookupUrl = `https://itunes.apple.com/lookup?id=${encodeURIComponent(id)}&country=jp&lang=ja_jp`;
   try {
     const res = await fetch(lookupUrl, { cache: 'no-store' });
     if (!res.ok) {

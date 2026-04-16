@@ -4,6 +4,7 @@
 // 本番: NEXT_PUBLIC_* のみ（リポジトリに埋め込みフォールバックは使わない）
 // 開発: env 未設定時のみ embeddedFallback を使用可能
 //
+// lib/firebaseClient.ts
 import { initializeApp, getApps, type FirebaseOptions } from 'firebase/app';
 
 const embeddedFallback = {
@@ -18,55 +19,66 @@ const embeddedFallback = {
 
 const isDev = process.env.NODE_ENV === 'development';
 
-function requireEnv(name: string): string {
-  const v = process.env[name];
-  if (!v || v.trim() === '') {
+// 直接参照で固定
+const envApiKey = process.env.NEXT_PUBLIC_FIREBASE_API_KEY;
+const envAuthDomain = process.env.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN;
+const envProjectId = process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID;
+const envStorageBucket = process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET;
+const envMessagingSenderId = process.env.NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID;
+const envAppId = process.env.NEXT_PUBLIC_FIREBASE_APP_ID;
+const envMeasurementId = process.env.NEXT_PUBLIC_FIREBASE_MEASUREMENT_ID;
+
+function required(value: string | undefined, name: string): string {
+  if (!value || value.trim() === '') {
     throw new Error(
       `[firebaseClient] ${name} is required in production. Set NEXT_PUBLIC_* in the deployment environment.`
     );
   }
-  return v;
+  return value;
 }
 
 function buildFirebaseConfig(): FirebaseOptions {
   if (isDev) {
     return {
-      apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY ?? embeddedFallback.apiKey,
-      authDomain: process.env.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN ?? embeddedFallback.authDomain,
-      projectId: process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID ?? embeddedFallback.projectId,
-      storageBucket: process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET ?? embeddedFallback.storageBucket,
-      messagingSenderId:
-        process.env.NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID ?? embeddedFallback.messagingSenderId,
-      appId: process.env.NEXT_PUBLIC_FIREBASE_APP_ID ?? embeddedFallback.appId,
-      measurementId: process.env.NEXT_PUBLIC_FIREBASE_MEASUREMENT_ID ?? embeddedFallback.measurementId,
+      apiKey: envApiKey ?? embeddedFallback.apiKey,
+      authDomain: envAuthDomain ?? embeddedFallback.authDomain,
+      projectId: envProjectId ?? embeddedFallback.projectId,
+      storageBucket: envStorageBucket ?? embeddedFallback.storageBucket,
+      messagingSenderId: envMessagingSenderId ?? embeddedFallback.messagingSenderId,
+      appId: envAppId ?? embeddedFallback.appId,
+      measurementId: envMeasurementId ?? embeddedFallback.measurementId,
     };
   }
 
   const base: FirebaseOptions = {
-    apiKey: requireEnv('NEXT_PUBLIC_FIREBASE_API_KEY'),
-    authDomain: requireEnv('NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN'),
-    projectId: requireEnv('NEXT_PUBLIC_FIREBASE_PROJECT_ID'),
-    storageBucket: requireEnv('NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET'),
-    messagingSenderId: requireEnv('NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID'),
-    appId: requireEnv('NEXT_PUBLIC_FIREBASE_APP_ID'),
+    apiKey: required(envApiKey, 'NEXT_PUBLIC_FIREBASE_API_KEY'),
+    authDomain: required(envAuthDomain, 'NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN'),
+    projectId: required(envProjectId, 'NEXT_PUBLIC_FIREBASE_PROJECT_ID'),
+    storageBucket: required(envStorageBucket, 'NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET'),
+    messagingSenderId: required(
+      envMessagingSenderId,
+      'NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID'
+    ),
+    appId: required(envAppId, 'NEXT_PUBLIC_FIREBASE_APP_ID'),
   };
-  const m = process.env.NEXT_PUBLIC_FIREBASE_MEASUREMENT_ID;
-  return m ? { ...base, measurementId: m } : base;
+
+  return envMeasurementId ? { ...base, measurementId: envMeasurementId } : base;
 }
 
 const firebaseConfig = buildFirebaseConfig();
 
-export const firebaseApp = getApps().length === 0 ? initializeApp(firebaseConfig) : getApps()[0];
+export const firebaseApp =
+  getApps().length === 0 ? initializeApp(firebaseConfig) : getApps()[0];
 
-if (isDev && typeof window !== 'undefined') {
-  const usingEnv = {
-    apiKey: Boolean(process.env.NEXT_PUBLIC_FIREBASE_API_KEY),
-    authDomain: Boolean(process.env.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN),
-    projectId: Boolean(process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID),
-    appId: Boolean(process.env.NEXT_PUBLIC_FIREBASE_APP_ID),
-  };
-  console.log('[firebaseClient] projectId:', firebaseConfig.projectId);
-  console.log('[firebaseClient] authDomain:', firebaseConfig.authDomain);
-  console.log('[firebaseClient] app.name:', firebaseApp.name);
-  console.log('[firebaseClient] env 使用状況 (true=env優先):', usingEnv);
+if (typeof window !== 'undefined') {
+  console.log('[firebaseClient] NODE_ENV:', process.env.NODE_ENV);
+  console.log('[firebaseClient] env exists:', {
+    apiKey: Boolean(envApiKey),
+    authDomain: Boolean(envAuthDomain),
+    projectId: Boolean(envProjectId),
+    storageBucket: Boolean(envStorageBucket),
+    messagingSenderId: Boolean(envMessagingSenderId),
+    appId: Boolean(envAppId),
+    measurementId: Boolean(envMeasurementId),
+  });
 }

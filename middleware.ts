@@ -3,7 +3,15 @@ import { NextResponse } from 'next/server';
 
 const RENDER_HOST = 'procom-next.onrender.com';
 const PRODUCTION_HOST = 'procom.jp';
-const REDIRECT_EXCLUDED_PATHS = new Set(['/googleeb841dae764c019b.html']);
+const REDIRECT_EXCLUDED_PATHS = new Set([
+  // Google Search Console ownership verification
+  '/googleeb841dae764c019b.html',
+  // Allow auth pages to be debugged on Render directly (avoid redirect to procom.jp)
+  '/login',
+  '/register',
+  '/forgot-password',
+  '/reset',
+]);
 
 export function middleware(request: NextRequest) {
   if (REDIRECT_EXCLUDED_PATHS.has(request.nextUrl.pathname)) {

@@ -1,0 +1,54 @@
+.appCardGrid {
+  display: grid;
+  grid-template-columns: clamp(64px, 19vw, 88px) minmax(0, 1fr);
+  column-gap: 20px;
+  row-gap: 8px;
+  align-items: start;
+}
+
+.appCardIcon,
+.appCardIconPlaceholder {
+  grid-column: 1;
+  grid-row: 1 / span 3;
+  flex-shrink: 0;
+}
+
+.appCardHeader {
+  grid-column: 2;
+  grid-row: 1;
+  min-width: 0;
+}
+
+.appCardDescription {
+  grid-column: 2;
+  grid-row: 2;
+  min-width: 0;
+}
+
+.appCardLinks {
+  grid-column: 2;
+  grid-row: 3;
+  min-width: 0;
+}
+
+@media (max-width: 640px) {
+  .appCardGrid {
+    row-gap: 12px;
+  }
+
+  .appCardIcon,
+  .appCardIconPlaceholder {
+    grid-row: 1;
+  }
+
+  .appCardDescription,
+  .appCardLinks {
+    grid-column: 1 / -1;
+  }
+
+  .appCardLinks :global(a) {
+    min-height: 38px;
+    padding: 8px 14px;
+    font-size: 12px;
+  }
+}

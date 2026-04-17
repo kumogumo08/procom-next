@@ -13,6 +13,7 @@ import {
 } from '@/lib/appProjects';
 import { formatStoreDescription } from '@/lib/storeDescriptionDisplay';
 import { cardActions, cardBase } from '@/components/ui/cardStyles';
+import styles from './AppProjectBlock.module.css';
 
 type AppFieldErrors = {
   title?: string;
@@ -480,6 +481,7 @@ export default function AppProjectBlock({
           const descriptionSource =
             (app.storeDescription ?? '').trim() || (app.shortDescription ?? '').trim();
           const descriptionDisplay = formatStoreDescription(descriptionSource || undefined);
+
           return (
             <article
               key={app.id}
@@ -537,171 +539,198 @@ export default function AppProjectBlock({
                 </button>
               ) : null}
 
-              <div
-                style={{
-                  display: 'flex',
-                  gap: 20,
-                  alignItems: 'flex-start',
-                  flexWrap: 'wrap',
-                }}
-              >
-                {app.iconUrl ? (
-                  <img
-                    src={app.iconUrl}
-                    alt=""
-                    width={88}
-                    height={88}
-                    style={{
-                      width: 'clamp(64px, 19vw, 88px)',
-                      height: 'clamp(64px, 19vw, 88px)',
-                      borderRadius: 18,
-                      objectFit: 'cover',
-                      flexShrink: 0,
-                      boxShadow: '0 2px 12px rgba(15, 23, 42, 0.08)',
-                    }}
-                    onError={(e) => {
-                      (e.target as HTMLImageElement).style.display = 'none';
-                    }}
-                  />
-                ) : (
-                  <div
-                    style={{
-                      width: 'clamp(64px, 19vw, 88px)',
-                      height: 'clamp(64px, 19vw, 88px)',
-                      borderRadius: 18,
-                      background: 'linear-gradient(145deg, #f1f5f9, #e8eef4)',
-                      flexShrink: 0,
-                      boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.8)',
-                    }}
-                  />
-                )}
-                <div
-                  style={{
-                    flex: 1,
-                    minWidth: 0,
-                    paddingRight: !isEditing && isEditable ? 76 : 0,
-                  }}
-                >
-                  {!isEditing ? (
-                    <>
-                      <div
+              {!isEditing ? (
+                <div className={styles.appCardGrid}>
+                  <div>
+                    {app.iconUrl ? (
+                      <img
+                        src={app.iconUrl}
+                        alt=""
+                        width={88}
+                        height={88}
+                        className={styles.appCardIcon}
                         style={{
-                          display: 'flex',
-                          alignItems: 'flex-start',
-                          gap: 10,
-                          flexWrap: 'wrap',
-                          marginBottom: 10,
+                          width: 'clamp(64px, 19vw, 88px)',
+                          height: 'clamp(64px, 19vw, 88px)',
+                          borderRadius: 18,
+                          objectFit: 'cover',
+                          boxShadow: '0 2px 12px rgba(15, 23, 42, 0.08)',
+                        }}
+                        onError={(e) => {
+                          (e.target as HTMLImageElement).style.display = 'none';
+                        }}
+                      />
+                    ) : (
+                      <div
+                        className={styles.appCardIconPlaceholder}
+                        style={{
+                          width: 'clamp(64px, 19vw, 88px)',
+                          height: 'clamp(64px, 19vw, 88px)',
+                          borderRadius: 18,
+                          background: 'linear-gradient(145deg, #f1f5f9, #e8eef4)',
+                          boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.8)',
+                        }}
+                      />
+                    )}
+                  </div>
+
+                  <div className={styles.appCardHeader} style={{ paddingRight: isEditable ? 76 : 0 }}>
+                    <div
+                      style={{
+                        display: 'flex',
+                        alignItems: 'flex-start',
+                        gap: 10,
+                        flexWrap: 'wrap',
+                        marginBottom: 10,
+                      }}
+                    >
+                      <h3
+                        style={{
+                          margin: 0,
+                          fontSize: 'clamp(1.05rem, 2.8vw, 1.25rem)',
+                          fontWeight: 800,
+                          color: '#0f172a',
+                          letterSpacing: '-0.02em',
+                          lineHeight: 1.35,
                         }}
                       >
-                        <h3
-                          style={{
-                            margin: 0,
-                            fontSize: 'clamp(1.05rem, 2.8vw, 1.25rem)',
-                            fontWeight: 800,
-                            color: '#0f172a',
-                            letterSpacing: '-0.02em',
-                            lineHeight: 1.35,
-                          }}
-                        >
-                          {app.title.trim() || '\u3000'}
-                        </h3>
-                        <span
-                          style={{
-                            fontSize: 11,
-                            fontWeight: 700,
-                            padding: '4px 10px',
-                            borderRadius: 999,
-                            background: '#f1f5f9',
-                            color: '#475569',
-                            border: '1px solid #e2e8f0',
-                          }}
-                        >
-                          {releaseStatusLabel(app.releaseStatus)}
-                        </span>
-                      </div>
-                      {fe?.title ? (
-                        <p style={{ marginTop: 6, marginBottom: 0, fontSize: 12, color: '#b91c1c', fontWeight: 600 }}>
-                          {fe.title}
-                        </p>
-                      ) : null}
-                      {descriptionDisplay ? (
-                        <p
-                          style={{
-                            margin: 0,
-                            marginTop: 4,
-                            fontSize: 15,
-                            color: '#475569',
-                            lineHeight: 1.7,
-                            whiteSpace: 'pre-line',
-                            wordBreak: 'break-word',
-                            maxHeight: '8.5em',
-                            overflow: 'hidden',
-                          }}
-                        >
-                          {descriptionDisplay}
-                        </p>
-                      ) : null}
-
-                      <div
+                        {app.title.trim() || '\u3000'}
+                      </h3>
+                      <span
                         style={{
-                          display: 'flex',
-                          flexWrap: 'wrap',
-                          gap: 10,
-                          marginTop: 16,
-                          alignItems: 'stretch',
+                          fontSize: 11,
+                          fontWeight: 700,
+                          padding: '4px 10px',
+                          borderRadius: 999,
+                          background: '#f1f5f9',
+                          color: '#475569',
+                          border: '1px solid #e2e8f0',
                         }}
                       >
-                        {app.appStoreUrl ? (
-                          <StoreLink href={app.appStoreUrl} label="App Store" bg="#111827" />
-                        ) : null}
-                        {app.googlePlayUrl ? (
-                          <StoreLink href={app.googlePlayUrl} label="Google Play" bg="#16a34a" />
-                        ) : null}
-                        {app.websiteUrl ? (
-                          <StoreLink href={app.websiteUrl} label="公式サイト" bg="#0ea5e9" variant="outline" />
-                        ) : null}
-                      </div>
+                        {releaseStatusLabel(app.releaseStatus)}
+                      </span>
+                    </div>
+                  </div>
 
-                      {fe?.appStoreUrl ? (
-                        <p style={{ marginTop: 10, marginBottom: 0, fontSize: 12, color: '#b91c1c', fontWeight: 600 }}>
-                          {fe.appStoreUrl}
-                        </p>
-                      ) : null}
-                      {fe?.googlePlayUrl ? (
-                        <p style={{ marginTop: 8, marginBottom: 0, fontSize: 12, color: '#b91c1c', fontWeight: 600 }}>
-                          {fe.googlePlayUrl}
-                        </p>
-                      ) : null}
-                      {fe?.storeUrl ? (
-                        <p style={{ marginTop: 8, marginBottom: 0, fontSize: 12, color: '#b91c1c', fontWeight: 600 }}>
-                          {fe.storeUrl}
-                        </p>
-                      ) : null}
+                  <div className={styles.appCardDescription}>
+                    {fe?.title ? (
+                      <p style={{ marginTop: 6, marginBottom: 0, fontSize: 12, color: '#b91c1c', fontWeight: 600 }}>
+                        {fe.title}
+                      </p>
+                    ) : null}
+                    {descriptionDisplay ? (
+                      <p
+                        style={{
+                          margin: 0,
+                          marginTop: 4,
+                          fontSize: 15,
+                          color: '#475569',
+                          lineHeight: 1.7,
+                          whiteSpace: 'pre-line',
+                          wordBreak: 'break-word',
+                          maxHeight: '8.5em',
+                          overflow: 'hidden',
+                        }}
+                      >
+                        {descriptionDisplay}
+                      </p>
+                    ) : null}
+                  </div>
 
-                      {app.screenshotUrls && app.screenshotUrls.length > 0 ? (
-                        <div style={{ display: 'flex', gap: 10, marginTop: 18, flexWrap: 'wrap' }}>
-                          {app.screenshotUrls.map((src, i) => (
-                            <img
-                              key={`${app.id}-ss-${i}`}
-                              src={src}
-                              alt=""
-                              style={{
-                                width: 120,
-                                height: 213,
-                                objectFit: 'cover',
-                                borderRadius: 10,
-                                border: '1px solid #e8ecf1',
-                                boxShadow: '0 2px 8px rgba(15, 23, 42, 0.06)',
-                              }}
-                              onError={(e) => {
-                                (e.target as HTMLImageElement).style.display = 'none';
-                              }}
-                            />
-                          ))}
-                        </div>
+                  <div className={styles.appCardLinks}>
+                    <div
+                      style={{
+                        display: 'flex',
+                        flexWrap: 'wrap',
+                        gap: 10,
+                        marginTop: 16,
+                        alignItems: 'stretch',
+                      }}
+                    >
+                      {app.appStoreUrl ? (
+                        <StoreLink href={app.appStoreUrl} label="App Store" bg="#111827" />
                       ) : null}
-                    </>
+                      {app.googlePlayUrl ? (
+                        <StoreLink href={app.googlePlayUrl} label="Google Play" bg="#16a34a" />
+                      ) : null}
+                      {app.websiteUrl ? (
+                        <StoreLink href={app.websiteUrl} label="公式サイト" bg="#0ea5e9" variant="outline" />
+                      ) : null}
+                    </div>
+                  </div>
+
+                  {fe?.appStoreUrl ? (
+                    <p style={{ marginTop: 10, marginBottom: 0, fontSize: 12, color: '#b91c1c', fontWeight: 600 }}>
+                      {fe.appStoreUrl}
+                    </p>
+                  ) : null}
+                  {fe?.googlePlayUrl ? (
+                    <p style={{ marginTop: 8, marginBottom: 0, fontSize: 12, color: '#b91c1c', fontWeight: 600 }}>
+                      {fe.googlePlayUrl}
+                    </p>
+                  ) : null}
+                  {fe?.storeUrl ? (
+                    <p style={{ marginTop: 8, marginBottom: 0, fontSize: 12, color: '#b91c1c', fontWeight: 600 }}>
+                      {fe.storeUrl}
+                    </p>
+                  ) : null}
+
+                  {app.screenshotUrls && app.screenshotUrls.length > 0 ? (
+                    <div style={{ display: 'flex', gap: 10, marginTop: 18, flexWrap: 'wrap' }}>
+                      {app.screenshotUrls.map((src, i) => (
+                        <img
+                          key={`${app.id}-ss-${i}`}
+                          src={src}
+                          alt=""
+                          style={{
+                            width: 120,
+                            height: 213,
+                            objectFit: 'cover',
+                            borderRadius: 10,
+                            border: '1px solid #e8ecf1',
+                            boxShadow: '0 2px 8px rgba(15, 23, 42, 0.06)',
+                          }}
+                          onError={(e) => {
+                            (e.target as HTMLImageElement).style.display = 'none';
+                          }}
+                        />
+                      ))}
+                    </div>
+                  ) : null}
+                </div>
+              ) : (
+                <div style={{ display: 'flex', gap: 20, alignItems: 'flex-start', flexWrap: 'wrap' }}>
+                  {app.iconUrl ? (
+                    <img
+                      src={app.iconUrl}
+                      alt=""
+                      width={88}
+                      height={88}
+                      style={{
+                        width: 'clamp(64px, 19vw, 88px)',
+                        height: 'clamp(64px, 19vw, 88px)',
+                        borderRadius: 18,
+                        objectFit: 'cover',
+                        flexShrink: 0,
+                        boxShadow: '0 2px 12px rgba(15, 23, 42, 0.08)',
+                      }}
+                      onError={(e) => {
+                        (e.target as HTMLImageElement).style.display = 'none';
+                      }}
+                    />
                   ) : (
+                    <div
+                      style={{
+                        width: 'clamp(64px, 19vw, 88px)',
+                        height: 'clamp(64px, 19vw, 88px)',
+                        borderRadius: 18,
+                        background: 'linear-gradient(145deg, #f1f5f9, #e8eef4)',
+                        flexShrink: 0,
+                        boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.8)',
+                      }}
+                    />
+                  )}
+                  <div style={{ flex: 1, minWidth: 0 }}>
                     <div style={{ display: 'grid', gap: 10 }}>
                       <div style={{ fontSize: 12, fontWeight: 700, color: '#6b7280', marginBottom: 4 }}>
                         編集（本人のみ）
@@ -847,9 +876,9 @@ export default function AppProjectBlock({
                         </button>
                       </div>
                     </div>
-                  )}
+                  </div>
                 </div>
-              </div>
+              )}
             </article>
           );
         })}

@@ -85,14 +85,24 @@ export default function TopLandingHero() {
                         マイページ
                       </Link>
                       {session.isAdmin ? (
-                        <Link
-                          href="/admin/news"
-                          className={styles.topNavDropdownItem}
-                          role="menuitem"
-                          onClick={() => setAccountMenuOpen(false)}
-                        >
-                          NEWS管理
-                        </Link>
+                        <>
+                          <Link
+                            href="/admin/news"
+                            className={styles.topNavDropdownItem}
+                            role="menuitem"
+                            onClick={() => setAccountMenuOpen(false)}
+                          >
+                            NEWS管理
+                          </Link>
+                          <Link
+                            href="/admin/users"
+                            className={styles.topNavDropdownItem}
+                            role="menuitem"
+                            onClick={() => setAccountMenuOpen(false)}
+                          >
+                            新規登録者
+                          </Link>
+                        </>
                       ) : null}
                       <Link
                         href="/account"
@@ -210,9 +220,14 @@ export default function TopLandingHero() {
                   マイページ
                 </Link>
                 {session.isAdmin && (
-                  <Link href="/admin/news" className={styles.menuLink} style={{ color: 'orange' }}>
-                    NEWS管理
-                  </Link>
+                  <>
+                    <Link href="/admin/news" className={styles.menuLink} style={{ color: 'orange' }}>
+                      NEWS管理
+                    </Link>
+                    <Link href="/admin/users" className={styles.menuLink} style={{ color: 'orange' }}>
+                      新規登録者
+                    </Link>
+                  </>
                 )}
                 <Link href="/account" className={styles.menuLink}>
                   設定

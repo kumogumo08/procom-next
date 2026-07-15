@@ -58,9 +58,14 @@ export default function Header() {
                 マイページ
               </Link>
               {session.isAdmin && (
-                <Link href="/admin/news" className="mypage-btn" style={{ background: 'orange' }}>
-                  NEWS管理
-                </Link>
+                <>
+                  <Link href="/admin/news" className="mypage-btn" style={{ background: 'orange' }}>
+                    NEWS管理
+                  </Link>
+                  <Link href="/admin/users" className="mypage-btn" style={{ background: 'orange' }}>
+                    新規登録者
+                  </Link>
+                </>
               )}
               <form action="/api/logout" method="GET">
                 <button type="submit" className="mypage-btn">
@@ -161,9 +166,14 @@ export default function Header() {
                   マイページ
                 </Link>
                 {session.isAdmin && (
-                  <Link href="/admin/news" className={styles.menuLink} style={{ color: 'orange' }}>
-                    NEWS管理
-                  </Link>
+                  <>
+                    <Link href="/admin/news" className={styles.menuLink} style={{ color: 'orange' }}>
+                      NEWS管理
+                    </Link>
+                    <Link href="/admin/users" className={styles.menuLink} style={{ color: 'orange' }}>
+                      新規登録者
+                    </Link>
+                  </>
                 )}
                 <Link href="/account" className={styles.menuLink}>
                   設定

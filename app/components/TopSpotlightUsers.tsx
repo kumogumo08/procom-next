@@ -35,7 +35,7 @@ function SpotlightUserThumb({ photoUrl }: { photoUrl: string }) {
 }
 
 /**
- * 「こんな人が使っています」— /api/category-users?category=new（ランダム最大12件）
+ * 「こんな人が使っています」— /api/category-users?category=new&withPhotos=1（画像あり・ランダム最大12件）
  */
 export default function TopSpotlightUsers() {
   const [users, setUsers] = useState<CategoryUser[] | null>(null);
@@ -44,10 +44,16 @@ export default function TopSpotlightUsers() {
     let cancelled = false;
     (async () => {
       try {
-        const res = await fetch('/api/category-users?category=new', { cache: 'no-store' });
+        const res = await fetch('/api/category-users?category=new&withPhotos=1', {
+          cache: 'no-store',
+        });
         const data = (await res.json()) as { users?: CategoryUser[] };
         const list = Array.isArray(data.users) ? data.users : [];
-        if (!cancelled) setUsers(list);
+        // API 側で絞り込み済み。クライアントでも無効 URL を除外（防御）
+        const usersWithProfileImage = list.filter((user) =>
+          Boolean(resolveFirstPhotoUrl(user.profile?.photos)),
+        );
+        if (!cancelled) setUsers(usersWithProfileImage);
       } catch {
         if (!cancelled) setUsers([]);
       }

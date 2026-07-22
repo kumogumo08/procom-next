@@ -26,10 +26,9 @@
         "name": "next"
       }
     ],
-    "baseUrl": ".",
     "paths": {
       "@/*": [
-        "app/*"
+        "./app/*"
       ]
     }
   },
@@ -42,6 +41,6 @@
   ],
   "exclude": [
     "node_modules",
-    ".next" // ✅ 推奨：自動生成フォルダを除外
+    ".next"
   ]
 }

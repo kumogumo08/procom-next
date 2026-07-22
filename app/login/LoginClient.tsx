@@ -3,7 +3,7 @@
 import { useState, useEffect, FormEvent } from 'react';
 import Head from 'next/head';
 import Header from '@/components/Header';
-import Footer from 'app/components/Footer';
+import Footer from '@/components/Footer';
 import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link'
 import { FirebaseError } from 'firebase/app';

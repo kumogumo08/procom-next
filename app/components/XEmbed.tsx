@@ -6,7 +6,6 @@ import SnsHelpTooltip from './SnsHelpTooltip';
 import { fetchUserApi } from '@/lib/userProfileClient';
 import {
   buttonPrimary,
-  buttonRowRight,
   cardActions,
   cardBody,
   cardTitle,
@@ -14,7 +13,7 @@ import {
   inputBase,
   snsCardBase,
 } from '@/components/ui/cardStyles';
-import { buildXProfileUrl, formatXHandle } from '@/lib/xUsername';
+import { buildXProfileUrl, formatXHandle, normalizeXUsername } from '@/lib/xUsername';
 
 type Props = {
   uid: string;
@@ -23,6 +22,42 @@ type Props = {
   initialUsername?: string;
   initialShowX?: boolean;
 };
+
+/** 公開プロフィールと同じ [Xロゴ][アバター][@ユーザー名] 横長リンク */
+function XProfileLinkRow({ username }: { username: string }) {
+  const normalized = normalizeXUsername(username);
+  const profileUrl = buildXProfileUrl(normalized);
+  const handleLabel = formatXHandle(normalized);
+
+  if (!normalized || !profileUrl) return null;
+
+  return (
+    <a
+      href={profileUrl}
+      target="_blank"
+      rel="noopener noreferrer"
+      className="sns-link-row"
+      aria-label={`${handleLabel}（外部リンク）`}
+    >
+      <img
+        className="sns-link-row__brand"
+        src="/icons/x.svg"
+        alt=""
+        width={18}
+        height={18}
+        aria-hidden="true"
+      />
+      <img
+        className="sns-link-row__avatar"
+        src={`https://unavatar.io/x/${normalized}`}
+        alt=""
+        width={30}
+        height={30}
+      />
+      <span className="sns-link-row__label">{handleLabel}</span>
+    </a>
+  );
+}
 
 export default function XEmbed({
   uid,
@@ -86,9 +121,12 @@ export default function XEmbed({
     }
   };
 
-  const profileUrl = buildXProfileUrl(username);
-  const handleLabel = formatXHandle(username);
-  const canShowPublicLink = Boolean(username && showX && profileUrl);
+  const publicUsername = normalizeXUsername(username);
+  const canShowPublicLink = Boolean(publicUsername && showX && buildXProfileUrl(publicUsername));
+
+  // 編集画面プレビュー: 入力中の値を即時反映（不正・空は非表示）
+  const previewUsername = normalizeXUsername(inputValue);
+  const canShowPreview = Boolean(previewUsername && showX && buildXProfileUrl(previewUsername));
 
   // ✅ フックの後で return 条件を判定
   if (loading) return null;
@@ -97,32 +135,7 @@ export default function XEmbed({
 
   // 公開プロフィール: [Xアイコン] [プロフィール画像] @username の横長リンクのみ
   if (!isEditable) {
-    return (
-      <a
-        href={profileUrl}
-        target="_blank"
-        rel="noopener noreferrer"
-        className="sns-link-row"
-        aria-label={`${handleLabel}（外部リンク）`}
-      >
-        <img
-          className="sns-link-row__brand"
-          src="/icons/x.svg"
-          alt=""
-          width={18}
-          height={18}
-          aria-hidden="true"
-        />
-        <img
-          className="sns-link-row__avatar"
-          src={`https://unavatar.io/x/${username}`}
-          alt=""
-          width={30}
-          height={30}
-        />
-        <span className="sns-link-row__label">{handleLabel}</span>
-      </a>
-    );
+    return <XProfileLinkRow username={publicUsername} />;
   }
 
   return (
@@ -137,52 +150,37 @@ export default function XEmbed({
           onChange={(e) => setInputValue(e.target.value)}
           style={{ ...inputBase, maxWidth: 520 }}
         />
-        <div style={buttonRowRight}>
-          <button onClick={handleSave} style={buttonPrimary}>保存</button>
-        </div>
       </div>
 
-      {username && showX && profileUrl && (
+      {canShowPreview && (
         <div style={{ flex: 1, display: 'grid', gap: 12 }}>
-          <div style={{ textAlign: 'center' }}>
-            <a
-              href={profileUrl}
-              target="_blank"
-              rel="noopener noreferrer"
-              style={{ display: 'block', fontWeight: 700, marginBottom: 8 }}
-            >
-              @{username} さんのXプロフィールを見る
-            </a>
-          </div>
-          <div style={{ minHeight: 220, borderRadius: 12, overflow: 'hidden', background: '#fafbfc', border: '1px solid #eef2f7', padding: 12 }}>
-            <a href={profileUrl} target="_blank" rel="noopener noreferrer" style={{ display: 'block' }}>
-              <img
-                src={`https://unavatar.io/x/${username}`}
-                alt={`${username} のプロフィール画像`}
-                style={{
-                  width: '100%',
-                  maxWidth: 520,
-                  borderRadius: 12,
-                  display: 'block',
-                  margin: '0 auto',
-                }}
-              />
-            </a>
-          </div>
+          <XProfileLinkRow username={previewUsername} />
         </div>
       )}
 
-      {(!username || showX === false) && (
+      {(!previewUsername || showX === false) && (
         <div style={{ flex: 1 }}>
           <div style={emptyStateBox}>未設定（ユーザー名を入力するとここに表示されます）</div>
         </div>
       )}
 
-      <div style={cardActions}>
+      <div
+        style={{
+          ...cardActions,
+          display: 'flex',
+          justifyContent: 'space-between',
+          alignItems: 'center',
+          flexWrap: 'wrap',
+          gap: 10,
+        }}
+      >
         <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
           <SnsVisibilityToggle label="Xを表示する" checked={showX} onChange={setShowX} />
           <SnsHelpTooltip />
         </div>
+        <button type="button" onClick={handleSave} style={buttonPrimary}>
+          保存
+        </button>
       </div>
     </div>
   );

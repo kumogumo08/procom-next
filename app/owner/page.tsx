@@ -3,7 +3,7 @@
 import { FC } from 'react';
 import Head from 'next/head';
 import Header from '@/components/Header';
-import Footer from 'app/components/Footer';
+import Footer from '@/components/Footer';
 import Link from 'next/link';
 
 const OwnerPage: FC = () => {

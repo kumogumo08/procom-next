@@ -17,6 +17,7 @@ export type SNSLinkRowProps = {
 /**
  * 細長い SNS リンクリスト行。
  * リンク挙動（新規タブ・rel）は既存 SNS ボタンと同じ。
+ * レイアウトは globals.css の .sns-link-row で親幅いっぱいに固定する。
  */
 export default function SNSLinkRow({
   label,
@@ -33,26 +34,16 @@ export default function SNSLinkRow({
       href={url}
       target="_blank"
       rel="noopener noreferrer"
-      className="group flex w-full items-center gap-3 border-b border-neutral-200/80 px-3 transition-colors hover:bg-neutral-100/90 focus-visible:bg-neutral-100/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-neutral-300 focus-visible:ring-inset"
-      style={{ minHeight: 52 }}
+      className="sns-link-row"
       aria-label={`${label}（外部リンク）`}
     >
-      <span
-        className="inline-flex h-8 w-8 shrink-0 items-center justify-center text-xl leading-none"
-        style={{ color: iconColor }}
-        aria-hidden
-      >
+      <span className="sns-link-row__icon" style={{ color: iconColor }} aria-hidden>
         <i className={iconClass} />
       </span>
 
-      <span className="min-w-0 flex-1 truncate text-[0.95rem] font-medium text-neutral-800 group-hover:text-neutral-950">
-        {label}
-      </span>
+      <span className="sns-link-row__label">{label}</span>
 
-      <span
-        className="shrink-0 text-sm text-neutral-400 transition-colors group-hover:text-neutral-600"
-        aria-hidden
-      >
+      <span className="sns-link-row__external" aria-hidden>
         <i className="fa-solid fa-arrow-up-right-from-square" />
       </span>
     </a>

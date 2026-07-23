@@ -4,7 +4,17 @@ import { useEffect, useState } from 'react';
 import SnsVisibilityToggle from './SnsVisibilityToggle';
 import SnsHelpTooltip from './SnsHelpTooltip';
 import { fetchUserApi } from '@/lib/userProfileClient';
-import { buttonPrimary, buttonRowRight, cardActions, cardBody, cardTitle, emptyStateBox, inputBase, snsCardBase } from '@/components/ui/cardStyles';
+import {
+  buttonPrimary,
+  buttonRowRight,
+  cardActions,
+  cardBody,
+  cardTitle,
+  emptyStateBox,
+  inputBase,
+  snsCardBase,
+} from '@/components/ui/cardStyles';
+import { buildXProfileUrl, formatXHandle } from '@/lib/xUsername';
 
 type Props = {
   uid: string;
@@ -48,61 +58,91 @@ export default function XEmbed({
     fetchXUsername();
   }, [uid, hasInitialProfile]);
 
-const handleSave = async () => {
-  if (showX && !inputValue.trim()) {
-    alert('ユーザー名を入力してください');
-    return;
-  }
+  const handleSave = async () => {
+    if (showX && !inputValue.trim()) {
+      alert('ユーザー名を入力してください');
+      return;
+    }
 
-  try {
-    const res = await fetch(`/api/user/${uid}`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        profile: {
-          xUsername: inputValue.trim(),
-          settings: {
-            showX: showX,
+    try {
+      const res = await fetch(`/api/user/${uid}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          profile: {
+            xUsername: inputValue.trim(),
+            settings: {
+              showX: showX,
+            },
           },
-        },
-      }),
-    });
+        }),
+      });
 
-    if (!res.ok) throw new Error('保存失敗');
-    alert('Xユーザー名を保存しました');
-    setUsername(inputValue.trim());
-  } catch (err) {
-    alert('保存に失敗しました');
-  }
-};
+      if (!res.ok) throw new Error('保存失敗');
+      alert('Xユーザー名を保存しました');
+      setUsername(inputValue.trim());
+    } catch (err) {
+      alert('保存に失敗しました');
+    }
+  };
 
-  const profileUrl = username ? `https://x.com/${username}` : '';
+  const profileUrl = buildXProfileUrl(username);
+  const handleLabel = formatXHandle(username);
+  const canShowPublicLink = Boolean(username && showX && profileUrl);
 
   // ✅ フックの後で return 条件を判定
   if (loading) return null;
 
-  if (!isEditable && (!username || showX === false)) return null;
+  if (!isEditable && !canShowPublicLink) return null;
+
+  // 公開プロフィール: [Xアイコン] [プロフィール画像] @username の横長リンクのみ
+  if (!isEditable) {
+    return (
+      <a
+        href={profileUrl}
+        target="_blank"
+        rel="noopener noreferrer"
+        className="sns-link-row"
+        aria-label={`${handleLabel}（外部リンク）`}
+      >
+        <img
+          className="sns-link-row__brand"
+          src="/icons/x.svg"
+          alt=""
+          width={18}
+          height={18}
+          aria-hidden="true"
+        />
+        <img
+          className="sns-link-row__avatar"
+          src={`https://unavatar.io/x/${username}`}
+          alt=""
+          width={30}
+          height={30}
+        />
+        <span className="sns-link-row__label">{handleLabel}</span>
+      </a>
+    );
+  }
 
   return (
     <div className="sns-item" style={snsCardBase}>
       <h2 style={cardTitle}>X（旧Twitter）</h2>
 
-      {isEditable && (
-        <div style={cardBody}>
-          <input
-            type="text"
-            placeholder="ユーザー名（@なし）"
-            value={inputValue}
-            onChange={(e) => setInputValue(e.target.value)}
-            style={{ ...inputBase, maxWidth: 520 }}
-          />
-          <div style={buttonRowRight}>
-            <button onClick={handleSave} style={buttonPrimary}>保存</button>
-          </div>
+      <div style={cardBody}>
+        <input
+          type="text"
+          placeholder="ユーザー名（@なし）"
+          value={inputValue}
+          onChange={(e) => setInputValue(e.target.value)}
+          style={{ ...inputBase, maxWidth: 520 }}
+        />
+        <div style={buttonRowRight}>
+          <button onClick={handleSave} style={buttonPrimary}>保存</button>
         </div>
-      )}
+      </div>
 
-      {username && showX && (
+      {username && showX && profileUrl && (
         <div style={{ flex: 1, display: 'grid', gap: 12 }}>
           <div style={{ textAlign: 'center' }}>
             <a
@@ -132,20 +172,18 @@ const handleSave = async () => {
         </div>
       )}
 
-      {isEditable && (!username || showX === false) && (
+      {(!username || showX === false) && (
         <div style={{ flex: 1 }}>
           <div style={emptyStateBox}>未設定（ユーザー名を入力するとここに表示されます）</div>
         </div>
       )}
 
-      {isEditable && (
-        <div style={cardActions}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
-            <SnsVisibilityToggle label="Xを表示する" checked={showX} onChange={setShowX} />
-            <SnsHelpTooltip />
-          </div>
+      <div style={cardActions}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
+          <SnsVisibilityToggle label="Xを表示する" checked={showX} onChange={setShowX} />
+          <SnsHelpTooltip />
         </div>
-      )}
+      </div>
     </div>
   );
 }

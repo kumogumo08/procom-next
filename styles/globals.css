@@ -661,6 +661,11 @@ body {
   object-fit: contain;
 }
 
+.sns-link-row__brand--instagram {
+  width: 40px;
+  height: 40px;
+}
+
 /* Xプロフィール画像 */
 .sns-link-row__avatar {
   width: 42px;

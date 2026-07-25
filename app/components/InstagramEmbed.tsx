@@ -1,32 +1,60 @@
 'use client';
 
-import { useEffect, useState, useRef } from 'react';
+import { useEffect, useState } from 'react';
 import SnsVisibilityToggle from './SnsVisibilityToggle';
 import SnsHelpTooltip from './SnsHelpTooltip';
 import { fetchUserApi } from '@/lib/userProfileClient';
-import { buttonPrimary, buttonRowRight, cardActions, cardBody, cardPreviewArea, cardTitle, emptyStateBox, inputBase, snsCardBase } from '@/components/ui/cardStyles';
+import {
+  buttonPrimary,
+  cardActions,
+  cardBody,
+  cardTitle,
+  emptyStateBox,
+  inputBase,
+  snsCardBase,
+} from '@/components/ui/cardStyles';
+import {
+  buildInstagramProfileUrl,
+  formatInstagramHandle,
+  normalizeInstagramUsername,
+} from '@/lib/instagramUsername';
 
-type Props = { uid: string; isEditable: boolean };
-
-// URL正規化（OKなら統一URLを返す／NGなら null）
-const normalizeInstagramUrl = (raw: string): string | null => {
-  try {
-    const u = new URL(raw.trim());
-    if (!/^(www\.)?instagram\.com$/.test(u.hostname)) return null;
-
-    const seg = u.pathname.replace(/\/+$/, '').split('/').filter(Boolean);
-    if (seg.length < 2) return null;
-
-    const type = seg[0]; // p | reel | tv
-    const id = seg[1];
-    if (!/^(p|reel|tv)$/.test(type)) return null;
-    if (!/^[a-zA-Z0-9_-]+$/.test(id)) return null;
-
-    return `https://www.instagram.com/${type}/${id}/`;
-  } catch {
-    return null;
-  }
+type Props = {
+  uid: string;
+  isEditable: boolean;
+  hasInitialProfile?: boolean;
+  initialInstagramUrl?: string;
+  initialShowInstagram?: boolean;
 };
+
+/** 公開プロフィールと同じ [Instagramロゴ][@ユーザー名] 横長リンク（プロフィール画像は非表示） */
+function InstagramProfileLinkRow({ username }: { username: string }) {
+  const normalized = normalizeInstagramUsername(username);
+  const profileUrl = buildInstagramProfileUrl(normalized);
+  const handleLabel = formatInstagramHandle(normalized);
+
+  if (!normalized || !profileUrl) return null;
+
+  return (
+    <a
+      href={profileUrl}
+      target="_blank"
+      rel="noopener noreferrer"
+      className="sns-link-row"
+      aria-label={`${handleLabel}（外部リンク）`}
+    >
+      <img
+        className="sns-link-row__brand sns-link-row__brand--instagram"
+        src="/icons/Instagram.svg"
+        alt=""
+        width={18}
+        height={18}
+        aria-hidden="true"
+      />
+      <span className="sns-link-row__label">{handleLabel}</span>
+    </a>
+  );
+}
 
 export default function InstagramEmbed({
   uid,
@@ -34,182 +62,147 @@ export default function InstagramEmbed({
   hasInitialProfile,
   initialInstagramUrl,
   initialShowInstagram,
-}: Props & {
-  hasInitialProfile?: boolean;
-  initialInstagramUrl?: string;
-  initialShowInstagram?: boolean | undefined;
-}) {
-  const [url, setUrl] = useState(initialInstagramUrl ?? '');
-  const [loadedUrl, setLoadedUrl] = useState(initialInstagramUrl ?? '');
-  const [showInstagram, setShowInstagram] = useState<boolean | undefined>(initialShowInstagram);
-  const [isLoaded, setIsLoaded] = useState(false);
+}: Props) {
+  const [username, setUsername] = useState(initialInstagramUrl ?? '');
+  const [inputValue, setInputValue] = useState(initialInstagramUrl ?? '');
+  const [showInstagram, setShowInstagram] = useState<boolean>(initialShowInstagram ?? true);
+  const [loading, setLoading] = useState(!hasInitialProfile);
 
-  const embedRef = useRef<HTMLDivElement>(null);
-  const embedScriptLoadedRef = useRef(false);
-  const scriptAppendedRef = useRef(false);
-  const lastProcessedUrlRef = useRef<string | null>(null);
-
-  // 初期データ取得
   useEffect(() => {
-    if (hasInitialProfile) {
-      setIsLoaded(true);
-      return;
-    }
-    (async () => {
+    async function fetchInstagramUsername() {
       try {
-        const data = await fetchUserApi(uid, { caller: 'InstagramEmbed', reason: 'initial load (instagram settings)' });
-        const profile = data.profile || {};
+        const data = await fetchUserApi(uid, {
+          caller: 'InstagramEmbed',
+          reason: 'initial load (instagram settings)',
+        });
+        const profile = data?.profile || {};
+        const name = profile.instagramPostUrl || '';
+        const flag = profile.settings?.showInstagram;
 
-        if (profile.instagramPostUrl) {
-          const normalized = normalizeInstagramUrl(profile.instagramPostUrl);
-          if (normalized) {
-            setUrl(normalized);
-            setLoadedUrl(normalized);
-          }
-        }
-        setShowInstagram(profile.settings?.showInstagram ?? true);
-      } catch {
-        console.warn('Instagram情報の取得に失敗しました');
+        setUsername(name);
+        setInputValue(name);
+        setShowInstagram(flag !== undefined ? flag : true);
+      } catch (err) {
+        console.warn('Instagramユーザー名の取得に失敗:', err);
       } finally {
-        setIsLoaded(true);
+        setLoading(false);
       }
-    })();
+    }
+
+    if (hasInitialProfile) return;
+    fetchInstagramUsername();
   }, [uid, hasInitialProfile]);
 
-  // 埋め込み処理（保存済みの loadedUrl を使用）
-  useEffect(() => {
-    if (!loadedUrl || !showInstagram) return;
-    if (lastProcessedUrlRef.current === loadedUrl) return;
-
-    const container = embedRef.current;
-    if (!container) return;
-
-    container.innerHTML = '';
-    const block = document.createElement('blockquote');
-    block.className = 'instagram-media';
-    block.setAttribute('data-instgrm-permalink', loadedUrl);
-    block.setAttribute('data-instgrm-version', '14');
-    block.setAttribute('data-instgrm-captioned', '');
-    block.style.width = '100%';
-    block.style.margin = '20px auto';
-    container.appendChild(block);
-
-    const process = () => {
-      try {
-        (window as any).instgrm?.Embeds?.process();
-        lastProcessedUrlRef.current = loadedUrl;
-      } catch (err) {
-        console.warn('Instagram埋め込み処理エラー:', err);
-      }
-    };
-
-    const available = (window as any).instgrm?.Embeds?.process;
-    if (available) {
-      process();
-    } else if (!embedScriptLoadedRef.current && !scriptAppendedRef.current) {
-      const script = document.createElement('script');
-      script.src = 'https://www.instagram.com/embed.js';
-      script.async = true;
-      script.onload = () => {
-        embedScriptLoadedRef.current = true;
-        process();
-      };
-      document.body.appendChild(script);
-      scriptAppendedRef.current = true;
+  const handleSave = async () => {
+    if (showInstagram && !inputValue.trim()) {
+      alert('ユーザー名を入力してください');
+      return;
     }
 
-    // クリーンアップ（ページ遷移時に空に）
-    return () => {
-      if (container) container.innerHTML = '';
-    };
-  }, [loadedUrl, showInstagram]);
+    const normalizedInput = inputValue.trim()
+      ? normalizeInstagramUsername(inputValue)
+      : '';
 
-  // 保存
-  const handleSave = async () => {
+    if (inputValue.trim() && !normalizedInput) {
+      alert(
+        '正しいInstagramユーザー名を入力してください（例: username または https://www.instagram.com/username/）'
+      );
+      return;
+    }
+
     try {
-      let normalized: string | '';
-
-      if (url.trim()) {
-        const n = normalizeInstagramUrl(url);
-        if (!n) {
-          alert('⚠️ 正しいInstagram投稿URLを入力してください（例: https://www.instagram.com/p/xxxxx/ または /reel/ /tv/）');
-          return;
-        }
-        normalized = n;
-      } else {
-        normalized = '';
-      }
-
       const res = await fetch(`/api/user/${uid}`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         credentials: 'include',
         body: JSON.stringify({
           profile: {
-            instagramPostUrl: normalized,
-            settings: { showInstagram },
+            instagramPostUrl: normalizedInput,
+            settings: {
+              showInstagram,
+            },
           },
         }),
       });
 
       if (!res.ok) throw new Error('保存失敗');
-      setLoadedUrl(normalized);
-      alert('Instagramリンクを保存しました');
+      alert('Instagramユーザー名を保存しました');
+      setUsername(normalizedInput);
+      setInputValue(normalizedInput);
     } catch (err) {
       console.error('保存エラー:', err);
       alert('保存に失敗しました');
     }
   };
 
-  // 非編集かつ非表示設定なら描画しない
-  if (!isEditable && showInstagram === false) return null;
+  const publicUsername = normalizeInstagramUsername(username);
+  const canShowPublicLink = Boolean(
+    publicUsername && showInstagram && buildInstagramProfileUrl(publicUsername)
+  );
+
+  // 編集画面プレビュー: 入力中の値を即時反映（不正・空は非表示）
+  const previewUsername = normalizeInstagramUsername(inputValue);
+  const canShowPreview = Boolean(
+    previewUsername && showInstagram && buildInstagramProfileUrl(previewUsername)
+  );
+
+  if (loading) return null;
+
+  if (!isEditable && !canShowPublicLink) return null;
+
+  // 公開プロフィール: [Instagramアイコン] [プロフィール画像] @username の横長リンクのみ
+  if (!isEditable) {
+    return <InstagramProfileLinkRow username={publicUsername} />;
+  }
 
   return (
     <div className="sns-item" style={snsCardBase}>
       <h2 style={cardTitle}>Instagram</h2>
 
-      {isEditable && (
-        <div style={cardBody}>
-          <input
-            type="text"
-            placeholder="Instagram投稿のURL（/p/xxxx/ /reel/xxxx/ /tv/xxxx/ のいずれか）"
-            value={url}
-            onChange={(e) => setUrl(e.target.value)}
-            style={inputBase}
-          />
-          <p style={{ fontSize: 12, color: '#555' }}>
-            お気に入りのinstagramのURLを入力してください。
-          </p>
-          <div style={buttonRowRight}>
-            <button onClick={handleSave} style={buttonPrimary}>
-              保存
-            </button>
-          </div>
-        </div>
-      )}
-
-      <div style={{ flex: 1 }}>
-        {isLoaded && loadedUrl && showInstagram ? (
-          <div style={cardPreviewArea}>
-            <div ref={embedRef} />
-          </div>
-        ) : (
-          <div style={emptyStateBox}>未設定（URLを入力するとここに表示されます）</div>
-        )}
+      <div style={cardBody}>
+        <input
+          type="text"
+          placeholder="ユーザー名（@なし）"
+          value={inputValue}
+          onChange={(e) => setInputValue(e.target.value)}
+          style={{ ...inputBase, maxWidth: 520 }}
+        />
       </div>
 
-      {isEditable && (
-        <div style={cardActions}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
-            <SnsVisibilityToggle
-              label="Instagramを表示する"
-              checked={showInstagram ?? true}
-              onChange={setShowInstagram}
-            />
-            <SnsHelpTooltip />
-          </div>
+      {canShowPreview && (
+        <div style={{ flex: 1, display: 'grid', gap: 12 }}>
+          <InstagramProfileLinkRow username={previewUsername} />
         </div>
       )}
+
+      {(!previewUsername || showInstagram === false) && (
+        <div style={{ flex: 1 }}>
+          <div style={emptyStateBox}>未設定（ユーザー名を入力するとここに表示されます）</div>
+        </div>
+      )}
+
+      <div
+        style={{
+          ...cardActions,
+          display: 'flex',
+          justifyContent: 'space-between',
+          alignItems: 'center',
+          flexWrap: 'wrap',
+          gap: 10,
+        }}
+      >
+        <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
+          <SnsVisibilityToggle
+            label="Instagramを表示する"
+            checked={showInstagram}
+            onChange={setShowInstagram}
+          />
+          <SnsHelpTooltip />
+        </div>
+        <button type="button" onClick={handleSave} style={buttonPrimary}>
+          保存
+        </button>
+      </div>
     </div>
   );
 }

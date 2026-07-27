@@ -656,14 +656,14 @@ body {
 .sns-link-row__brand {
   display: block;
   flex-shrink: 0;
-  width: 24px;
-  height: 24px;
+  width: 32px;
+  height: 32px;
   object-fit: contain;
 }
 
 .sns-link-row__brand--instagram {
-  width: 40px;
-  height: 40px;
+  width: 48px;
+  height: 48px;
 }
 
 /* Xプロフィール画像 */
@@ -686,6 +686,21 @@ body {
   justify-content: center;
   font-size: 1.25rem;
   line-height: 1;
+}
+
+.sns-link-row__icon--facebook {
+  color: #1877f2;
+  font-size: 1.75rem;
+}
+
+.sns-link-row--static {
+  cursor: default;
+  pointer-events: none;
+}
+
+.sns-link-row--static:hover {
+  background: #fff;
+  border-color: #e5e7eb;
 }
 
 /* ユーザー名 */

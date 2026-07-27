@@ -33,6 +33,7 @@ type Profile = {
   tiktokUrls?: string[];
   calendarEvents?: { date: string; events: string[] }[];
   facebookUrl?: string;
+  facebookUsername?: string;
   facebookPageUrl?: string;
   apps?: AppProject[];
   settings?: {
@@ -142,6 +143,7 @@ export default function UserPageSectionsClient({
           isEditable={isEditable}
           hasInitialProfile
           initialUrl={profile?.facebookUrl}
+          initialFacebookUsername={profile?.facebookUsername}
           initialShowFacebook={profile?.settings?.showFacebook}
         />
       ),

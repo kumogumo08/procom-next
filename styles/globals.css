@@ -656,9 +656,25 @@ body {
 .sns-link-row__brand {
   display: block;
   flex-shrink: 0;
+  width: 48px;
+  height: 48px;
+  object-fit: contain;
+}
+
+.sns-link-row__brand-slot {
+  width: 48px;
+  height: 48px;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.sns-link-row__brand-slot .sns-link-row__brand {
   width: 32px;
   height: 32px;
   object-fit: contain;
+  display: block;
 }
 
 .sns-link-row__brand--instagram {
@@ -668,8 +684,8 @@ body {
 
 /* Xプロフィール画像 */
 .sns-link-row__avatar {
-  width: 42px;
-  height: 42px;
+  width: 48px;
+  height: 48px;
   flex-shrink: 0;
   border-radius: 50%;
   object-fit: cover;
@@ -679,8 +695,8 @@ body {
 
 .sns-link-row__icon {
   display: inline-flex;
-  width: 32px;
-  height: 32px;
+  width: 48px;
+  height: 48px;
   flex-shrink: 0;
   align-items: center;
   justify-content: center;
@@ -690,7 +706,7 @@ body {
 
 .sns-link-row__icon--facebook {
   color: #1877f2;
-  font-size: 1.75rem;
+  font-size: 2.75rem;
 }
 
 .sns-link-row--static {

@@ -39,14 +39,16 @@ function XProfileLinkRow({ username }: { username: string }) {
       className="sns-link-row"
       aria-label={`${handleLabel}（外部リンク）`}
     >
-      <img
-        className="sns-link-row__brand"
-        src="/icons/x.svg"
-        alt=""
-        width={18}
-        height={18}
-        aria-hidden="true"
-      />
+      <span className="sns-link-row__brand-slot">
+        <img
+          className="sns-link-row__brand"
+          src="/icons/x.svg"
+          alt=""
+          width={18}
+          height={18}
+          aria-hidden="true"
+        />
+      </span>
       <img
         className="sns-link-row__avatar"
         src={`https://unavatar.io/x/${normalized}`}

@@ -26,6 +26,11 @@ type Props = {
   initialUrl?: string;
   initialFacebookUsername?: string;
   initialShowFacebook?: boolean;
+  onDraftChange?: (draft: {
+    facebookUrl: string;
+    facebookUsername: string;
+    showFacebook: boolean;
+  }) => void;
 };
 
 /** 公開プロフィールと同じ [Facebookアイコン][表示名] 横長リンク */
@@ -77,6 +82,7 @@ export default function FacebookEmbedBlock({
   initialUrl,
   initialFacebookUsername,
   initialShowFacebook,
+  onDraftChange,
 }: Props) {
   const [fbUrl, setFbUrl] = useState(initialUrl ?? '');
   const [inputValue, setInputValue] = useState(initialUrl ?? '');
@@ -113,6 +119,14 @@ export default function FacebookEmbedBlock({
     fetchFacebookSettings();
   }, [uid, hasInitialProfile]);
 
+  useEffect(() => {
+    onDraftChange?.({
+      facebookUrl: inputValue,
+      facebookUsername: usernameInput,
+      showFacebook,
+    });
+  }, [inputValue, usernameInput, showFacebook, onDraftChange]);
+
   const handleSave = async () => {
     const trimmedUrl = inputValue.trim();
     const normalizedUrl = trimmedUrl ? normalizeFacebookUrl(trimmedUrl) : '';
@@ -148,11 +162,16 @@ export default function FacebookEmbedBlock({
       });
 
       if (!res.ok) throw new Error('保存失敗');
-      alert('Facebook設定を保存しました');
       setFbUrl(normalizedUrl);
       setInputValue(normalizedUrl);
       setFacebookUsername(trimmedUsername);
       setUsernameInput(trimmedUsername);
+      onDraftChange?.({
+        facebookUrl: normalizedUrl,
+        facebookUsername: trimmedUsername,
+        showFacebook,
+      });
+      alert('Facebook設定を保存しました');
     } catch (err) {
       console.error('保存エラー:', err);
       alert('保存に失敗しました');

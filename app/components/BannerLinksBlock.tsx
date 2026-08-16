@@ -17,9 +17,10 @@ type Banner = {
 type Props = {
   uid: string;
   isEditable: boolean;
+  onDraftChange?: (draft: { bannerLinks: Banner[]; showBanners: boolean }) => void;
 };
 
-export default function BannerLinksBlock({ uid, isEditable }: Props) {
+export default function BannerLinksBlock({ uid, isEditable, onDraftChange }: Props) {
   const [banners, setBanners] = useState<Banner[]>([]);
   const [cropIndex, setCropIndex] = useState<number | null>(null);
   const [showBanners, setShowBanners] = useState(true);
@@ -88,6 +89,7 @@ export default function BannerLinksBlock({ uid, isEditable }: Props) {
 
       if (!res.ok) throw new Error('保存失敗');
 
+      onDraftChange?.({ bannerLinks: uploadedBanners, showBanners });
       alert('✅ リンクを保存しました！');
     } catch (err) {
       console.error('❌ 保存エラー:', err);
@@ -122,6 +124,9 @@ export default function BannerLinksBlock({ uid, isEditable }: Props) {
     fetchBannerLinks();
   }, [uid]);
 
+  useEffect(() => {
+    onDraftChange?.({ bannerLinks: banners, showBanners });
+  }, [banners, showBanners, onDraftChange]);
 
   const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>, index: number) => {
     const input = e.target;

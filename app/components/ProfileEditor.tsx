@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useRef } from 'react';
+import { useState, useRef, useEffect } from 'react';
 
 const TEN_QUESTIONS_TEMPLATE = `＼＼ 10の質問 ／／
 
@@ -21,6 +21,7 @@ type Props = {
   initialTitle?: string;
   initialBio?: string;
   isEditable: boolean;
+  onDraftChange?: (draft: { name: string; title: string; bio: string }) => void;
 };
 
 // 改行＋XSS対策用のエスケープ関数
@@ -39,6 +40,7 @@ export default function ProfileEditor({
   initialTitle = '',
   initialBio = '',
   isEditable,
+  onDraftChange,
 }: Props) {
   const [name, setName] = useState(initialName);
   const [title, setTitle] = useState(initialTitle);
@@ -54,6 +56,10 @@ export default function ProfileEditor({
     title: initialTitle,
     bio: initialBio,
   });
+
+  useEffect(() => {
+    onDraftChange?.({ name, title, bio });
+  }, [name, title, bio, onDraftChange]);
 
   const handleSave = async () => {
     const isNameEmpty = nameCleared.current || name.trim() === '';
@@ -84,34 +90,6 @@ export default function ProfileEditor({
       profile.bio = bio.trim();
     }
 
-    // 🔽 SNS系
-    const youtubeChannelId = localStorage.getItem('youtubeChannelId');
-    if (youtubeChannelId) profile.youtubeChannelId = youtubeChannelId;
-
-    const instagramPostUrl = localStorage.getItem('instagramPostUrl');
-    if (instagramPostUrl) profile.instagramPostUrl = instagramPostUrl;
-
-    const xUsername = localStorage.getItem('xUsername');
-    if (xUsername) profile.xUsername = xUsername;
-
-    const tiktokUrls = JSON.parse(localStorage.getItem('tiktokUrls') || '[]');
-    if (Array.isArray(tiktokUrls) && tiktokUrls.length > 0) {
-      profile.tiktokUrls = tiktokUrls;
-    }
-
-    const photos = JSON.parse(localStorage.getItem('photos') || '[]');
-    if (Array.isArray(photos) && photos.length > 0) {
-      profile.photos = photos;
-    }
-
-    const rawEvents = JSON.parse(localStorage.getItem('calendarEvents') || '{}');
-    const calendarEvents = Object.entries(rawEvents)
-      .filter(([date, evs]) => /^\d{4}-\d{2}-\d{2}$/.test(date) && Array.isArray(evs) && evs.length > 0)
-      .map(([date, evs]) => ({ date, events: evs }));
-    if (calendarEvents.length > 0) {
-      profile.calendarEvents = calendarEvents;
-    }
-
     if (Object.keys(profile).length === 0) {
       alert('🛑 入力が空です');
       return;
@@ -126,6 +104,11 @@ export default function ProfileEditor({
       });
 
       if (!res.ok) throw new Error('保存失敗');
+      onDraftChange?.({
+        name: profile.name ?? name,
+        title: profile.title ?? title,
+        bio: profile.bio ?? bio,
+      });
       alert('✅ プロフィールが保存されました');
       setIsEditing(false);
     } catch (err) {

@@ -7,6 +7,7 @@ type Props = {
   isEditable: boolean;
   initialEmail?: string;
   onSavedEmail?: (email: string) => void;
+  onDraftChange?: (emailForContact: string) => void;
 };
 
 export default function ContactButtonBlock({
@@ -14,6 +15,7 @@ export default function ContactButtonBlock({
   isEditable,
   initialEmail,
   onSavedEmail,
+  onDraftChange,
 }: Props) {
   const [email, setEmail] = useState(initialEmail || '');
   const [savedEmail, setSavedEmail] = useState(initialEmail || '');
@@ -24,6 +26,10 @@ export default function ContactButtonBlock({
     setEmail(initialEmail || '');
     setSavedEmail(initialEmail || '');
   }, [initialEmail]);
+
+  useEffect(() => {
+    onDraftChange?.(email);
+  }, [email, onDraftChange]);
 
   const handleSave = async () => {
     if (!email) return;
@@ -37,6 +43,7 @@ export default function ContactButtonBlock({
       if (res.ok) {
         setSavedEmail(email);
         onSavedEmail?.(email);
+        onDraftChange?.(email);
         alert('お仕事用メールアドレスを保存しました');
       } else {
         throw new Error();

@@ -16,6 +16,12 @@ type Props = {
   initialChannelId?: string;
   initialManualUrls?: string[];
   initialShowYouTube?: boolean | undefined;
+  onDraftChange?: (draft: {
+    youtubeMode: 'latest' | 'manual';
+    youtubeChannelId: string;
+    manualYouTubeUrls: string[];
+    showYouTube?: boolean;
+  }) => void;
 };
 
 export default function YouTubeEmbedBlock({
@@ -26,6 +32,7 @@ export default function YouTubeEmbedBlock({
   initialChannelId,
   initialManualUrls,
   initialShowYouTube,
+  onDraftChange,
 }: Props) {
   const [mode, setMode] = useState<'latest' | 'manual'>(initialMode ?? 'latest');
   const [channelId, setChannelId] = useState(initialChannelId ?? '');
@@ -49,6 +56,15 @@ export default function YouTubeEmbedBlock({
     }
     fetchData();
   }, [uid, hasInitialProfile]);
+
+  useEffect(() => {
+    onDraftChange?.({
+      youtubeMode: mode,
+      youtubeChannelId: channelId,
+      manualYouTubeUrls: manualUrls,
+      showYouTube,
+    });
+  }, [mode, channelId, manualUrls, showYouTube, onDraftChange]);
 
   // 表示更新
   useEffect(() => {
@@ -110,6 +126,12 @@ export default function YouTubeEmbedBlock({
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ profile: payload }),
+    });
+    onDraftChange?.({
+      youtubeMode: mode,
+      youtubeChannelId: channelId,
+      manualYouTubeUrls: manualUrls,
+      showYouTube,
     });
     alert('YouTube設定を保存しました');
   };

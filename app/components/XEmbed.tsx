@@ -21,6 +21,7 @@ type Props = {
   hasInitialProfile?: boolean;
   initialUsername?: string;
   initialShowX?: boolean;
+  onDraftChange?: (draft: { xUsername: string; showX: boolean }) => void;
 };
 
 /** 公開プロフィールと同じ [Xロゴ][アバター][@ユーザー名] 横長リンク */
@@ -67,6 +68,7 @@ export default function XEmbed({
   hasInitialProfile,
   initialUsername,
   initialShowX,
+  onDraftChange,
 }: Props) {
   const [username, setUsername] = useState(initialUsername ?? '');
   const [inputValue, setInputValue] = useState(initialUsername ?? '');
@@ -95,6 +97,10 @@ export default function XEmbed({
     fetchXUsername();
   }, [uid, hasInitialProfile]);
 
+  useEffect(() => {
+    onDraftChange?.({ xUsername: inputValue, showX });
+  }, [inputValue, showX, onDraftChange]);
+
   const handleSave = async () => {
     if (showX && !inputValue.trim()) {
       alert('ユーザー名を入力してください');
@@ -116,8 +122,10 @@ export default function XEmbed({
       });
 
       if (!res.ok) throw new Error('保存失敗');
+      const savedUsername = inputValue.trim();
+      setUsername(savedUsername);
+      onDraftChange?.({ xUsername: savedUsername, showX });
       alert('Xユーザー名を保存しました');
-      setUsername(inputValue.trim());
     } catch (err) {
       alert('保存に失敗しました');
     }

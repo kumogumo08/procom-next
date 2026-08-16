@@ -1,7 +1,7 @@
 'use client';
 
 import type { JSX } from 'react';
-import { useCallback, useMemo, useState } from 'react';
+import { useCallback, useMemo, useRef, useState } from 'react';
 import OshiButton from '@/components/OshiButton';
 import XShareButton from '@/components/XShareButton';
 import UserProfileSection from '@/components/UserProfileSection';
@@ -18,6 +18,9 @@ import AppProjectBlock from '@/components/AppProjectBlock';
 import type { AppProject } from '@/lib/appProjects';
 
 type Photo = { url: string; position?: number };
+
+type BannerLink = { imageUrl: string; linkUrl: string; visible?: boolean };
+type CustomLink = { label: string; url: string; color?: string; icon?: string };
 
 type Profile = {
   name?: string;
@@ -36,6 +39,8 @@ type Profile = {
   facebookUsername?: string;
   facebookPageUrl?: string;
   apps?: AppProject[];
+  bannerLinks?: BannerLink[];
+  customLinks?: CustomLink[];
   settings?: {
     showYouTube?: boolean;
     showX?: boolean;
@@ -43,6 +48,7 @@ type Profile = {
     showInstagram?: boolean;
     showTikTok?: boolean;
     showFacebook?: boolean;
+    showBanners?: boolean;
     sectionOrder?: string[];
   };
 };
@@ -68,10 +74,31 @@ export default function UserPageSectionsClient({
   initialApps: AppProject[];
 }) {
   const [profile, setProfile] = useState<Profile>(initialProfile);
+  const [draftProfile, setDraftProfile] = useState<Profile>(() => ({
+    ...initialProfile,
+    apps: initialApps,
+  }));
+  const draftProfileRef = useRef(draftProfile);
+  draftProfileRef.current = draftProfile;
+
   const [sectionOrder, setSectionOrder] = useState<string[]>(
     ensureAppProjectsInOrder(initialSectionOrder)
   );
   const [apps, setApps] = useState<AppProject[]>(initialApps);
+
+  const updateDraftProfile = useCallback((patch: Partial<Profile>) => {
+    setDraftProfile((prev) => ({ ...prev, ...patch }));
+  }, []);
+
+  const updateDraftSettings = useCallback((patch: NonNullable<Profile['settings']>) => {
+    setDraftProfile((prev) => ({
+      ...prev,
+      settings: {
+        ...(prev.settings ?? {}),
+        ...patch,
+      },
+    }));
+  }, []);
 
   const onSectionOrderSaved = useCallback(
     (nextOrder: string[]) => {
@@ -81,21 +108,105 @@ export default function UserPageSectionsClient({
         ...prev,
         settings: { ...(prev.settings ?? {}), sectionOrder: normalized },
       }));
+      updateDraftSettings({ sectionOrder: normalized });
     },
-    []
+    [updateDraftSettings]
   );
 
   const onAppsChange = useCallback((next: AppProject[]) => {
     setApps(next);
     setProfile((prev) => ({ ...prev, apps: next }));
-  }, []);
+    updateDraftProfile({ apps: next });
+  }, [updateDraftProfile]);
 
   const onShowAppsSaved = useCallback((showApps: boolean) => {
     setProfile((prev) => ({
       ...prev,
       settings: { ...(prev.settings ?? {}), showApps },
     }));
-  }, []);
+    updateDraftSettings({ showApps });
+  }, [updateDraftSettings]);
+
+  const onYouTubeDraftChange = useCallback(
+    (draft: {
+      youtubeMode: 'latest' | 'manual';
+      youtubeChannelId: string;
+      manualYouTubeUrls: string[];
+      showYouTube?: boolean;
+    }) => {
+      updateDraftProfile({
+        youtubeMode: draft.youtubeMode,
+        youtubeChannelId: draft.youtubeChannelId,
+        manualYouTubeUrls: draft.manualYouTubeUrls,
+      });
+      updateDraftSettings({ showYouTube: draft.showYouTube });
+    },
+    [updateDraftProfile, updateDraftSettings]
+  );
+
+  const onXDraftChange = useCallback(
+    (draft: { xUsername: string; showX: boolean }) => {
+      updateDraftProfile({ xUsername: draft.xUsername });
+      updateDraftSettings({ showX: draft.showX });
+    },
+    [updateDraftProfile, updateDraftSettings]
+  );
+
+  const onInstagramDraftChange = useCallback(
+    (draft: { instagramPostUrl: string; showInstagram: boolean }) => {
+      updateDraftProfile({ instagramPostUrl: draft.instagramPostUrl });
+      updateDraftSettings({ showInstagram: draft.showInstagram });
+    },
+    [updateDraftProfile, updateDraftSettings]
+  );
+
+  const onFacebookDraftChange = useCallback(
+    (draft: { facebookUrl: string; facebookUsername: string; showFacebook: boolean }) => {
+      updateDraftProfile({
+        facebookUrl: draft.facebookUrl,
+        facebookUsername: draft.facebookUsername,
+      });
+      updateDraftSettings({ showFacebook: draft.showFacebook });
+    },
+    [updateDraftProfile, updateDraftSettings]
+  );
+
+  const onTikTokDraftChange = useCallback(
+    (draft: { tiktokUrls: string[]; showTikTok: boolean }) => {
+      updateDraftProfile({ tiktokUrls: draft.tiktokUrls });
+      updateDraftSettings({ showTikTok: draft.showTikTok });
+    },
+    [updateDraftProfile, updateDraftSettings]
+  );
+
+  const onBasicDraftChange = useCallback(
+    (draft: { name?: string; title?: string; bio?: string }) => {
+      updateDraftProfile(draft);
+    },
+    [updateDraftProfile]
+  );
+
+  const onContactDraftChange = useCallback(
+    (emailForContact: string) => {
+      updateDraftProfile({ emailForContact });
+    },
+    [updateDraftProfile]
+  );
+
+  const onBannerDraftChange = useCallback(
+    (draft: { bannerLinks: BannerLink[]; showBanners: boolean }) => {
+      updateDraftProfile({ bannerLinks: draft.bannerLinks });
+      updateDraftSettings({ showBanners: draft.showBanners });
+    },
+    [updateDraftProfile, updateDraftSettings]
+  );
+
+  const onCustomLinksDraftChange = useCallback(
+    (customLinks: CustomLink[]) => {
+      updateDraftProfile({ customLinks });
+    },
+    [updateDraftProfile]
+  );
 
   const sectionMap: Record<string, JSX.Element> = useMemo(
     () => ({
@@ -108,6 +219,7 @@ export default function UserPageSectionsClient({
           initialChannelId={profile?.youtubeChannelId}
           initialManualUrls={profile?.manualYouTubeUrls}
           initialShowYouTube={profile?.settings?.showYouTube}
+          onDraftChange={isEditable ? onYouTubeDraftChange : undefined}
         />
       ),
       X: (
@@ -117,6 +229,7 @@ export default function UserPageSectionsClient({
           hasInitialProfile
           initialUsername={profile?.xUsername}
           initialShowX={profile?.settings?.showX}
+          onDraftChange={isEditable ? onXDraftChange : undefined}
         />
       ),
       Instagram: (
@@ -126,6 +239,7 @@ export default function UserPageSectionsClient({
           hasInitialProfile
           initialInstagramUrl={profile?.instagramPostUrl}
           initialShowInstagram={profile?.settings?.showInstagram}
+          onDraftChange={isEditable ? onInstagramDraftChange : undefined}
         />
       ),
       TikTok: (
@@ -135,6 +249,7 @@ export default function UserPageSectionsClient({
           hasInitialProfile
           initialUrls={profile?.tiktokUrls}
           initialShowTikTok={profile?.settings?.showTikTok}
+          onDraftChange={isEditable ? onTikTokDraftChange : undefined}
         />
       ),
       Facebook: (
@@ -145,9 +260,16 @@ export default function UserPageSectionsClient({
           initialUrl={profile?.facebookUrl}
           initialFacebookUsername={profile?.facebookUsername}
           initialShowFacebook={profile?.settings?.showFacebook}
+          onDraftChange={isEditable ? onFacebookDraftChange : undefined}
         />
       ),
-      BannerLinks: <BannerLinksBlock uid={uid} isEditable={isEditable} />,
+      BannerLinks: (
+        <BannerLinksBlock
+          uid={uid}
+          isEditable={isEditable}
+          onDraftChange={isEditable ? onBannerDraftChange : undefined}
+        />
+      ),
       AppProjects: (
         <AppProjectBlock
           uid={uid}
@@ -158,9 +280,30 @@ export default function UserPageSectionsClient({
           onShowAppsSaved={onShowAppsSaved}
         />
       ),
-      SNSButtons: <UserPageClientWrapper uid={uid} profile={profile} isEditable={isEditable} />,
+      SNSButtons: (
+        <UserPageClientWrapper
+          uid={uid}
+          profile={profile}
+          isEditable={isEditable}
+          onCustomLinksChange={isEditable ? onCustomLinksDraftChange : undefined}
+        />
+      ),
     }),
-    [apps, isEditable, onAppsChange, onShowAppsSaved, profile, uid]
+    [
+      apps,
+      isEditable,
+      onAppsChange,
+      onBannerDraftChange,
+      onCustomLinksDraftChange,
+      onFacebookDraftChange,
+      onInstagramDraftChange,
+      onShowAppsSaved,
+      onTikTokDraftChange,
+      onXDraftChange,
+      onYouTubeDraftChange,
+      profile,
+      uid,
+    ]
   );
 
   /** Phase1: 常にワンカラム縦積み（PC で隣接セクションを横並びにしない） */
@@ -196,7 +339,13 @@ export default function UserPageSectionsClient({
         <OshiButton uid={uid} />
         <XShareButton uid={uid} name={profile?.name} />
 
-        <UserProfileSection uid={uid} isEditable={isEditable} initialProfile={profile} />
+        <UserProfileSection
+          uid={uid}
+          isEditable={isEditable}
+          initialProfile={profile}
+          onBasicDraftChange={isEditable ? onBasicDraftChange : undefined}
+          onContactDraftChange={isEditable ? onContactDraftChange : undefined}
+        />
 
         <UserPageClient
           uid={uid}

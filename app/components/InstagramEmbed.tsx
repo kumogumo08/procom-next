@@ -25,6 +25,7 @@ type Props = {
   hasInitialProfile?: boolean;
   initialInstagramUrl?: string;
   initialShowInstagram?: boolean;
+  onDraftChange?: (draft: { instagramPostUrl: string; showInstagram: boolean }) => void;
 };
 
 /** 公開プロフィールと同じ [Instagramロゴ][@ユーザー名] 横長リンク（プロフィール画像は非表示） */
@@ -62,6 +63,7 @@ export default function InstagramEmbed({
   hasInitialProfile,
   initialInstagramUrl,
   initialShowInstagram,
+  onDraftChange,
 }: Props) {
   const [username, setUsername] = useState(initialInstagramUrl ?? '');
   const [inputValue, setInputValue] = useState(initialInstagramUrl ?? '');
@@ -92,6 +94,10 @@ export default function InstagramEmbed({
     if (hasInitialProfile) return;
     fetchInstagramUsername();
   }, [uid, hasInitialProfile]);
+
+  useEffect(() => {
+    onDraftChange?.({ instagramPostUrl: inputValue, showInstagram });
+  }, [inputValue, showInstagram, onDraftChange]);
 
   const handleSave = async () => {
     if (showInstagram && !inputValue.trim()) {
@@ -126,9 +132,10 @@ export default function InstagramEmbed({
       });
 
       if (!res.ok) throw new Error('保存失敗');
-      alert('Instagramユーザー名を保存しました');
       setUsername(normalizedInput);
       setInputValue(normalizedInput);
+      onDraftChange?.({ instagramPostUrl: normalizedInput, showInstagram });
+      alert('Instagramユーザー名を保存しました');
     } catch (err) {
       console.error('保存エラー:', err);
       alert('保存に失敗しました');

@@ -32,14 +32,21 @@ interface Props {
   uid: string;
   profile: Profile;
   isEditable: boolean;
+  onCustomLinksChange?: (links: CustomSNSLink[]) => void;
 }
 
-export default function UserPageClientWrapper({ uid, profile, isEditable }: Props) {
+export default function UserPageClientWrapper({
+  uid,
+  profile,
+  isEditable,
+  onCustomLinksChange,
+}: Props) {
   return (
     <SNSButtonBlockClient
       uid={uid}
       profile={profile}
       isEditable={isEditable}
+      onChange={onCustomLinksChange}
     />
   );
 }

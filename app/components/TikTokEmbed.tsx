@@ -12,6 +12,7 @@ interface Props {
   hasInitialProfile?: boolean;
   initialUrls?: string[];
   initialShowTikTok?: boolean;
+  onDraftChange?: (draft: { tiktokUrls: string[]; showTikTok: boolean }) => void;
 }
 
 export default function TikTokEmbed({
@@ -20,6 +21,7 @@ export default function TikTokEmbed({
   hasInitialProfile,
   initialUrls,
   initialShowTikTok,
+  onDraftChange,
 }: Props) {
   const [urls, setUrls] = useState<string[]>(initialUrls ?? []);
   const [loadedUrls, setLoadedUrls] = useState<string[]>(initialUrls ?? []);
@@ -68,6 +70,10 @@ export default function TikTokEmbed({
     if (hasInitialProfile) return;
     fetchData();
   }, [uid, hasInitialProfile]);
+
+  useEffect(() => {
+    onDraftChange?.({ tiktokUrls: urls, showTikTok });
+  }, [urls, showTikTok, onDraftChange]);
 
   // 🔽 スクリプト読み込み
   useEffect(() => {
@@ -123,6 +129,7 @@ export default function TikTokEmbed({
 
     setLoadedUrls(cleaned);
     setUrls(cleaned);
+    onDraftChange?.({ tiktokUrls: cleaned, showTikTok });
     alert('TikTokリンクを保存しました');
   };
 

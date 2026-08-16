@@ -10,6 +10,8 @@ export default function UserProfileSection({
   uid,
   isEditable,
   initialProfile,
+  onBasicDraftChange,
+  onContactDraftChange,
 }: {
   uid: string;
   isEditable: boolean;
@@ -19,6 +21,8 @@ export default function UserProfileSection({
     bio?: string;
     emailForContact?: string | null;
   };
+  onBasicDraftChange?: (draft: { name?: string; title?: string; bio?: string }) => void;
+  onContactDraftChange?: (emailForContact: string) => void;
 }) {
   const [emailForContact] = useState<string | null>(
     initialProfile?.emailForContact ?? null
@@ -34,6 +38,7 @@ export default function UserProfileSection({
             initialName={initialProfile?.name}
             initialTitle={initialProfile?.title}
             initialBio={initialProfile?.bio}
+            onDraftChange={onBasicDraftChange}
           />
         </div>
         <div id="calendar-container">
@@ -44,6 +49,7 @@ export default function UserProfileSection({
                 uid={uid}
                 isEditable={isEditable}
                 initialEmail={emailForContact ?? undefined}
+                onDraftChange={onContactDraftChange}
               />
             </div>
           )}

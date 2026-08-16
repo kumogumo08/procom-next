@@ -80,21 +80,19 @@ const UserPageClient = ({ uid, profile, isEditable, onSectionOrderSaved }: Props
     ensureAppProjectsInOrder(profile.settings?.sectionOrder ?? DEFAULT_ORDER)
   );
 
-    // --- 並び順保存 ---
+    // --- 並び順保存（sectionOrder のみ。他プロフィール項目は送らない） ---
 const saveOrderToServer = async () => {
   try {
-    const updatedProfile = {
-      ...profile,
-      settings: {
-        ...profile.settings,
-        sectionOrder: sectionOrder,
-      },
-    };
-
     const res = await fetch(`/api/user/${uid}`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ profile: updatedProfile }),
+      body: JSON.stringify({
+        profile: {
+          settings: {
+            sectionOrder,
+          },
+        },
+      }),
     });
 
     if (res.ok) {

@@ -73,6 +73,10 @@ const handleAddLink = () => {
     onChange?.(updated);
   };
 
+  const visibleLinks = links.filter((l) => Boolean(l.label?.trim() && l.url?.trim()));
+  if (!isEditable && visibleLinks.length === 0) return null;
+  const displayLinks = isEditable ? links : visibleLinks;
+
 return (
   <div
   className="mt-6"
@@ -84,7 +88,7 @@ return (
     {/* ✅ ボタンを中央に固定するラッパー */}
     <div className="w-full flex flex-wrap justify-center">
       <div className="max-w-[700px] w-full flex flex-wrap justify-center gap-4">
-        {links.map((link, index) => (
+        {displayLinks.map((link, index) => (
           <div key={index} className="relative">
           <a
             href={link.url}

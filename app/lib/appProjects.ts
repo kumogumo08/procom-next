@@ -348,10 +348,23 @@ export function coerceAppsFromFirestore(raw: unknown): AppProject[] {
   return out;
 }
 
-/** 他人向け: 全件（アプリ単位の非公開は廃止。ブロック表示は showApps で制御） */
+/** 公開カードとして表示できる中身があるか（空文字・空白はなし） */
+export function hasAppPublicContent(app: AppProject): boolean {
+  return Boolean(
+    app.title?.trim() ||
+      app.appStoreUrl?.trim() ||
+      app.googlePlayUrl?.trim() ||
+      app.websiteUrl?.trim() ||
+      app.storeDescription?.trim() ||
+      app.shortDescription?.trim() ||
+      app.iconUrl?.trim()
+  );
+}
+
+/** 他人向け: 表示できる中身があるアプリのみ（ブロック表示は showApps で制御） */
 export function filterAppsForPublicView(apps: AppProject[] | undefined | null): AppProject[] {
   if (!Array.isArray(apps)) return [];
-  return [...apps];
+  return apps.filter(hasAppPublicContent);
 }
 
 /** QR に使う URL（優先: App Store → Google Play → 公式） */

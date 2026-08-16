@@ -228,8 +228,12 @@ export default function BannerLinksBlock({ uid, isEditable }: Props) {
     </div>
   );
 
-  if (!showBanners && !isEditable) {
-    return null; // 非表示 + 編集不可なら何も表示しない
+  const visibleBanners = banners.filter((b) =>
+    Boolean(b.imageUrl?.trim() && b.linkUrl?.trim() && (b.visible ?? true))
+  );
+  const hasBannerContent = visibleBanners.length > 0;
+  if (!isEditable && !(showBanners && hasBannerContent)) {
+    return null;
   }
 
   return (
@@ -256,8 +260,7 @@ export default function BannerLinksBlock({ uid, isEditable }: Props) {
         </>
       ) : (
         <>
-          {banners
-            .filter((b) => b.imageUrl && b.linkUrl && (b.visible ?? true)) // ← ✅ visibleがtrueのものだけ
+          {visibleBanners
             .map((b, i) => (
               <a
                 key={i}

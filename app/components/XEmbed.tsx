@@ -124,7 +124,8 @@ export default function XEmbed({
   };
 
   const publicUsername = normalizeXUsername(username);
-  const canShowPublicLink = Boolean(publicUsername && showX && buildXProfileUrl(publicUsername));
+  const hasXContent = Boolean(publicUsername && buildXProfileUrl(publicUsername));
+  const canShowPublicLink = Boolean(showX && hasXContent);
 
   // 編集画面プレビュー: 入力中の値を即時反映（不正・空は非表示）
   const previewUsername = normalizeXUsername(inputValue);

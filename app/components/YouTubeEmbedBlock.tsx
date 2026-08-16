@@ -119,17 +119,14 @@ export default function YouTubeEmbedBlock({
     return match ? match[1] : '';
   };
 
-  // 🔽 非表示条件を追加（他人のページでYouTubeが未設定 or 表示対象なしなら非表示）
-      if (
-        !isEditable &&
-        (
-          showYouTube === false ||
-          (mode === 'latest' && !channelId) ||
-          (mode === 'manual' && manualUrls.filter(url => !!extractVideoId(url)).length === 0)
-        )
-      ) {
-        return null;
-      }
+  const hasYouTubeContent =
+    mode === 'latest'
+      ? Boolean(channelId.trim())
+      : manualUrls.some((url) => Boolean(extractVideoId((url ?? '').trim())));
+
+  if (!isEditable && (showYouTube === false || !hasYouTubeContent)) {
+    return null;
+  }
 
   return (
     <div className="sns-item" id="youtube-section" style={snsCardBase}>

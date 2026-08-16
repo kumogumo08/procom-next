@@ -416,7 +416,8 @@ export default function AppProjectBlock({
     void persist(apps, { closeEditorOnSuccess: true });
   };
 
-  if (!isEditable && (showApps === false || displayApps.length === 0)) {
+  const hasAppContent = displayApps.length > 0;
+  if (!isEditable && !(showApps && hasAppContent)) {
     return null;
   }
 

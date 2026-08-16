@@ -625,6 +625,12 @@ body {
   box-sizing: border-box;
 }
 
+.user-page-section:empty {
+  display: none;
+  margin: 0;
+  padding: 0;
+}
+
 /* SNS 横長リンクブロック（親幅いっぱい・細い行） */
 .sns-link-row {
   display: flex;

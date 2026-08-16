@@ -89,7 +89,20 @@ export default function TikTokEmbed({
     };
   }, [loadedUrls, showTikTok]);
 
-  if (!isEditable && !showTikTok) return null;
+  const extractVideoId = (url: string): string => {
+    const match = url.match(/video\/(\d+)/);
+    if (!match) {
+      console.warn('⚠ TikTok URLが無効です:', url);
+      return '';
+    }
+    return match[1];
+  };
+
+  const hasTikTokContent = loadedUrls.some((url) =>
+    Boolean(url?.trim() && extractVideoId(url.trim()))
+  );
+
+  if (!isEditable && !(showTikTok && hasTikTokContent)) return null;
 
   const handleSave = async () => {
     const cleaned = urls
@@ -112,16 +125,6 @@ export default function TikTokEmbed({
     setUrls(cleaned);
     alert('TikTokリンクを保存しました');
   };
-
-    const extractVideoId = (url: string): string => {
-      const match = url.match(/video\/(\d+)/);
-      if (!match) {
-        console.warn('⚠ TikTok URLが無効です:', url);
-        return ''; // ← 空文字で明示的にreturn
-      }
-      return match[1];
-    };
-
 
   return (
     <div className="sns-bottom-row">

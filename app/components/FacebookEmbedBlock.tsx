@@ -160,7 +160,8 @@ export default function FacebookEmbedBlock({
   };
 
   const publicUrl = normalizeFacebookUrl(fbUrl);
-  const canShowPublicLink = Boolean(publicUrl && showFacebook && isValidFacebookUrl(publicUrl));
+  const hasFacebookContent = Boolean(publicUrl && isValidFacebookUrl(publicUrl));
+  const canShowPublicLink = Boolean(showFacebook && hasFacebookContent);
 
   // 編集画面プレビュー: 入力中の値を即時反映
   const previewUrl = inputValue.trim();

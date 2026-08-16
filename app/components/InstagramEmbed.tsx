@@ -136,9 +136,10 @@ export default function InstagramEmbed({
   };
 
   const publicUsername = normalizeInstagramUsername(username);
-  const canShowPublicLink = Boolean(
-    publicUsername && showInstagram && buildInstagramProfileUrl(publicUsername)
+  const hasInstagramContent = Boolean(
+    publicUsername && buildInstagramProfileUrl(publicUsername)
   );
+  const canShowPublicLink = Boolean(showInstagram && hasInstagramContent);
 
   // 編集画面プレビュー: 入力中の値を即時反映（不正・空は非表示）
   const previewUsername = normalizeInstagramUsername(inputValue);

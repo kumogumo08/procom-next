@@ -421,7 +421,7 @@ export default function AppProjectBlock({
   }
 
   return (
-    <section className="app-project-block" style={{ ...cardBase, maxWidth: 720, margin: '0 auto 32px' }}>
+    <section className="app-project-block" style={{ ...cardBase, width: '100%' }}>
       <h2 style={{ textAlign: 'center', fontSize: '1.25rem', marginBottom: 16, fontWeight: 800 }}>
         アプリ
       </h2>
@@ -473,7 +473,16 @@ export default function AppProjectBlock({
         </div>
       )}
 
-      <div style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
+      <div
+        style={{
+          display: 'flex',
+          flexDirection: 'column',
+          gap: 24,
+          width: '100%',
+          maxWidth: 960,
+          margin: '0 auto',
+        }}
+      >
         {displayApps.map((app) => {
           const isEditing = isEditable && editingAppId === app.id;
           const fe = fieldErrors[app.id];
@@ -487,6 +496,7 @@ export default function AppProjectBlock({
               key={app.id}
               style={{
                 position: 'relative',
+                width: '100%',
                 border: isEditing ? '2px solid #7dd3fc' : '1px solid #e5eaf0',
                 borderRadius: 20,
                 padding: 22,

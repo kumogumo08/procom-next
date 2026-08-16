@@ -60,6 +60,17 @@
   margin: 0;
 }
 
+.recent {
+  margin-top: 24px;
+}
+
+.sectionHeading {
+  font-size: 1rem;
+  font-weight: 700;
+  margin: 0 0 12px;
+  color: #1a1a2e;
+}
+
 .empty {
   color: #666;
 }

@@ -58,8 +58,11 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
               url: 'https://procom.jp/',
               potentialAction: {
                 '@type': 'SearchAction',
-                target: 'https://procom.jp/search?q={query}',
-                'query-input': 'required name=query',
+                target: {
+                  '@type': 'EntryPoint',
+                  urlTemplate: 'https://procom.jp/users?q={search_term_string}',
+                },
+                'query-input': 'required name=search_term_string',
               },
               publisher: {
                 '@type': 'Organization',

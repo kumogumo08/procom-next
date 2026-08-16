@@ -1,5 +1,6 @@
 // app/api/users/route.ts — ユーザー検索（名前・肩書き）※一覧の全件返却は行わない
 import { db } from '@/lib/firebase';
+import { isProfilePublic, slimProfileForList } from '@/lib/userSeo';
 import { NextRequest, NextResponse } from 'next/server';
 
 /** category-users と同様の正規化（検索のゆらぎ吸収） */
@@ -9,33 +10,6 @@ function normalize(text: string): string {
     .replace(/[ー−―─]/g, '')
     .replace(/\s/g, '')
     .replace(/[^\wぁ-んァ-ン一-龥]/g, '');
-}
-
-/** 一覧カード用: 先頭1枚のみ（過剰なプロフィール露出を抑える） */
-function slimProfileForList(profile: Record<string, unknown>): {
-  name: string;
-  title: string;
-  photos: unknown[];
-} {
-  const name = typeof profile.name === 'string' ? profile.name : '';
-  const title = typeof profile.title === 'string' ? profile.title : '';
-  const raw = Array.isArray(profile.photos) ? profile.photos : [];
-  const first = raw[0];
-  const photos: unknown[] = [];
-  if (typeof first === 'string') {
-    photos.push(first);
-  } else if (first && typeof first === 'object' && first !== null && 'url' in first) {
-    const u = (first as { url?: unknown; position?: unknown }).url;
-    if (typeof u === 'string') {
-      const pos = (first as { position?: unknown }).position;
-      if (typeof pos === 'number' && !Number.isNaN(pos)) {
-        photos.push({ url: u, position: Math.min(100, Math.max(0, pos)) });
-      } else {
-        photos.push({ url: u });
-      }
-    }
-  }
-  return { name, title, photos };
 }
 
 export async function GET(req: NextRequest) {
@@ -59,6 +33,7 @@ export async function GET(req: NextRequest) {
     snapshot.forEach((doc) => {
       const data = doc.data();
       const profileRaw = (data.profile || {}) as Record<string, unknown>;
+      if (!isProfilePublic(profileRaw)) return;
       const name = typeof profileRaw.name === 'string' ? profileRaw.name : '';
       const title = typeof profileRaw.title === 'string' ? profileRaw.title : '';
       const nameNorm = normalize(name);

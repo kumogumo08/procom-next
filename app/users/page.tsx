@@ -1,6 +1,8 @@
-import { Suspense } from 'react';
+import { getRecentPublicUsers } from '@/lib/publicUsers';
 
 import UsersPageClient from './UsersPageClient';
+
+export const runtime = 'nodejs';
 
 export const metadata = {
   title: 'ユーザー検索・一覧 | Procom',
@@ -10,14 +12,18 @@ export const metadata = {
   },
 };
 
-export default function UsersPage() {
-  return (
-    <Suspense
-      fallback={
-        <div style={{ padding: '48px 20px', textAlign: 'center', color: '#555' }}>読み込み中…</div>
-      }
-    >
-      <UsersPageClient />
-    </Suspense>
-  );
+function firstQueryValue(value: string | string[] | undefined): string {
+  if (Array.isArray(value)) return value[0] ?? '';
+  return value ?? '';
+}
+
+export default async function UsersPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ q?: string | string[] }>;
+}) {
+  const q = firstQueryValue((await searchParams).q).trim();
+  const recentUsers = q ? [] : await getRecentPublicUsers();
+
+  return <UsersPageClient q={q} recentUsers={recentUsers} />;
 }

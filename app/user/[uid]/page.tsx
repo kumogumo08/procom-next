@@ -25,6 +25,7 @@ import type { JSX } from 'react';
 import type { Metadata } from 'next';
 import UserPageSectionsClient from '@/components/UserPageSectionsClient';
 import { clampPhotoPositionY } from '@/lib/photoPosition';
+import { buildProfileDocumentTitle, isProfilePublic } from '@/lib/userSeo';
 
 export async function generateMetadata({
   params,
@@ -34,18 +35,24 @@ export async function generateMetadata({
   const { uid } = await params;
   const profile = await getProfileFromFirestore(uid);
   const name = profile?.name || 'Procomユーザー';
+  const pageTitle = buildProfileDocumentTitle(profile?.name, profile?.title);
   const bio = profile?.bio || 'SNSプロフィールとリンク集をまとめたページ';
   const photoUrl =
     profile?.photos?.[0]?.url || 'https://procom.jp/og-image.jpg';
+  const isPublic = isProfilePublic(profile);
 
   return {
-    title: `${name} | Procom`,
+    title: pageTitle,
     description: bio,
     alternates: {
       canonical: `/user/${uid}`,
     },
+    robots: {
+      index: isPublic,
+      follow: isPublic,
+    },
     openGraph: {
-      title: `${name} | Procom`,
+      title: pageTitle,
       description: bio,
       url: `https://procom.jp/user/${uid}`,
       siteName: 'Procom',
@@ -61,7 +68,7 @@ export async function generateMetadata({
     },
     twitter: {
       card: 'summary_large_image',
-      title: `${name} | Procom`,
+      title: pageTitle,
       description: bio,
       images: [photoUrl],
     },

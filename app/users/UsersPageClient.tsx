@@ -1,7 +1,6 @@
 'use client';
 
 import Link from 'next/link';
-import { useSearchParams } from 'next/navigation';
 import { useCallback, useEffect, useState } from 'react';
 
 import Header from '@/components/Header';
@@ -10,18 +9,52 @@ import { resolveFirstPhotoUrl, type CategoryUser } from '@/components/TopCategor
 
 import styles from './users.module.css';
 
-export default function UsersPageClient() {
-  const searchParams = useSearchParams();
-  const q = searchParams.get('q')?.trim() ?? '';
+function UserList({ users }: { users: CategoryUser[] }) {
+  return (
+    <ul className={styles.list}>
+      {users.map(({ uid, profile }) => {
+        const name = profile?.name?.trim() || 'ユーザー';
+        const title = profile?.title?.trim() || '';
+        const photoUrl = resolveFirstPhotoUrl(profile?.photos);
+        return (
+          <li key={uid} className={styles.item}>
+            <Link href={`/user/${uid}`} className={styles.card}>
+              <div className={styles.thumbWrap}>
+                {photoUrl ? (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img src={photoUrl} alt="" className={styles.thumb} />
+                ) : (
+                  <div className={styles.thumbPlaceholder} aria-hidden />
+                )}
+              </div>
+              <div className={styles.meta}>
+                <span className={styles.name}>{name}</span>
+                {title ? <span className={styles.sub}>{title}</span> : null}
+              </div>
+            </Link>
+          </li>
+        );
+      })}
+    </ul>
+  );
+}
 
+export default function UsersPageClient({
+  q,
+  recentUsers,
+}: {
+  q: string;
+  recentUsers: CategoryUser[];
+}) {
   const [users, setUsers] = useState<CategoryUser[]>([]);
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(() => Boolean(q));
   const [error, setError] = useState<string | null>(null);
 
   const load = useCallback(async () => {
     if (!q) {
       setUsers([]);
       setError(null);
+      setLoading(false);
       return;
     }
     setLoading(true);
@@ -74,40 +107,28 @@ export default function UsersPageClient() {
           </div>
         </form>
 
-        {!q ? (
-          <p className={styles.hint}>キーワードを入力して検索してください。</p>
-        ) : loading ? (
-          <p className={styles.muted}>読み込み中…</p>
-        ) : error ? (
-          <p className={styles.error}>{error}</p>
-        ) : users.length === 0 ? (
-          <p className={styles.empty}>「{q}」に一致するユーザーは見つかりませんでした。</p>
+        {q ? (
+          loading ? (
+            <p className={styles.muted}>読み込み中…</p>
+          ) : error ? (
+            <p className={styles.error}>{error}</p>
+          ) : users.length === 0 ? (
+            <p className={styles.empty}>「{q}」に一致するユーザーは見つかりませんでした。</p>
+          ) : (
+            <UserList users={users} />
+          )
         ) : (
-          <ul className={styles.list}>
-            {users.map(({ uid, profile }) => {
-              const name = profile?.name?.trim() || 'ユーザー';
-              const title = profile?.title?.trim() || '';
-              const photoUrl = resolveFirstPhotoUrl(profile?.photos);
-              return (
-                <li key={uid} className={styles.item}>
-                  <Link href={`/user/${uid}`} className={styles.card}>
-                    <div className={styles.thumbWrap}>
-                      {photoUrl ? (
-                        // eslint-disable-next-line @next/next/no-img-element
-                        <img src={photoUrl} alt="" className={styles.thumb} />
-                      ) : (
-                        <div className={styles.thumbPlaceholder} aria-hidden />
-                      )}
-                    </div>
-                    <div className={styles.meta}>
-                      <span className={styles.name}>{name}</span>
-                      {title ? <span className={styles.sub}>{title}</span> : null}
-                    </div>
-                  </Link>
-                </li>
-              );
-            })}
-          </ul>
+          <>
+            <p className={styles.hint}>キーワードを入力して検索してください。</p>
+            {recentUsers.length > 0 ? (
+              <section className={styles.recent} aria-labelledby="recent-users-heading">
+                <h2 id="recent-users-heading" className={styles.sectionHeading}>
+                  新着ユーザー
+                </h2>
+                <UserList users={recentUsers} />
+              </section>
+            ) : null}
+          </>
         )}
       </main>
       <Footer />

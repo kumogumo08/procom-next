@@ -10,9 +10,8 @@ const db = getFirestore();
 
 /**
  * - 本番では無認証のまま公開しない。
- * - 自動取得: Authorization: Bearer <ALL_UIDS_EXPORT_SECRET>（next-sitemap 等）
+ * - 自動取得: Authorization: Bearer <ALL_UIDS_EXPORT_SECRET>
  * - 手動: ログイン管理者セッション
- * 呼び出し元が sitemap のみなら、秘密未設定時は 401 になり additionalPaths が空になる点に注意。
  */
 export async function GET(req: NextRequest) {
   const exportSecret = process.env.ALL_UIDS_EXPORT_SECRET;

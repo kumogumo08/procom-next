@@ -1371,13 +1371,8 @@ body.own-page .auth-only {
   background-color: #145dbf;
 }
 
-.banner-section h3 {
-  font-size: 1.2rem;
-  margin-bottom: 12px;
-}
-
 .banner-item {
-  margin-bottom: 24px;
+  width: 100%;
 }
 
 input[type="search"],

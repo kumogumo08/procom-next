@@ -135,7 +135,7 @@ function getSectionLabel(key: string) {
     Instagram: 'Instagram投稿',
     TikTok: 'TikTok動画',
     Facebook: 'Facebookページ',
-    BannerLinks: 'バナーリンク',
+    BannerLinks: 'リンク',
     AppProjects: 'アプリ紹介',
     SNSButtons: 'SNSボタン',
   };

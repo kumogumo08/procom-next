@@ -5,6 +5,7 @@ import Cropper from 'react-easy-crop';
 import getCroppedImg from './utils/cropImage'; // 後述の関数を別ファイルに置くと良い
 import type { Area } from 'react-easy-crop';
 import SnsVisibilityToggle from './SnsVisibilityToggle';
+import { cardBase } from '@/components/ui/cardStyles';
 
 
 type Banner = {
@@ -173,7 +174,7 @@ export default function BannerLinksBlock({ uid, isEditable }: Props) {
   };
 
   const renderBannerInput = (banner: Banner, index: number) => (
-    <div key={index} className="banner-item" style={{ position: 'relative', marginBottom: '20px' }}>
+    <div key={index} className="banner-item" style={{ position: 'relative', width: '100%' }}>
       <input type="file" accept="image/*" onChange={(e) => handleImageChange(e, index)} />
       <input
         type="text"
@@ -183,19 +184,19 @@ export default function BannerLinksBlock({ uid, isEditable }: Props) {
         style={{ width: '100%', marginTop: '8px' }}
       />
       {banner?.imageUrl && (
-        <div style={{ position: 'relative', display: 'inline-block', width: '100%' }}>
+        <div style={{ position: 'relative', display: 'block', width: '100%' }}>
           <a href={banner.linkUrl || '#'} target="_blank" rel="noopener noreferrer">
             <img
               src={banner.imageUrl}
               alt={`バナー${index + 1}`}
               style={{
                 marginTop: '10px',
+                display: 'block',
                 width: '100%',
-                maxWidth: '600px',
+                maxWidth: '100%',
                 height: 'auto',
                 borderRadius: '6px',
-                objectFit: 'cover',
-                display: 'block',
+                objectFit: 'contain',
               }}
             />
           </a>
@@ -232,9 +233,21 @@ export default function BannerLinksBlock({ uid, isEditable }: Props) {
   }
 
   return (
-    <div className="banner-section" style={{ maxWidth: '600px', margin: '0 auto', padding: '20px 0' }}>
-      <h3>ブログやnoteなどの外部リンク</h3>
+    <section className="banner-section" style={{ ...cardBase, width: '100%' }}>
+      <h2 style={{ textAlign: 'center', fontSize: '1.25rem', marginBottom: 16, fontWeight: 800 }}>
+        リンク
+      </h2>
 
+      <div
+        style={{
+          display: 'flex',
+          flexDirection: 'column',
+          gap: 24,
+          width: '100%',
+          maxWidth: 960,
+          margin: '0 auto',
+        }}
+      >
       {isEditable ? (
         <>
           {[0, 1, 2].map((i) =>
@@ -246,16 +259,22 @@ export default function BannerLinksBlock({ uid, isEditable }: Props) {
           {banners
             .filter((b) => b.imageUrl && b.linkUrl && (b.visible ?? true)) // ← ✅ visibleがtrueのものだけ
             .map((b, i) => (
-              <a key={i} href={b.linkUrl} target="_blank" rel="noopener noreferrer">
+              <a
+                key={i}
+                href={b.linkUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                style={{ display: 'block', width: '100%' }}
+              >
                 <img
                   src={b.imageUrl}
                   alt={`バナー${i + 1}`}
-                  className="sns-item"
                   style={{
+                    display: 'block',
                     width: '100%',
-                    maxWidth: '600px',
+                    maxWidth: '100%',
                     height: 'auto',
-                    marginBottom: '16px',
+                    objectFit: 'contain',
                     borderRadius: '6px',
                   }}
                 />
@@ -263,6 +282,7 @@ export default function BannerLinksBlock({ uid, isEditable }: Props) {
             ))}
         </>
       )}
+      </div>
 
       {isEditable && (
         <div style={{ marginTop: 20, textAlign: 'center' }}>
@@ -335,7 +355,7 @@ export default function BannerLinksBlock({ uid, isEditable }: Props) {
           </div>
         </div>
       )}
-    </div>
+    </section>
   );
 }
 

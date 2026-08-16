@@ -207,7 +207,9 @@ export default function UserPageSectionsClient({
 
         {renderedSections}
 
-        <QRCodeBlock initialName={profile?.name} />
+        <div className="user-page-section">
+          <QRCodeBlock uid={uid} initialName={profile?.name} />
+        </div>
       </main>
     </>
   );

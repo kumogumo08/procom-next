@@ -5,7 +5,6 @@ import SnsVisibilityToggle from './SnsVisibilityToggle';
 import SnsHelpTooltip from './SnsHelpTooltip';
 import { fetchUserApi } from '@/lib/userProfileClient';
 import {
-  buttonPrimary,
   cardActions,
   cardBody,
   cardTitle,
@@ -101,36 +100,6 @@ export default function XEmbed({
     onDraftChange?.({ xUsername: inputValue, showX });
   }, [inputValue, showX, onDraftChange]);
 
-  const handleSave = async () => {
-    if (showX && !inputValue.trim()) {
-      alert('ユーザー名を入力してください');
-      return;
-    }
-
-    try {
-      const res = await fetch(`/api/user/${uid}`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          profile: {
-            xUsername: inputValue.trim(),
-            settings: {
-              showX: showX,
-            },
-          },
-        }),
-      });
-
-      if (!res.ok) throw new Error('保存失敗');
-      const savedUsername = inputValue.trim();
-      setUsername(savedUsername);
-      onDraftChange?.({ xUsername: savedUsername, showX });
-      alert('Xユーザー名を保存しました');
-    } catch (err) {
-      alert('保存に失敗しました');
-    }
-  };
-
   const publicUsername = normalizeXUsername(username);
   const hasXContent = Boolean(publicUsername && buildXProfileUrl(publicUsername));
   const canShowPublicLink = Boolean(showX && hasXContent);
@@ -179,7 +148,6 @@ export default function XEmbed({
         style={{
           ...cardActions,
           display: 'flex',
-          justifyContent: 'space-between',
           alignItems: 'center',
           flexWrap: 'wrap',
           gap: 10,
@@ -189,9 +157,6 @@ export default function XEmbed({
           <SnsVisibilityToggle label="Xを表示する" checked={showX} onChange={setShowX} />
           <SnsHelpTooltip />
         </div>
-        <button type="button" onClick={handleSave} style={buttonPrimary}>
-          保存
-        </button>
       </div>
     </div>
   );

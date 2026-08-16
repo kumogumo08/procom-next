@@ -72,9 +72,7 @@ type Props = {
   initialApps?: AppProject[];
   initialShowApps?: boolean;
   isEditable: boolean;
-  onChange?: (apps: AppProject[]) => void;
-  /** persist 成功時に親の profile.settings.showApps を同期する（Facebook 等と同様、保存後の巻き戻り防止） */
-  onShowAppsSaved?: (showApps: boolean) => void;
+  onDraftChange?: (draft: { apps: AppProject[]; showApps: boolean }) => void;
 };
 
 function releaseStatusLabel(s: AppProjectReleaseStatus | undefined): string {
@@ -150,114 +148,38 @@ function StoreLink({
 }
 
 export default function AppProjectBlock({
-  uid,
   initialApps = [],
   initialShowApps,
   isEditable,
-  onChange,
-  onShowAppsSaved,
+  onDraftChange,
 }: Props) {
-  const [apps, setApps] = useState<AppProject[]>(initialApps);
-  const [saving, setSaving] = useState(false);
-  const [message, setMessage] = useState<string | null>(null);
+  const [apps, setApps] = useState<AppProject[]>(() => initialApps.map((a) => ({ ...a })));
   const [showApps, setShowApps] = useState<boolean>(initialShowApps ?? true);
   const [editingAppId, setEditingAppId] = useState<string | null>(null);
   const [editSnapshot, setEditSnapshot] = useState<AppProject | null>(null);
   const [fieldErrors, setFieldErrors] = useState<FieldErrorsByApp>({});
-  /** このセッションで「＋追加」したが、まだ保存成功していない app id（キャンセルで空なら取り除く判定用） */
+  /** このセッションで「＋追加」したが、まだカード確定していない app id（キャンセルで空なら取り除く判定用） */
   const pendingNewAppIdsRef = useRef<Set<string>>(new Set());
-  /** 未保存の新規が1件でもあると「＋追加」を抑止する（再描画用） */
+  /** 未確定の新規が1件でもあると「＋追加」を抑止する（再描画用） */
   const [hasUnsavedNewApp, setHasUnsavedNewApp] = useState(false);
+  const [message, setMessage] = useState<string | null>(null);
 
   useEffect(() => {
-    setApps(initialApps);
+    setApps(initialApps.map((a) => ({ ...a })));
+    pendingNewAppIdsRef.current.clear();
+    setHasUnsavedNewApp(false);
+    setEditingAppId(null);
+    setEditSnapshot(null);
   }, [initialApps]);
+
+  useEffect(() => {
+    onDraftChange?.({ apps, showApps });
+  }, [apps, showApps, onDraftChange]);
 
   const displayApps = useMemo(() => {
     if (isEditable) return apps;
     return filterAppsForPublicView(apps);
   }, [apps, isEditable]);
-
-  const persist = useCallback(
-    async (
-      next: AppProject[],
-      opts?: {
-        skipStoreValidation?: boolean;
-        rollback?: () => void;
-        closeEditorOnSuccess?: boolean;
-      }
-    ) => {
-      if (!opts?.skipStoreValidation) {
-        const fe = buildAppFieldErrors(next);
-        if (Object.keys(fe).length > 0) {
-          setFieldErrors(fe);
-          setMessage(null);
-          return;
-        }
-        setFieldErrors({});
-      }
-
-      const payload = {
-        profile: { apps: next, settings: { showApps } },
-        ...(opts?.skipStoreValidation ? { skipStoreUrlValidation: true as const } : {}),
-      };
-      if (process.env.NODE_ENV !== 'production') {
-        console.log('[AppProjectBlock] persist payload profile.apps.length', next.length);
-      }
-
-      setSaving(true);
-      setMessage(null);
-      try {
-        const res = await fetch(`/api/user/${uid}`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(payload),
-        });
-        const responseText = await res.text().catch(() => '');
-        if (process.env.NODE_ENV !== 'production') {
-          console.log('[AppProjectBlock] persist response', res.status, responseText.slice(0, 200));
-        }
-        if (!res.ok) {
-          opts?.rollback?.();
-          let errMsg = '保存に失敗しました';
-          try {
-            const data = JSON.parse(responseText) as { error?: string };
-            if (typeof data.error === 'string') errMsg = data.error;
-          } catch {
-            /* ignore */
-          }
-          setMessage(errMsg);
-          return;
-        }
-        let applied = next;
-        try {
-          const data = JSON.parse(responseText) as { apps?: AppProject[] };
-          if (Array.isArray(data.apps)) {
-            applied = data.apps;
-          }
-        } catch {
-          /* ignore */
-        }
-        setApps(applied);
-        applied.forEach((a) => pendingNewAppIdsRef.current.delete(a.id));
-        setHasUnsavedNewApp(pendingNewAppIdsRef.current.size > 0);
-        onChange?.(applied);
-        setFieldErrors({});
-        if (opts?.closeEditorOnSuccess) {
-          setEditingAppId(null);
-          setEditSnapshot(null);
-        }
-        setMessage('保存しました');
-        onShowAppsSaved?.(showApps);
-      } catch {
-        opts?.rollback?.();
-        setMessage('保存に失敗しました');
-      } finally {
-        setSaving(false);
-      }
-    },
-    [uid, onChange, showApps, onShowAppsSaved]
-  );
 
   const cloneApp = (a: AppProject): AppProject => structuredClone(a);
 
@@ -336,7 +258,7 @@ export default function AppProjectBlock({
   const addApp = () => {
     if (apps.length >= MAX_APP_PROJECTS_PER_PROFILE) return;
     if (pendingNewAppIdsRef.current.size > 0) {
-      setMessage('保存またはキャンセルをしてから次のアプリを追加してください');
+      setMessage('完了またはキャンセルをしてから次のアプリを追加してください');
       return;
     }
     const now = new Date().toISOString();
@@ -372,7 +294,6 @@ export default function AppProjectBlock({
   const removeApp = (id: string) => {
     const beforeLen = apps.length;
     const list = apps.filter((a) => a.id !== id);
-    const prev = apps;
     if (process.env.NODE_ENV !== 'production') {
       console.log('[AppProjectBlock] removeApp', {
         id,
@@ -392,10 +313,6 @@ export default function AppProjectBlock({
       return n;
     });
     setApps(list);
-    void persist(list, {
-      skipStoreValidation: true,
-      rollback: () => setApps(prev),
-    });
   };
 
   const move = (id: string, dir: -1 | 1) => {
@@ -403,17 +320,29 @@ export default function AppProjectBlock({
     if (idx < 0) return;
     const j = idx + dir;
     if (j < 0 || j >= apps.length) return;
-    const copy = [...apps];
+    const copy = apps.map((a) => ({ ...a }));
     const [removed] = copy.splice(idx, 1);
     copy.splice(j, 0, removed);
     copy.forEach((a, i) => {
       a.displayOrder = i;
     });
-    void persist(copy);
+    setApps(copy);
   };
 
-  const saveRow = () => {
-    void persist(apps, { closeEditorOnSuccess: true });
+  const finishEdit = () => {
+    const fe = buildAppFieldErrors(apps);
+    if (Object.keys(fe).length > 0) {
+      setFieldErrors(fe);
+      return;
+    }
+    setFieldErrors({});
+    if (editingAppId) {
+      pendingNewAppIdsRef.current.delete(editingAppId);
+    }
+    setHasUnsavedNewApp(pendingNewAppIdsRef.current.size > 0);
+    setEditingAppId(null);
+    setEditSnapshot(null);
+    setMessage(null);
   };
 
   const hasAppContent = displayApps.length > 0;
@@ -433,20 +362,20 @@ export default function AppProjectBlock({
             type="button"
             onClick={addApp}
             disabled={
-              saving || apps.length >= MAX_APP_PROJECTS_PER_PROFILE || hasUnsavedNewApp
+              apps.length >= MAX_APP_PROJECTS_PER_PROFILE || hasUnsavedNewApp
             }
             style={{
               padding: '10px 18px',
               borderRadius: 8,
               border: 'none',
               background:
-                saving || apps.length >= MAX_APP_PROJECTS_PER_PROFILE || hasUnsavedNewApp
+                apps.length >= MAX_APP_PROJECTS_PER_PROFILE || hasUnsavedNewApp
                   ? '#9ca3af'
                   : '#0ea5e9',
               color: '#fff',
               fontWeight: 700,
               cursor:
-                saving || apps.length >= MAX_APP_PROJECTS_PER_PROFILE || hasUnsavedNewApp
+                apps.length >= MAX_APP_PROJECTS_PER_PROFILE || hasUnsavedNewApp
                   ? 'not-allowed'
                   : 'pointer',
             }}
@@ -457,7 +386,7 @@ export default function AppProjectBlock({
           </button>
           {hasUnsavedNewApp && apps.length < MAX_APP_PROJECTS_PER_PROFILE ? (
             <p style={{ fontSize: 12, color: '#6b7280', marginTop: 8, marginBottom: 0 }}>
-              保存またはキャンセルをしてから次のアプリを追加してください
+              完了またはキャンセルをしてから次のアプリを追加してください
             </p>
           ) : null}
           {message ? (
@@ -465,7 +394,7 @@ export default function AppProjectBlock({
               style={{
                 marginTop: 8,
                 fontSize: 13,
-                color: message === '保存しました' ? '#15803d' : '#b91c1c',
+                color: '#b91c1c',
               }}
             >
               {message}
@@ -487,7 +416,7 @@ export default function AppProjectBlock({
         {displayApps.map((app) => {
           const isEditing = isEditable && editingAppId === app.id;
           const fe = fieldErrors[app.id];
-          const editDisabled = saving || (editingAppId !== null && editingAppId !== app.id);
+          const editDisabled = editingAppId !== null && editingAppId !== app.id;
           const descriptionSource =
             (app.storeDescription ?? '').trim() || (app.shortDescription ?? '').trim();
           const descriptionDisplay = formatStoreDescription(descriptionSource || undefined);
@@ -812,8 +741,7 @@ export default function AppProjectBlock({
                       <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, marginTop: 4 }}>
                         <button
                           type="button"
-                          onClick={() => saveRow()}
-                          disabled={saving}
+                          onClick={() => finishEdit()}
                           style={{
                             padding: '8px 14px',
                             borderRadius: 8,
@@ -824,12 +752,11 @@ export default function AppProjectBlock({
                             cursor: 'pointer',
                           }}
                         >
-                          保存
+                          完了
                         </button>
                         <button
                           type="button"
                           onClick={() => cancelEdit()}
-                          disabled={saving}
                           style={{
                             padding: '8px 14px',
                             borderRadius: 8,
@@ -843,7 +770,6 @@ export default function AppProjectBlock({
                         <button
                           type="button"
                           onClick={() => move(app.id, -1)}
-                          disabled={saving}
                           style={{
                             padding: '8px 14px',
                             borderRadius: 8,
@@ -857,7 +783,6 @@ export default function AppProjectBlock({
                         <button
                           type="button"
                           onClick={() => move(app.id, 1)}
-                          disabled={saving}
                           style={{
                             padding: '8px 14px',
                             borderRadius: 8,
@@ -873,7 +798,6 @@ export default function AppProjectBlock({
                           onClick={() => {
                             if (confirm('このアプリを削除しますか？')) removeApp(app.id);
                           }}
-                          disabled={saving}
                           style={{
                             padding: '8px 14px',
                             borderRadius: 8,

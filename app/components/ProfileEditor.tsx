@@ -35,7 +35,6 @@ function escapeHtml(str: string): string {
 }
 
 export default function ProfileEditor({
-  uid,
   initialName = '',
   initialTitle = '',
   initialBio = '',
@@ -61,60 +60,12 @@ export default function ProfileEditor({
     onDraftChange?.({ name, title, bio });
   }, [name, title, bio, onDraftChange]);
 
-  const handleSave = async () => {
-    const isNameEmpty = nameCleared.current || name.trim() === '';
-    const isTitleEmpty = titleCleared.current || title.trim() === '';
-    const isBioEmpty = bioCleared.current || bio.trim() === '';
-
-    // すべて空ならエラー
-    if (isNameEmpty && isTitleEmpty && isBioEmpty) {
-      alert('🛑 名前・肩書・プロフィールのいずれかを入力してください');
-      return;
-    }
-
-    // 名前だけは必須としたい場合（任意で）
-    if (isNameEmpty) {
-      alert('🛑 名前を入力してください');
-      return;
-    }
-
-    const profile: any = {};
-
-    if (!nameCleared.current && name.trim()) {
-      profile.name = name.trim();
-    }
-    if (!titleCleared.current && title.trim()) {
-      profile.title = title.trim();
-    }
-    if (!bioCleared.current && bio.trim()) {
-      profile.bio = bio.trim();
-    }
-
-    if (Object.keys(profile).length === 0) {
-      alert('🛑 入力が空です');
-      return;
-    }
-
-    try {
-      const res = await fetch(`/api/user/${uid}`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        credentials: 'include',
-        body: JSON.stringify({ profile }),
-      });
-
-      if (!res.ok) throw new Error('保存失敗');
-      onDraftChange?.({
-        name: profile.name ?? name,
-        title: profile.title ?? title,
-        bio: profile.bio ?? bio,
-      });
-      alert('✅ プロフィールが保存されました');
-      setIsEditing(false);
-    } catch (err) {
-      console.error(err);
-      alert('❌ プロフィール保存に失敗しました');
-    }
+  const handleFinishEditing = () => {
+    latestProfileRef.current = { name, title, bio };
+    nameCleared.current = false;
+    titleCleared.current = false;
+    bioCleared.current = false;
+    setIsEditing(false);
   };
 
   const handleCancel = () => {
@@ -257,8 +208,8 @@ export default function ProfileEditor({
                   🎀 10の質問を挿入する
                 </button>
               </div>
-              <button type="button" id="saveBtn" onClick={handleSave}>
-                保存
+              <button type="button" id="saveBtn" onClick={handleFinishEditing}>
+                完了
               </button>
               <button type="button" id="cancelBtn" onClick={handleCancel}>
                 キャンセル

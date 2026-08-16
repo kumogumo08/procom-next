@@ -1,7 +1,8 @@
 'use client';
 
 import type { JSX } from 'react';
-import { useCallback, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { buttonPrimary } from '@/components/ui/cardStyles';
 import OshiButton from '@/components/OshiButton';
 import XShareButton from '@/components/XShareButton';
 import UserProfileSection from '@/components/UserProfileSection';
@@ -15,6 +16,7 @@ import QRCodeBlock from '@/components/QRCodeBlock';
 import BannerLinksBlock from '@/components/BannerLinksBlock';
 import UserPageClientWrapper from '@/components/UserPageClientWrapper';
 import AppProjectBlock from '@/components/AppProjectBlock';
+import UnsavedChangesLeaveGuard from '@/components/UnsavedChangesLeaveGuard';
 import type { AppProject } from '@/lib/appProjects';
 
 type Photo = { url: string; position?: number };
@@ -60,6 +62,89 @@ function ensureAppProjectsInOrder(order: string[]): string[] {
   return [...order, 'AppProjects'];
 }
 
+function isUploadedBannerUrl(url: string | undefined): boolean {
+  const trimmed = url?.trim() ?? '';
+  return trimmed !== '' && !trimmed.startsWith('data:');
+}
+
+/** photos / calendarEvents は含めない。data URL のバナーは除外する */
+function buildDraftSavePayload(
+  draft: Profile,
+  fallbacks: { apps: AppProject[]; sectionOrder: string[] }
+) {
+  const settings = draft.settings ?? {};
+  const payload: Record<string, unknown> = {
+    name: draft.name ?? '',
+    title: draft.title ?? '',
+    bio: draft.bio ?? '',
+    emailForContact: draft.emailForContact ?? '',
+    youtubeMode: draft.youtubeMode ?? 'latest',
+    youtubeChannelId: draft.youtubeChannelId ?? '',
+    manualYouTubeUrls: draft.manualYouTubeUrls ?? [],
+    xUsername: draft.xUsername ?? '',
+    instagramPostUrl: draft.instagramPostUrl ?? '',
+    facebookUrl: draft.facebookUrl ?? '',
+    facebookUsername: draft.facebookUsername ?? '',
+    tiktokUrls: draft.tiktokUrls ?? [],
+    apps: Array.isArray(draft.apps) ? draft.apps : fallbacks.apps,
+    customLinks: Array.isArray(draft.customLinks) ? draft.customLinks : [],
+    settings: {
+      showYouTube: settings.showYouTube,
+      showX: settings.showX,
+      showInstagram: settings.showInstagram,
+      showFacebook: settings.showFacebook,
+      showTikTok: settings.showTikTok,
+      showApps: settings.showApps,
+      showBanners: settings.showBanners,
+      sectionOrder: settings.sectionOrder ?? fallbacks.sectionOrder,
+    },
+  };
+
+  if (Array.isArray(draft.bannerLinks)) {
+    payload.bannerLinks = draft.bannerLinks.filter((b) => isUploadedBannerUrl(b.imageUrl));
+  }
+
+  return payload;
+}
+
+const SHOW_FLAG_DEFAULT = true;
+
+/** buildDraftSavePayload と同じ形を、未指定の表示フラグと bannerLinks 欠落だけ揃えて比較する */
+function normalizePayloadForCompare(payload: Record<string, unknown>) {
+  const settings = (payload.settings ?? {}) as Record<string, unknown>;
+  const bannerLinks = Array.isArray(payload.bannerLinks)
+    ? (payload.bannerLinks as BannerLink[]).map((b) => ({
+        imageUrl: b.imageUrl ?? '',
+        linkUrl: b.linkUrl ?? '',
+        visible: b.visible ?? true,
+      }))
+    : [];
+  return {
+    ...payload,
+    bannerLinks,
+    settings: {
+      showYouTube: settings.showYouTube ?? SHOW_FLAG_DEFAULT,
+      showX: settings.showX ?? SHOW_FLAG_DEFAULT,
+      showInstagram: settings.showInstagram ?? SHOW_FLAG_DEFAULT,
+      showFacebook: settings.showFacebook ?? SHOW_FLAG_DEFAULT,
+      showTikTok: settings.showTikTok ?? SHOW_FLAG_DEFAULT,
+      showApps: settings.showApps ?? SHOW_FLAG_DEFAULT,
+      showBanners: settings.showBanners ?? SHOW_FLAG_DEFAULT,
+      sectionOrder: settings.sectionOrder,
+    },
+  };
+}
+
+function isDraftDirty(
+  saved: Profile,
+  draft: Profile,
+  fallbacks: { apps: AppProject[]; sectionOrder: string[] }
+) {
+  const savedPayload = normalizePayloadForCompare(buildDraftSavePayload(saved, fallbacks));
+  const draftPayload = normalizePayloadForCompare(buildDraftSavePayload(draft, fallbacks));
+  return JSON.stringify(savedPayload) !== JSON.stringify(draftPayload);
+}
+
 export default function UserPageSectionsClient({
   uid,
   isEditable,
@@ -73,7 +158,12 @@ export default function UserPageSectionsClient({
   initialSectionOrder: string[];
   initialApps: AppProject[];
 }) {
-  const [profile, setProfile] = useState<Profile>(initialProfile);
+  /** 最後に保存成功した状態（savedProfile） */
+  const [profile, setProfile] = useState<Profile>(() => ({
+    ...initialProfile,
+    apps: initialApps,
+  }));
+  /** 編集途中状態 */
   const [draftProfile, setDraftProfile] = useState<Profile>(() => ({
     ...initialProfile,
     apps: initialApps,
@@ -85,6 +175,10 @@ export default function UserPageSectionsClient({
     ensureAppProjectsInOrder(initialSectionOrder)
   );
   const [apps, setApps] = useState<AppProject[]>(initialApps);
+  const [isSaving, setIsSaving] = useState(false);
+  const savingLockRef = useRef(false);
+  const [saveMessage, setSaveMessage] = useState<string | null>(null);
+  const [saveMessageTone, setSaveMessageTone] = useState<'ok' | 'error'>('ok');
 
   const updateDraftProfile = useCallback((patch: Partial<Profile>) => {
     setDraftProfile((prev) => ({ ...prev, ...patch }));
@@ -100,32 +194,22 @@ export default function UserPageSectionsClient({
     }));
   }, []);
 
-  const onSectionOrderSaved = useCallback(
+  const onSectionOrderDraftChange = useCallback(
     (nextOrder: string[]) => {
       const normalized = ensureAppProjectsInOrder(nextOrder);
       setSectionOrder(normalized);
-      setProfile((prev) => ({
-        ...prev,
-        settings: { ...(prev.settings ?? {}), sectionOrder: normalized },
-      }));
       updateDraftSettings({ sectionOrder: normalized });
     },
     [updateDraftSettings]
   );
 
-  const onAppsChange = useCallback((next: AppProject[]) => {
-    setApps(next);
-    setProfile((prev) => ({ ...prev, apps: next }));
-    updateDraftProfile({ apps: next });
-  }, [updateDraftProfile]);
-
-  const onShowAppsSaved = useCallback((showApps: boolean) => {
-    setProfile((prev) => ({
-      ...prev,
-      settings: { ...(prev.settings ?? {}), showApps },
-    }));
-    updateDraftSettings({ showApps });
-  }, [updateDraftSettings]);
+  const onAppsDraftChange = useCallback(
+    (draft: { apps: AppProject[]; showApps: boolean }) => {
+      updateDraftProfile({ apps: draft.apps });
+      updateDraftSettings({ showApps: draft.showApps });
+    },
+    [updateDraftProfile, updateDraftSettings]
+  );
 
   const onYouTubeDraftChange = useCallback(
     (draft: {
@@ -208,6 +292,102 @@ export default function UserPageSectionsClient({
     [updateDraftProfile]
   );
 
+  const saveDraftProfile = useCallback(async (): Promise<boolean> => {
+    if (savingLockRef.current) return false;
+    savingLockRef.current = true;
+    setIsSaving(true);
+    setSaveMessage(null);
+    try {
+      const draft = draftProfileRef.current;
+      const profilePayload = buildDraftSavePayload(draft, { apps, sectionOrder });
+      const res = await fetch(`/api/user/${uid}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({ profile: profilePayload }),
+      });
+      const data = (await res.json().catch(() => ({}))) as {
+        error?: string;
+        apps?: AppProject[];
+      };
+      if (!res.ok) {
+        throw new Error(typeof data.error === 'string' ? data.error : '保存に失敗しました');
+      }
+
+      const savedApps = Array.isArray(data.apps) ? data.apps : (profilePayload.apps as AppProject[]);
+      const savedSettings = {
+        ...(profile.settings ?? {}),
+        ...(draft.settings ?? {}),
+        ...((profilePayload.settings as Profile['settings']) ?? {}),
+      };
+      const savedProfile: Profile = {
+        ...profile,
+        name: profilePayload.name as string,
+        title: profilePayload.title as string,
+        bio: profilePayload.bio as string,
+        emailForContact: profilePayload.emailForContact as string,
+        youtubeMode: profilePayload.youtubeMode as Profile['youtubeMode'],
+        youtubeChannelId: profilePayload.youtubeChannelId as string,
+        manualYouTubeUrls: profilePayload.manualYouTubeUrls as string[],
+        xUsername: profilePayload.xUsername as string,
+        instagramPostUrl: profilePayload.instagramPostUrl as string,
+        facebookUrl: profilePayload.facebookUrl as string,
+        facebookUsername: profilePayload.facebookUsername as string,
+        tiktokUrls: profilePayload.tiktokUrls as string[],
+        apps: savedApps,
+        customLinks: profilePayload.customLinks as CustomLink[],
+        settings: savedSettings,
+        ...(Array.isArray(profilePayload.bannerLinks)
+          ? { bannerLinks: profilePayload.bannerLinks as BannerLink[] }
+          : {}),
+      };
+
+      setProfile(savedProfile);
+      setDraftProfile(savedProfile);
+      setApps(savedApps);
+      if (savedSettings.sectionOrder) {
+        setSectionOrder(ensureAppProjectsInOrder(savedSettings.sectionOrder));
+      }
+      setSaveMessageTone('ok');
+      setSaveMessage('保存しました');
+      return true;
+    } catch (err) {
+      setSaveMessageTone('error');
+      setSaveMessage(err instanceof Error ? err.message : '保存に失敗しました');
+      return false;
+    } finally {
+      savingLockRef.current = false;
+      setIsSaving(false);
+    }
+  }, [apps, profile, sectionOrder, uid]);
+
+  const payloadFallbacks = useMemo(
+    () => ({ apps, sectionOrder }),
+    [apps, sectionOrder]
+  );
+
+  const isDirty = useMemo(
+    () => (isEditable ? isDraftDirty(profile, draftProfile, payloadFallbacks) : false),
+    [draftProfile, isEditable, payloadFallbacks, profile]
+  );
+
+  useEffect(() => {
+    if (isDirty && saveMessageTone === 'ok') {
+      setSaveMessage(null);
+    }
+    if (!isDirty && saveMessageTone === 'error') {
+      setSaveMessage(null);
+    }
+  }, [isDirty, saveMessageTone]);
+
+  useEffect(() => {
+    if (!saveMessage || saveMessageTone !== 'ok') return;
+    const timer = window.setTimeout(() => setSaveMessage(null), 2000);
+    return () => window.clearTimeout(timer);
+  }, [saveMessage, saveMessageTone]);
+
+  const showSaveBar = isEditable && (isDirty || isSaving || Boolean(saveMessage));
+
   const sectionMap: Record<string, JSX.Element> = useMemo(
     () => ({
       YouTube: (
@@ -276,8 +456,7 @@ export default function UserPageSectionsClient({
           initialApps={apps}
           initialShowApps={profile?.settings?.showApps}
           isEditable={isEditable}
-          onChange={onAppsChange}
-          onShowAppsSaved={onShowAppsSaved}
+          onDraftChange={isEditable ? onAppsDraftChange : undefined}
         />
       ),
       SNSButtons: (
@@ -292,12 +471,11 @@ export default function UserPageSectionsClient({
     [
       apps,
       isEditable,
-      onAppsChange,
+      onAppsDraftChange,
       onBannerDraftChange,
       onCustomLinksDraftChange,
       onFacebookDraftChange,
       onInstagramDraftChange,
-      onShowAppsSaved,
       onTikTokDraftChange,
       onXDraftChange,
       onYouTubeDraftChange,
@@ -320,7 +498,7 @@ export default function UserPageSectionsClient({
   }, [sectionMap, sectionOrder]);
 
   return (
-    <>
+    <div className={isEditable ? 'profile-edit-with-save-bar' : undefined}>
       {profile?.name && (
         <h2
           style={{
@@ -351,7 +529,7 @@ export default function UserPageSectionsClient({
           uid={uid}
           profile={profile}
           isEditable={isEditable}
-          onSectionOrderSaved={onSectionOrderSaved}
+          onSectionOrderChange={isEditable ? onSectionOrderDraftChange : undefined}
         />
 
         {renderedSections}
@@ -360,7 +538,44 @@ export default function UserPageSectionsClient({
           <QRCodeBlock uid={uid} initialName={profile?.name} />
         </div>
       </main>
-    </>
+
+      {isEditable ? (
+        <UnsavedChangesLeaveGuard
+          isDirty={isDirty}
+          isSaving={isSaving}
+          saveDraftProfile={saveDraftProfile}
+        />
+      ) : null}
+
+      {showSaveBar ? (
+        <div className="profile-save-bar" role="status">
+          {isDirty || isSaving ? (
+            <>
+              <p className="profile-save-bar__label">未保存の変更があります</p>
+              <button
+                type="button"
+                onClick={() => void saveDraftProfile()}
+                disabled={isSaving}
+                style={{
+                  ...buttonPrimary,
+                  ...(isSaving ? { opacity: 0.65, cursor: 'wait' } : {}),
+                }}
+              >
+                {isSaving ? '保存中...' : '変更を保存'}
+              </button>
+            </>
+          ) : null}
+          {saveMessage ? (
+            <p
+              className="profile-save-bar__status"
+              style={{ color: saveMessageTone === 'ok' ? '#15803d' : '#b91c1c' }}
+            >
+              {saveMessage}
+            </p>
+          ) : null}
+        </div>
+      ) : null}
+    </div>
   );
 }
 

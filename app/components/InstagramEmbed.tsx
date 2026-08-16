@@ -5,7 +5,6 @@ import SnsVisibilityToggle from './SnsVisibilityToggle';
 import SnsHelpTooltip from './SnsHelpTooltip';
 import { fetchUserApi } from '@/lib/userProfileClient';
 import {
-  buttonPrimary,
   cardActions,
   cardBody,
   cardTitle,
@@ -99,49 +98,6 @@ export default function InstagramEmbed({
     onDraftChange?.({ instagramPostUrl: inputValue, showInstagram });
   }, [inputValue, showInstagram, onDraftChange]);
 
-  const handleSave = async () => {
-    if (showInstagram && !inputValue.trim()) {
-      alert('ユーザー名を入力してください');
-      return;
-    }
-
-    const normalizedInput = inputValue.trim()
-      ? normalizeInstagramUsername(inputValue)
-      : '';
-
-    if (inputValue.trim() && !normalizedInput) {
-      alert(
-        '正しいInstagramユーザー名を入力してください（例: username または https://www.instagram.com/username/）'
-      );
-      return;
-    }
-
-    try {
-      const res = await fetch(`/api/user/${uid}`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        credentials: 'include',
-        body: JSON.stringify({
-          profile: {
-            instagramPostUrl: normalizedInput,
-            settings: {
-              showInstagram,
-            },
-          },
-        }),
-      });
-
-      if (!res.ok) throw new Error('保存失敗');
-      setUsername(normalizedInput);
-      setInputValue(normalizedInput);
-      onDraftChange?.({ instagramPostUrl: normalizedInput, showInstagram });
-      alert('Instagramユーザー名を保存しました');
-    } catch (err) {
-      console.error('保存エラー:', err);
-      alert('保存に失敗しました');
-    }
-  };
-
   const publicUsername = normalizeInstagramUsername(username);
   const hasInstagramContent = Boolean(
     publicUsername && buildInstagramProfileUrl(publicUsername)
@@ -193,7 +149,6 @@ export default function InstagramEmbed({
         style={{
           ...cardActions,
           display: 'flex',
-          justifyContent: 'space-between',
           alignItems: 'center',
           flexWrap: 'wrap',
           gap: 10,
@@ -207,9 +162,6 @@ export default function InstagramEmbed({
           />
           <SnsHelpTooltip />
         </div>
-        <button type="button" onClick={handleSave} style={buttonPrimary}>
-          保存
-        </button>
       </div>
     </div>
   );

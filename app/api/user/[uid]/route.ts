@@ -27,20 +27,43 @@ const db = getFirestore();
 const firestore = getFirestore();
 const bucket = getStorage().bucket();
 
-function cleanData(obj: Record<string, any>) {
-  const cleaned: Record<string, any> = {};
-  for (const key in obj) {
+function hasOwn(obj: Record<string, unknown>, key: string): boolean {
+  return Object.prototype.hasOwnProperty.call(obj, key);
+}
+
+/**
+ * undefined のみ「今回の更新対象外」として落とす。
+ * "" / [] / null / false は明示的な値として残す（ユーザーが空にした状態を保存するため）。
+ */
+function omitUndefined(obj: Record<string, unknown>): Record<string, unknown> {
+  const cleaned: Record<string, unknown> = {};
+  for (const key of Object.keys(obj)) {
     const value = obj[key];
-    if (
-      value !== undefined &&
-      value !== null &&
-      !(typeof value === 'string' && value.trim() === '') &&
-      !(Array.isArray(value) && value.length === 0)
-    ) {
+    if (value !== undefined) {
       cleaned[key] = value;
     }
   }
   return cleaned;
+}
+
+/** 未送信 / undefined → 既存値。null / "" → 空文字で上書き */
+function pickString(incoming: Record<string, unknown>, key: string, existing: unknown): string {
+  if (!hasOwn(incoming, key) || incoming[key] === undefined) {
+    return typeof existing === 'string' ? existing : '';
+  }
+  const value = incoming[key];
+  if (value === null) return '';
+  return typeof value === 'string' ? value : String(value);
+}
+
+/** 未送信 / undefined → 既存値。null / [] → 空配列で上書き */
+function pickArray<T>(incoming: Record<string, unknown>, key: string, existing: unknown): T[] {
+  if (!hasOwn(incoming, key) || incoming[key] === undefined) {
+    return Array.isArray(existing) ? (existing as T[]) : [];
+  }
+  const value = incoming[key];
+  if (value === null) return [];
+  return Array.isArray(value) ? (value as T[]) : [];
 }
 
 // --- GET: プロフィール情報取得 ---
@@ -167,6 +190,8 @@ export async function POST(req: NextRequest, props: { params: Promise<{ uid: str
       profile.calendarEvents = profile.calendarEvents
         .filter((e: any) => typeof e === 'object' && e.date && Array.isArray(e.events))
         .map((e: any) => ({ date: String(e.date), events: e.events.map(String) }));
+    } else if (profile.calendarEvents === null) {
+      profile.calendarEvents = [];
     } else {
       delete profile.calendarEvents;
     }
@@ -296,28 +321,35 @@ export async function POST(req: NextRequest, props: { params: Promise<{ uid: str
       appsForSave = mergedApps;
     }
 
-    // 🔄 プロフィール保存（cleanData は空配列を落とすため apps は後付け）
-    const cleanedProfile = cleanData({
-      name: profile.name ?? existingProfile.name ?? '',
-      title: profile.title ?? existingProfile.title ?? '',
-      bio: profile.bio ?? existingProfile.bio ?? '',
-      calendarEvents: profile.calendarEvents ?? existingProfile.calendarEvents ?? [],
-      photos: profile.photos ?? existingProfile.photos ?? [],
-      youtubeChannelId: profile.youtubeChannelId ?? existingProfile.youtubeChannelId ?? '',
-      instagramPostUrl: profile.instagramPostUrl ?? existingProfile.instagramPostUrl ?? '',
-      xUsername: profile.xUsername ?? existingProfile.xUsername ?? '',
-      tiktokUrls: profile.tiktokUrls ?? existingProfile.tiktokUrls ?? [],
+    // 🔄 プロフィール保存
+    // undefined = 未更新（既存維持）。"" / [] / null = 明示的な空。false は settings に残す。
+    // photos は上の既存処理どおり（空配列は既存維持）。apps は sanitize 済みを後付け。
+    const incomingProfile = profile as Record<string, unknown>;
+    const cleanedProfile = omitUndefined({
+      name: pickString(incomingProfile, 'name', existingProfile.name),
+      title: pickString(incomingProfile, 'title', existingProfile.title),
+      bio: pickString(incomingProfile, 'bio', existingProfile.bio),
+      calendarEvents: pickArray(incomingProfile, 'calendarEvents', existingProfile.calendarEvents),
+      photos: Array.isArray(profile.photos) ? profile.photos : existingProfile.photos ?? [],
+      youtubeChannelId: pickString(incomingProfile, 'youtubeChannelId', existingProfile.youtubeChannelId),
+      instagramPostUrl: pickString(incomingProfile, 'instagramPostUrl', existingProfile.instagramPostUrl),
+      xUsername: pickString(incomingProfile, 'xUsername', existingProfile.xUsername),
+      tiktokUrls: pickArray<string>(incomingProfile, 'tiktokUrls', existingProfile.tiktokUrls),
       youtubeMode: profile.youtubeMode ?? existingProfile.youtubeMode ?? 'latest',
-      manualYouTubeUrls: profile.manualYouTubeUrls ?? existingProfile.manualYouTubeUrls ?? [],
-      facebookUrl: profile.facebookUrl ?? existingProfile.facebookUrl ?? '',
-      facebookUsername: profile.facebookUsername ?? existingProfile.facebookUsername ?? '',
-      bannerLinks: profile.bannerLinks ?? existingProfile.bannerLinks ?? [],
-      customLinks: profile.customLinks ?? existingProfile.customLinks ?? [],
-      emailForContact: profile.emailForContact ?? existingProfile.emailForContact ?? '',
+      manualYouTubeUrls: pickArray<string>(
+        incomingProfile,
+        'manualYouTubeUrls',
+        existingProfile.manualYouTubeUrls
+      ),
+      facebookUrl: pickString(incomingProfile, 'facebookUrl', existingProfile.facebookUrl),
+      facebookUsername: pickString(incomingProfile, 'facebookUsername', existingProfile.facebookUsername),
+      bannerLinks: pickArray(incomingProfile, 'bannerLinks', existingProfile.bannerLinks),
+      customLinks: pickArray(incomingProfile, 'customLinks', existingProfile.customLinks),
+      emailForContact: pickString(incomingProfile, 'emailForContact', existingProfile.emailForContact),
       settings: {
-        ...existingProfile.settings ?? {},
-        ...profile.settings ?? {},
-      }
+        ...(existingProfile.settings ?? {}),
+        ...(profile.settings ?? {}),
+      },
     });
 
     cleanedProfile.apps = appsForSave;

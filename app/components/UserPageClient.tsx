@@ -49,7 +49,7 @@ type Props = {
   uid: string;
   profile: Profile;
   isEditable: boolean;
-  onSectionOrderSaved?: (nextOrder: string[]) => void;
+  onSectionOrderChange?: (nextOrder: string[]) => void;
 };
 
 const DEFAULT_ORDER = [
@@ -72,40 +72,32 @@ function ensureAppProjectsInOrder(order: string[]): string[] {
   return [...order, 'AppProjects'];
 }
 
-const UserPageClient = ({ uid, profile, isEditable, onSectionOrderSaved }: Props) => {
+const UserPageClient = ({ uid, profile, isEditable, onSectionOrderChange }: Props) => {
   const lastInstagramUrlRef = useRef<string | null>(null);
   const lastFacebookUrlRef = useRef<string | null>(null);
   const [isReorderMode, setIsReorderMode] = useState(false);
   const [sectionOrder, setSectionOrder] = useState<string[]>(() =>
     ensureAppProjectsInOrder(profile.settings?.sectionOrder ?? DEFAULT_ORDER)
   );
+  const orderBeforeReorderRef = useRef(sectionOrder);
 
-    // --- 並び順保存（sectionOrder のみ。他プロフィール項目は送らない） ---
-const saveOrderToServer = async () => {
-  try {
-    const res = await fetch(`/api/user/${uid}`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        profile: {
-          settings: {
-            sectionOrder,
-          },
-        },
-      }),
-    });
+  const startReorder = () => {
+    const current = ensureAppProjectsInOrder(sectionOrder);
+    setSectionOrder(current);
+    orderBeforeReorderRef.current = current;
+    setIsReorderMode(true);
+  };
 
-    if (res.ok) {
-      alert('並び順を保存しました');
-      onSectionOrderSaved?.(sectionOrder);
-      setIsReorderMode(false);
-    } else {
-      throw new Error();
-    }
-  } catch (err) {
-    alert('保存に失敗しました');
-  }
-};
+  const completeReorder = () => {
+    setIsReorderMode(false);
+  };
+
+  const cancelReorder = () => {
+    const original = ensureAppProjectsInOrder(orderBeforeReorderRef.current);
+    setSectionOrder(original);
+    onSectionOrderChange?.(original);
+    setIsReorderMode(false);
+  };
 
 
   useEffect(() => {
@@ -218,7 +210,7 @@ if (profile.youtubeMode === 'manual') {
       {isEditable && !isReorderMode && (
         <div style={{ textAlign: 'center', margin: '30px 0' }}>
           <button
-            onClick={() => setIsReorderMode(true)}
+            onClick={startReorder}
             style={{
               backgroundColor: '#0070f3',
               color: '#fff',
@@ -237,9 +229,12 @@ if (profile.youtubeMode === 'manual') {
       {isEditable && isReorderMode && (
         <SectionReorderBlock
           sectionOrder={sectionOrder}
-          onChange={(newOrder) => setSectionOrder(newOrder)}
-          onSave={saveOrderToServer}
-          onCancel={() => setIsReorderMode(false)}
+          onChange={(newOrder) => {
+            setSectionOrder(newOrder);
+            onSectionOrderChange?.(newOrder);
+          }}
+          onComplete={completeReorder}
+          onCancel={cancelReorder}
         />
       )}
     </>

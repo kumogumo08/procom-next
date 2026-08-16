@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react';
 import SnsVisibilityToggle from './SnsVisibilityToggle';
 import SnsHelpTooltip from './SnsHelpTooltip';
 import { fetchUserApi } from '@/lib/userProfileClient';
-import { buttonPrimary, buttonRowRight, cardActions, cardBody, cardPreviewArea, cardTitle, emptyStateBox, inputBase, snsCardBase } from '@/components/ui/cardStyles';
+import { buttonPrimary, cardActions, cardBody, cardPreviewArea, cardTitle, emptyStateBox, inputBase, snsCardBase } from '@/components/ui/cardStyles';
 
 interface Props {
   uid: string;
@@ -72,8 +72,21 @@ export default function TikTokEmbed({
   }, [uid, hasInitialProfile]);
 
   useEffect(() => {
-    onDraftChange?.({ tiktokUrls: urls, showTikTok });
+    const cleaned = urls
+      .map((url) => url.trim())
+      .filter((url) => url !== '')
+      .slice(0, 3);
+    onDraftChange?.({ tiktokUrls: cleaned, showTikTok });
   }, [urls, showTikTok, onDraftChange]);
+
+  useEffect(() => {
+    if (!isEditable) return;
+    const cleaned = urls
+      .map((url) => url.trim())
+      .filter((url) => url !== '')
+      .slice(0, 3);
+    setLoadedUrls(cleaned);
+  }, [urls, isEditable]);
 
   // 🔽 スクリプト読み込み
   useEffect(() => {
@@ -109,29 +122,6 @@ export default function TikTokEmbed({
   );
 
   if (!isEditable && !(showTikTok && hasTikTokContent)) return null;
-
-  const handleSave = async () => {
-    const cleaned = urls
-      .map(url => url.trim())
-      .filter(url => url !== '')
-      .slice(0, 3);
-
-    await fetch(`/api/user/${uid}`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        profile: {
-          tiktokUrls: cleaned,
-          settings: { showTikTok },
-        },
-      }),
-    });
-
-    setLoadedUrls(cleaned);
-    setUrls(cleaned);
-    onDraftChange?.({ tiktokUrls: cleaned, showTikTok });
-    alert('TikTokリンクを保存しました');
-  };
 
   return (
     <div className="sns-bottom-row">
@@ -206,11 +196,6 @@ export default function TikTokEmbed({
                 ＋ 入力欄を追加
               </button>
             )}
-            <div style={buttonRowRight}>
-              <button onClick={handleSave} className="auth-only" style={buttonPrimary}>
-                保存
-              </button>
-            </div>
           </div>
         )}
 

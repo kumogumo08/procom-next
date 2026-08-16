@@ -6,20 +6,16 @@ type Props = {
   uid: string;
   isEditable: boolean;
   initialEmail?: string;
-  onSavedEmail?: (email: string) => void;
   onDraftChange?: (emailForContact: string) => void;
 };
 
 export default function ContactButtonBlock({
-  uid,
   isEditable,
   initialEmail,
-  onSavedEmail,
   onDraftChange,
 }: Props) {
   const [email, setEmail] = useState(initialEmail || '');
   const [savedEmail, setSavedEmail] = useState(initialEmail || '');
-  const [saving, setSaving] = useState(false);
 
   // ✅ 初期メールアドレスが変更されたときに反映する
   useEffect(() => {
@@ -31,30 +27,6 @@ export default function ContactButtonBlock({
     onDraftChange?.(email);
   }, [email, onDraftChange]);
 
-  const handleSave = async () => {
-    if (!email) return;
-    setSaving(true);
-    try {
-      const res = await fetch(`/api/user/${uid}`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ profile: { emailForContact: email } }),
-      });
-      if (res.ok) {
-        setSavedEmail(email);
-        onSavedEmail?.(email);
-        onDraftChange?.(email);
-        alert('お仕事用メールアドレスを保存しました');
-      } else {
-        throw new Error();
-      }
-    } catch (err) {
-      alert('保存に失敗しました');
-    } finally {
-      setSaving(false);
-    }
-  };
-
   if (isEditable) {
     return (
       <div className="my-6 text-center">
@@ -64,16 +36,8 @@ export default function ContactButtonBlock({
           placeholder="contact@example.com"
           value={email}
           onChange={(e) => setEmail(e.target.value)}
-          className="border px-3 py-2 rounded w-[280px] text-sm mb-2"
+          className="border px-3 py-2 rounded w-[280px] text-sm"
         />
-        <br />
-        <button
-          onClick={handleSave}
-          className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700 transition"
-          disabled={saving}
-        >
-          {saving ? '保存中...' : '保存'}
-        </button>
       </div>
     );
   }

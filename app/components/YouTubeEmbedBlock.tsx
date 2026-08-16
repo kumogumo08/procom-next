@@ -6,7 +6,7 @@ import SnsVisibilityToggle from './SnsVisibilityToggle';
 import SnsHelpTooltip from './SnsHelpTooltip';
 import YouTubeHelpTooltip from '@/components/YouTubeHelpTooltip';
 import { fetchUserApi } from '@/lib/userProfileClient';
-import { buttonDanger, buttonPrimary, buttonRowRight, cardActions, cardBody, cardPreviewArea, cardTitle, emptyStateBox, inputBase, snsCardBase } from '@/components/ui/cardStyles';
+import { buttonDanger, buttonPrimary, cardActions, cardBody, cardPreviewArea, cardTitle, emptyStateBox, inputBase, snsCardBase } from '@/components/ui/cardStyles';
 
 type Props = {
   uid: string;
@@ -111,30 +111,6 @@ export default function YouTubeEmbedBlock({
       setVideoElements(container);
     }
   }, [mode, channelId, manualUrls]);
-  
-  // 保存処理
-  const handleSave = async () => {
-    const payload = {
-      youtubeMode: mode,
-      youtubeChannelId: channelId,
-      manualYouTubeUrls: manualUrls,
-      settings: {
-      showYouTube, // ✅ ここを追加
-    },
-    };
-    await fetch(`/api/user/${uid}`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ profile: payload }),
-    });
-    onDraftChange?.({
-      youtubeMode: mode,
-      youtubeChannelId: channelId,
-      manualYouTubeUrls: manualUrls,
-      showYouTube,
-    });
-    alert('YouTube設定を保存しました');
-  };
 
   const extractVideoId = (url: string) => {
     const match = url.match(/(?:v=|\.be\/)([a-zA-Z0-9_-]{11})/);
@@ -243,11 +219,6 @@ export default function YouTubeEmbedBlock({
 
       {isEditable && (
         <div style={cardActions}>
-          <div style={buttonRowRight}>
-            <button type="button" onClick={handleSave} style={buttonPrimary}>
-              保存
-            </button>
-          </div>
           <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
             <SnsVisibilityToggle
               label="YouTubeを表示する"

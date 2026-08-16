@@ -5,7 +5,6 @@ import SnsVisibilityToggle from './SnsVisibilityToggle';
 import SnsHelpTooltip from './SnsHelpTooltip';
 import { fetchUserApi } from '@/lib/userProfileClient';
 import {
-  buttonPrimary,
   cardActions,
   cardBody,
   cardTitle,
@@ -127,57 +126,6 @@ export default function FacebookEmbedBlock({
     });
   }, [inputValue, usernameInput, showFacebook, onDraftChange]);
 
-  const handleSave = async () => {
-    const trimmedUrl = inputValue.trim();
-    const normalizedUrl = trimmedUrl ? normalizeFacebookUrl(trimmedUrl) : '';
-
-    if (trimmedUrl && !normalizedUrl) {
-      alert(
-        '正しいFacebookのURLを入力してください（例: https://www.facebook.com/username）'
-      );
-      return;
-    }
-
-    if (showFacebook && !normalizedUrl) {
-      alert('FacebookプロフィールURLを入力してください');
-      return;
-    }
-
-    const trimmedUsername = usernameInput.trim();
-
-    try {
-      const res = await fetch(`/api/user/${uid}`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        credentials: 'include',
-        body: JSON.stringify({
-          profile: {
-            facebookUrl: normalizedUrl,
-            facebookUsername: trimmedUsername,
-            settings: {
-              showFacebook,
-            },
-          },
-        }),
-      });
-
-      if (!res.ok) throw new Error('保存失敗');
-      setFbUrl(normalizedUrl);
-      setInputValue(normalizedUrl);
-      setFacebookUsername(trimmedUsername);
-      setUsernameInput(trimmedUsername);
-      onDraftChange?.({
-        facebookUrl: normalizedUrl,
-        facebookUsername: trimmedUsername,
-        showFacebook,
-      });
-      alert('Facebook設定を保存しました');
-    } catch (err) {
-      console.error('保存エラー:', err);
-      alert('保存に失敗しました');
-    }
-  };
-
   const publicUrl = normalizeFacebookUrl(fbUrl);
   const hasFacebookContent = Boolean(publicUrl && isValidFacebookUrl(publicUrl));
   const canShowPublicLink = Boolean(showFacebook && hasFacebookContent);
@@ -249,7 +197,6 @@ export default function FacebookEmbedBlock({
         style={{
           ...cardActions,
           display: 'flex',
-          justifyContent: 'space-between',
           alignItems: 'center',
           flexWrap: 'wrap',
           gap: 10,
@@ -263,9 +210,6 @@ export default function FacebookEmbedBlock({
           />
           <SnsHelpTooltip />
         </div>
-        <button type="button" onClick={handleSave} style={buttonPrimary}>
-          保存
-        </button>
       </div>
     </div>
   );

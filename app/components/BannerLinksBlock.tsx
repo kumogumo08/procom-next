@@ -24,6 +24,7 @@ export default function BannerLinksBlock({ uid, isEditable, onDraftChange }: Pro
   const [banners, setBanners] = useState<Banner[]>([]);
   const [cropIndex, setCropIndex] = useState<number | null>(null);
   const [showBanners, setShowBanners] = useState(true);
+  const [hasLoadedBanners, setHasLoadedBanners] = useState(false);
   const [crop, setCrop] = useState({ x: 0, y: 0 });
   const [zoom, setZoom] = useState(1);
   const [croppedAreaPixels, setCroppedAreaPixels] = useState<Area | null>(null);
@@ -62,41 +63,6 @@ export default function BannerLinksBlock({ uid, isEditable, onDraftChange }: Pro
     return result.imageUrl; // ← API から返される画像URLを使用
   };
 
-  const saveBannersToServer = async () => {
-    try {
-      const uploadedBanners = await Promise.all(
-        banners.map(async (b, i) => {
-          const url = b.imageUrl.startsWith('data:')
-            ? await uploadBase64ToStorage(b.imageUrl, uid, i)
-            : b.imageUrl;
-          return {
-            imageUrl: url,
-            linkUrl: b.linkUrl,
-            visible: b.visible ?? true,
-          };
-        })
-      );
-
-      const res = await fetch('/api/banner-links', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        credentials: 'include',
-        body: JSON.stringify({
-          bannerLinks: uploadedBanners,
-          showBanners, // ✅ 🔥 ← これを追加！
-        }),
-      });
-
-      if (!res.ok) throw new Error('保存失敗');
-
-      onDraftChange?.({ bannerLinks: uploadedBanners, showBanners });
-      alert('✅ リンクを保存しました！');
-    } catch (err) {
-      console.error('❌ 保存エラー:', err);
-      alert('保存に失敗しました');
-    }
-  };
-
   useEffect(() => {
     if (!uid) return;
 
@@ -116,6 +82,7 @@ export default function BannerLinksBlock({ uid, isEditable, onDraftChange }: Pro
 
         setBanners(padded);
         setShowBanners(data.settings?.showBanners ?? true);
+        setHasLoadedBanners(true);
       } catch (err) {
         console.error('❌ バナーリンク取得失敗:', err);
       }
@@ -125,8 +92,9 @@ export default function BannerLinksBlock({ uid, isEditable, onDraftChange }: Pro
   }, [uid]);
 
   useEffect(() => {
+    if (!hasLoadedBanners) return;
     onDraftChange?.({ bannerLinks: banners, showBanners });
-  }, [banners, showBanners, onDraftChange]);
+  }, [banners, showBanners, onDraftChange, hasLoadedBanners]);
 
   const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>, index: number) => {
     const input = e.target;
@@ -156,11 +124,19 @@ export default function BannerLinksBlock({ uid, isEditable, onDraftChange }: Pro
 
   const applyCrop = async () => {
     if (cropIndex === null || croppedAreaPixels === null) return;
-    const cropped = await getCroppedImg(banners[cropIndex].imageUrl, croppedAreaPixels);
-    const updated = [...banners];
-    updated[cropIndex] = { ...updated[cropIndex], imageUrl: cropped };
-    setBanners(updated);
-    setCropIndex(null);
+    try {
+      const cropped = await getCroppedImg(banners[cropIndex].imageUrl, croppedAreaPixels);
+      const imageUrl = cropped.startsWith('data:')
+        ? await uploadBase64ToStorage(cropped, uid, cropIndex)
+        : cropped;
+      const updated = [...banners];
+      updated[cropIndex] = { ...updated[cropIndex], imageUrl };
+      setBanners(updated);
+      setCropIndex(null);
+    } catch (err) {
+      console.error('❌ バナー画像アップロード失敗:', err);
+      alert('画像のアップロードに失敗しました');
+    }
   };
 
   const handleLinkChange = (index: number, value: string) => {
@@ -294,27 +270,11 @@ export default function BannerLinksBlock({ uid, isEditable, onDraftChange }: Pro
 
       {isEditable && (
         <div style={{ marginTop: 20, textAlign: 'center' }}>
-          <button
-            onClick={saveBannersToServer}
-            style={{
-              background: '#4e73df',
-              color: 'white',
-              border: 'none',
-              borderRadius: '4px',
-              padding: '8px 16px', // ← 少し大きめでもOK
-              fontSize: '16px',
-              cursor: 'pointer',
-            }}
-          >
-            保存
-          </button>
-          {isEditable && (
-            <SnsVisibilityToggle
-              label="バナーリンクを表示する"
-              checked={showBanners}
-              onChange={setShowBanners}
-            />
-          )}
+          <SnsVisibilityToggle
+            label="バナーリンクを表示する"
+            checked={showBanners}
+            onChange={setShowBanners}
+          />
         </div>
       )}
 

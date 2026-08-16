@@ -19,14 +19,14 @@ import { useState } from 'react';
 interface Props {
   sectionOrder: string[];
   onChange: (newOrder: string[]) => void;
-  onSave: () => void;
+  onComplete: () => void;
   onCancel: () => void;
 }
 
 export default function SectionReorderBlock({
   sectionOrder,
   onChange,
-  onSave,
+  onComplete,
   onCancel,
 }: Props) {
   const [items, setItems] = useState(sectionOrder);
@@ -67,7 +67,7 @@ export default function SectionReorderBlock({
         }}
       >
         <button
-          onClick={onSave}
+          onClick={onComplete}
           style={{
             backgroundColor: '#22c55e',
             color: '#fff',
@@ -77,7 +77,7 @@ export default function SectionReorderBlock({
             cursor: 'pointer',
           }}
         >
-          ✅ 保存する
+          完了
         </button>
         <button
           onClick={onCancel}

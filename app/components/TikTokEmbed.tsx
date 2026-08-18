@@ -6,6 +6,15 @@ import SnsHelpTooltip from './SnsHelpTooltip';
 import { fetchUserApi } from '@/lib/userProfileClient';
 import { buttonPrimary, cardActions, cardBody, cardPreviewArea, cardTitle, emptyStateBox, inputBase, snsCardBase } from '@/components/ui/cardStyles';
 
+function escapeHtmlAttr(value: string): string {
+  return value
+    .replace(/&/g, '&amp;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;');
+}
+
 interface Props {
   uid: string;
   isEditable: boolean;
@@ -207,12 +216,15 @@ export default function TikTokEmbed({
                   const videoId = extractVideoId(url);
                   if (!videoId) return null;
 
+                  const safeUrl = escapeHtmlAttr(url);
                   const embedHtml = `
                     <blockquote class="tiktok-embed"
-                      cite="${url}"
+                      cite="${safeUrl}"
                       data-video-id="${videoId}"
                       style="max-width: 325px; min-width: 325px;">
-                      <section>Loading...</section>
+                      <section>
+                        <a href="${safeUrl}" target="_blank" rel="noopener noreferrer">TikTokで投稿を見る</a>
+                      </section>
                     </blockquote>
                   `;
                   return (

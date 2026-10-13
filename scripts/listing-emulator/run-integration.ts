@@ -231,7 +231,7 @@ async function main(): Promise<void> {
     return finish(emulator, null);
   }
   mark('Emulator接続', 'PASS', `${settings?.servicePath ?? settings?.host}:${settings?.port ?? ''} project=${projectId} ssl=false`);
-  console.log(`stage\tconnected host=${settings.host} project=${projectId}`);
+  console.log(`stage\tconnected host=${settings?.host ?? ''} project=${projectId}`);
 
   const batch = db.batch();
   const uids: string[] = [];

@@ -55,3 +55,5 @@ console.log(
   })
 );
 process.exit(foreignIds.length === 0 ? 0 : 2);
+
+export {};

@@ -4,7 +4,7 @@ name: listing-sync
 # 有効化は移行完了後。手順はリポジトリの移行報告を参照。
 on:
   schedule:
-    - cron: '*/5 * * * *'
+    - cron: '0 * * * *'
   workflow_dispatch:
     inputs:
       confirm:

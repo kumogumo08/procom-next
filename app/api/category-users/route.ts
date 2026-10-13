@@ -1,78 +1,70 @@
-// /api/category-users/route.ts
+// /api/category-users/route.ts — 準備完了前は上限付きの旧一覧。完了後は publicProfiles の上限読み。
 
 import { NextRequest, NextResponse } from 'next/server';
-import { getFirestore } from 'firebase-admin/firestore';
-import { initializeFirebaseAdmin } from '@/lib/firebase';
 
-initializeFirebaseAdmin();
-const db = getFirestore();
+import { categoryListed, getNewestListed, getPhotoNewestListed } from '@/lib/listing/firestoreListing';
+import { getLegacyDirectory } from '@/lib/listing/legacyDirectory';
+import { isListingDirectoryReady } from '@/lib/listing/readiness';
+import { CATEGORY_LABELS, categorySlugsForTitle } from '@/lib/listing/searchText';
+import { clientKey } from '@/lib/rateLimit';
+import { allowDistributed } from '@/lib/rateLimitStore';
 
-type CategoryUserRow = {
-  uid: string;
-  profile: {
-    photos?: unknown;
-    title?: string;
-    [key: string]: unknown;
+export const runtime = 'nodejs';
+
+const PRIVATE = { 'Cache-Control': 'private, no-store' };
+
+function toRow(card: { uid: string; name: string; title: string; photoUrl: string }) {
+  return {
+    uid: card.uid,
+    profile: {
+      name: card.name,
+      title: card.title,
+      photos: card.photoUrl ? [{ url: card.photoUrl }] : [],
+    },
   };
-};
-
-/** profile.photos の先頭に有効な URL があるか（string / { url } 両対応） */
-function hasValidProfilePhoto(photos: unknown): boolean {
-  if (!Array.isArray(photos) || photos.length === 0) return false;
-  const raw = photos[0];
-  if (typeof raw === 'string') return raw.trim().length > 0;
-  if (raw && typeof raw === 'object' && 'url' in raw) {
-    const u = (raw as { url?: unknown }).url;
-    return typeof u === 'string' && u.trim().length > 0;
-  }
-  return false;
 }
 
 export async function GET(req: NextRequest) {
+  if (!(await allowDistributed(`category:${clientKey(req.headers.get('x-forwarded-for'))}`, 60, 60_000))) {
+    return NextResponse.json(
+      { error: 'リクエストが多すぎます。しばらく待ってから再度お試しください。' },
+      { status: 429, headers: { ...PRIVATE, 'Retry-After': '60' } }
+    );
+  }
+
   const { searchParams } = new URL(req.url);
   const category = searchParams.get('category') || '';
   const withPhotos = searchParams.get('withPhotos') === '1';
 
   try {
-    const snapshot = await db.collection('users').get();
-
-    const matchedUsers: CategoryUserRow[] = [];
-
-    // 正規化関数：ひらがな・カタカナ・記号・長音などを揃える
-    const normalize = (text: string) =>
-      text
-        .toLowerCase()
-        .replace(/[ー−―─]/g, '') // 長音のゆらぎ除去
-        .replace(/\s/g, '')       // 全角/半角スペース除去
-        .replace(/[^\wぁ-んァ-ン一-龥]/g, ''); // 記号除去（必要に応じて調整）
-
-    const categoryNorm = normalize(category);
-
-    snapshot.forEach((doc) => {
-      const data = doc.data();
-      const profile = data.profile || {};
-      const title = profile.title || '';
-
-      if (category === 'new') {
-        matchedUsers.push({ uid: doc.id, profile }); // 新規登録者は全件対象
-      } else {
-        const titleNorm = normalize(title);
-        if (titleNorm.includes(categoryNorm)) {
-          matchedUsers.push({ uid: doc.id, profile });
+    if (!isListingDirectoryReady()) {
+      const rows = await getLegacyDirectory();
+      let picked = rows;
+      if (category !== 'new') {
+        if (!CATEGORY_LABELS.includes(category as (typeof CATEGORY_LABELS)[number])) {
+          return NextResponse.json({ users: [] }, { headers: PRIVATE });
         }
+        picked = rows.filter((row) => categorySlugsForTitle(row.title).includes(category));
       }
-    });
-
-    // withPhotos=1 のときだけ画像ありユーザーに絞ってから件数制限（表示件数の不足を防ぐ）
-    const candidates = withPhotos
-      ? matchedUsers.filter((u) => hasValidProfilePhoto(u.profile?.photos))
-      : matchedUsers;
-
-    const shuffled = candidates.sort(() => 0.5 - Math.random()).slice(0, 12);
-
-    return NextResponse.json({ users: shuffled });
+      if (withPhotos) picked = picked.filter((row) => row.photoUrl.length > 0);
+      return NextResponse.json({ users: picked.slice(0, 12).map(toRow) }, { headers: PRIVATE });
+    }
+    if (category === 'new' && withPhotos) {
+      const cards = await getPhotoNewestListed();
+      return NextResponse.json({ users: cards.map(toRow) }, { headers: PRIVATE });
+    }
+    if (category === 'new') {
+      const cards = await getNewestListed(12);
+      return NextResponse.json({ users: cards.map(toRow) }, { headers: PRIVATE });
+    }
+    if (!CATEGORY_LABELS.includes(category as (typeof CATEGORY_LABELS)[number])) {
+      return NextResponse.json({ users: [] }, { headers: PRIVATE });
+    }
+    const cards = await categoryListed(category);
+    const rows = cards.map(toRow).filter((row) => (withPhotos ? row.profile.photos.length > 0 : true));
+    return NextResponse.json({ users: rows }, { headers: PRIVATE });
   } catch (error) {
-    console.error('🔥 category-users エラー:', error);
-    return NextResponse.json({ error: 'Failed to fetch users' }, { status: 500 });
+    console.error('category-users エラー:', error);
+    return NextResponse.json({ error: 'Failed to fetch users' }, { status: 500, headers: PRIVATE });
   }
 }

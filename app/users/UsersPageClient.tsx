@@ -6,7 +6,9 @@ import { useCallback, useEffect, useState } from 'react';
 import Header from '@/components/Header';
 import Footer from '@/components/Footer';
 import { resolveFirstPhotoUrl, type CategoryUser } from '@/components/TopCategoryUserCards';
+import { PUBLIC_USERS_PAGE_SIZE, usersPageHref } from '@/lib/publicUserDirectory';
 
+import UsersPagination from './UsersPagination';
 import styles from './users.module.css';
 
 function UserList({ users }: { users: CategoryUser[] }) {
@@ -41,18 +43,34 @@ function UserList({ users }: { users: CategoryUser[] }) {
 
 export default function UsersPageClient({
   q,
-  recentUsers,
+  searchPage,
+  listError,
+  showDirectory,
+  directoryMode,
+  directoryUsers,
+  directoryPage,
+  directoryPageCount,
+  crawlPages,
 }: {
   q: string;
-  recentUsers: CategoryUser[];
+  searchPage: number;
+  listError: boolean;
+  showDirectory: boolean;
+  directoryMode: 'newest' | 'fixed' | 'legacy';
+  directoryUsers: CategoryUser[];
+  directoryPage: number;
+  directoryPageCount: number;
+  crawlPages: number[];
 }) {
   const [users, setUsers] = useState<CategoryUser[]>([]);
+  const [truncated, setTruncated] = useState(false);
   const [loading, setLoading] = useState(() => Boolean(q));
   const [error, setError] = useState<string | null>(null);
 
   const load = useCallback(async () => {
     if (!q) {
       setUsers([]);
+      setTruncated(false);
       setError(null);
       setLoading(false);
       return;
@@ -61,16 +79,19 @@ export default function UsersPageClient({
     setError(null);
     try {
       const res = await fetch(`/api/users?q=${encodeURIComponent(q)}`, { cache: 'no-store' });
-      const data = (await res.json()) as { users?: CategoryUser[]; error?: string };
+      const data = (await res.json()) as { users?: CategoryUser[]; error?: string; truncated?: boolean };
       if (!res.ok) {
         setError(data.error ?? '取得に失敗しました');
         setUsers([]);
+        setTruncated(false);
         return;
       }
       setUsers(Array.isArray(data.users) ? data.users : []);
+      setTruncated(data.truncated === true);
     } catch {
       setError('通信に失敗しました');
       setUsers([]);
+      setTruncated(false);
     } finally {
       setLoading(false);
     }
@@ -79,6 +100,12 @@ export default function UsersPageClient({
   useEffect(() => {
     void load();
   }, [load]);
+
+  const searchPageCount = Math.max(1, Math.ceil(users.length / PUBLIC_USERS_PAGE_SIZE));
+  const searchOutOfRange = users.length > 0 && searchPage > searchPageCount;
+  const visibleSearchUsers = searchOutOfRange
+    ? []
+    : users.slice((searchPage - 1) * PUBLIC_USERS_PAGE_SIZE, searchPage * PUBLIC_USERS_PAGE_SIZE);
 
   return (
     <>
@@ -114,18 +141,64 @@ export default function UsersPageClient({
             <p className={styles.error}>{error}</p>
           ) : users.length === 0 ? (
             <p className={styles.empty}>「{q}」に一致するユーザーは見つかりませんでした。</p>
+          ) : searchOutOfRange ? (
+            <p className={styles.empty}>
+              このページには検索結果がありません。{' '}
+              <Link href={usersPageHref(1, q)}>検索結果の最初へ</Link>
+            </p>
           ) : (
-            <UserList users={users} />
+            <>
+              <UserList users={visibleSearchUsers} />
+              {truncated ? (
+                <p className={styles.hint}>
+                  同じ文字の並びを含む人が多いため、一致する人がすべて表示されているとは限りません。
+                </p>
+              ) : null}
+              <UsersPagination
+                page={searchPage}
+                pageCount={searchPageCount}
+                hrefForPage={(page) => usersPageHref(page, q)}
+              />
+            </>
           )
         ) : (
           <>
             <p className={styles.hint}>キーワードを入力して検索してください。</p>
-            {recentUsers.length > 0 ? (
-              <section className={styles.recent} aria-labelledby="recent-users-heading">
-                <h2 id="recent-users-heading" className={styles.sectionHeading}>
-                  新着ユーザー
+            {listError ? (
+              <p className={styles.error}>ユーザー一覧の取得に失敗しました。</p>
+            ) : showDirectory ? (
+              <section className={styles.recent} aria-labelledby="users-list-heading">
+                <h2 id="users-list-heading" className={styles.sectionHeading}>
+                  {directoryMode === 'newest'
+                    ? '新着のユーザー'
+                    : directoryMode === 'legacy' && directoryPage <= 1
+                      ? 'ユーザー一覧'
+                      : `ユーザー一覧（${directoryPage}ページ目）`}
                 </h2>
-                <UserList users={recentUsers} />
+                {directoryUsers.length === 0 ? (
+                  <p className={styles.empty}>
+                    {directoryMode === 'newest'
+                      ? '公開中のユーザーはまだいません。'
+                      : 'このページの公開プロフィールはありません。'}
+                  </p>
+                ) : (
+                  <UserList users={directoryUsers} />
+                )}
+                {directoryMode === 'newest' && directoryPageCount > 0 ? (
+                  <p className={styles.hint}>
+                    <Link href="/users?page=1">固定一覧の1ページ目へ</Link>
+                  </p>
+                ) : null}
+                {directoryMode === 'fixed' || directoryMode === 'legacy' ? (
+                  <UsersPagination
+                    page={directoryPage}
+                    pageCount={directoryPageCount}
+                    pageNumbers={crawlPages}
+                    hrefForPage={(page) =>
+                      directoryMode === 'legacy' ? usersPageHref(page) : `/users?page=${page}`
+                    }
+                  />
+                ) : null}
               </section>
             ) : null}
           </>

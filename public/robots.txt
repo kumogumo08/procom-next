@@ -7,3 +7,4 @@ Host: https://procom.jp
 
 # Sitemaps
 Sitemap: https://procom.jp/sitemap.xml
+Sitemap: https://procom.jp/sitemaps

@@ -1,35 +1,61 @@
 // app/api/oshi/[uid]/route.ts
 export const runtime = 'nodejs';
+export const dynamic = 'force-dynamic';
 
 import { NextRequest, NextResponse } from 'next/server';
 import { initializeFirebaseAdmin } from '@/lib/firebase';
-import { getFirestore } from 'firebase-admin/firestore';
+import {
+  commitOshi,
+  isSafeProfileUid,
+  readOshiState,
+  resolveOshiActor,
+  visitorCookieOptions,
+} from '@/lib/oshiDaily';
 
 initializeFirebaseAdmin();
-const db = getFirestore();
+
+function oshiJson(body: unknown, status: number, issueVisitorId: string | null) {
+  const res = NextResponse.json(body, { status });
+  res.headers.set('Cache-Control', 'private, no-store');
+  if (issueVisitorId) {
+    const options = visitorCookieOptions();
+    res.cookies.set({
+      ...options,
+      value: issueVisitorId,
+    });
+  }
+  return res;
+}
 
 export async function POST(
   req: NextRequest,
   context: { params: Promise<{ uid: string }> }
 ) {
   const { uid } = await context.params;
-  if (!uid) {
-    return NextResponse.json({ error: 'Missing UID' }, { status: 400 });
+  if (!uid || !isSafeProfileUid(uid)) {
+    return oshiJson({ success: false, error: 'Missing UID' }, 400, null);
   }
 
-  const userRef = db.collection('users').doc(uid);
-
+  let issueVisitorId: string | null = null;
   try {
-    await db.runTransaction(async (tx) => {
-      const doc = await tx.get(userRef);
-      const prev = doc.exists ? doc.data()?.oshiCount ?? 0 : 0;
-      tx.set(userRef, { oshiCount: prev + 1 }, { merge: true });
-    });
-
-    return NextResponse.json({ success: true });
+    const actor = await resolveOshiActor(req);
+    issueVisitorId = actor.issueVisitorId;
+    const result = await commitOshi(uid, actor.actorKey);
+    if (!result.ok) {
+      return oshiJson(
+        { success: false, reason: result.reason, todayCount: result.todayCount },
+        429,
+        issueVisitorId
+      );
+    }
+    return oshiJson(
+      { success: true, todayCount: result.todayCount, totalCount: result.totalCount },
+      200,
+      issueVisitorId
+    );
   } catch (error) {
-    console.error('POST Error:', error);
-    return NextResponse.json({ success: false, error: String(error) }, { status: 500 });
+    console.error('POST oshi error:', error);
+    return oshiJson({ success: false, error: 'server_error' }, 500, issueVisitorId);
   }
 }
 
@@ -38,16 +64,22 @@ export async function GET(
   context: { params: Promise<{ uid: string }> }
 ) {
   const { uid } = await context.params;
-  if (!uid) {
-    return NextResponse.json({ error: 'Missing UID' }, { status: 400 });
+  if (!uid || !isSafeProfileUid(uid)) {
+    return oshiJson({ error: 'Missing UID' }, 400, null);
   }
 
+  let issueVisitorId: string | null = null;
   try {
-    const doc = await db.collection('users').doc(uid).get();
-    const count = doc.exists ? doc.data()?.oshiCount ?? 0 : 0;
-    return NextResponse.json({ oshiCount: count });
+    const actor = await resolveOshiActor(req);
+    issueVisitorId = actor.issueVisitorId;
+    const { oshiCount, todayCount } = await readOshiState(uid, actor.actorKey);
+    return oshiJson(
+      { oshiCount, todayCount, totalCount: oshiCount },
+      200,
+      issueVisitorId
+    );
   } catch (error) {
-    console.error('GET Error:', error);
-    return NextResponse.json({ error: String(error) }, { status: 500 });
+    console.error('GET oshi error:', error);
+    return oshiJson({ error: 'server_error' }, 500, issueVisitorId);
   }
 }

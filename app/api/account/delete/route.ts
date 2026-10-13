@@ -1,6 +1,7 @@
 // ファイル: app/api/account/delete/route.ts
 import { NextRequest, NextResponse } from 'next/server';
 import { db, bucket } from '@/lib/firebase';
+import { noteUserListing } from '@/lib/listing/firestoreListing';
 import { getSessionUID } from '@/lib/session';
 
 export async function DELETE(req: NextRequest) {
@@ -12,6 +13,7 @@ export async function DELETE(req: NextRequest) {
   try {
     // Firestoreのユーザーデータ削除
     await db.collection('users').doc(uid).delete();
+    await noteUserListing(uid);
 
     // Firebase Storageの写真も削除
     const [files] = await bucket.getFiles({ prefix: `photos/${uid}` });

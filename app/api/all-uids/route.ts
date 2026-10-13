@@ -30,10 +30,13 @@ export async function GET(req: NextRequest) {
   }
 
   if (!allowed) {
-    return NextResponse.json({ error: 'unauthorized' }, { status: 401 });
+    return NextResponse.json(
+      { error: 'unauthorized' },
+      { status: 401, headers: { 'Cache-Control': 'private, no-store' } }
+    );
   }
 
   const snapshot = await db.collection('users').get();
   const uids = snapshot.docs.map((doc) => doc.id);
-  return NextResponse.json({ uids });
+  return NextResponse.json({ uids }, { headers: { 'Cache-Control': 'private, no-store' } });
 }

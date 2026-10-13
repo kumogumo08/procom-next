@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import bcrypt from 'bcryptjs';
 import { admin } from '@/lib/firebase';
+import { noteUserListing } from '@/lib/listing/firestoreListing';
 import { setSessionCookie } from '@/lib/session';
 
 function isValidPassword(password: string): boolean {
@@ -107,6 +108,8 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
       calendarEvents: [],
     },
   });
+
+  await noteUserListing(uid);
 
   // セッション & レスポンス
   const redirectTo = `/user/${uid}`;

@@ -11,6 +11,7 @@ import { sessionOptions } from '@/lib/session';
 import type { SessionData } from '@/lib/session-types';
 import admin from 'firebase-admin';
 import { normalizeInstagramUrl } from '@/lib/sns';
+import { noteUserListing } from '@/lib/listing/firestoreListing';
 import {
   coerceAppsFromFirestore,
   sanitizeAppsArray,
@@ -359,6 +360,7 @@ export async function POST(req: NextRequest, props: { params: Promise<{ uid: str
     }
 
     await userRef.set({ profile: cleanedProfile }, { merge: true });
+    await noteUserListing(uid);
     return NextResponse.json({ message: 'User profile updated', apps: appsForSave });
   } catch (err) {
     const message = err instanceof Error ? err.message : String(err);
@@ -411,6 +413,7 @@ export async function PATCH(req: NextRequest) {
 
     const userRef = db.collection('users').doc(uid);
     await userRef.set(updates, { merge: true });
+    await noteUserListing(uid);
 
     return NextResponse.json({ message: 'プロフィールの一部を更新しました' });
   } catch (err) {

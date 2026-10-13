@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/firebase';
+import { noteUserListing } from '@/lib/listing/firestoreListing';
 import { getSessionUID } from '@/lib/session';
 
 /** リポジトリ内に fetch 呼び出し元なし。/api/user/[uid] へ統合済みなら削除候補 */
@@ -40,6 +41,7 @@ export async function POST(req: NextRequest, props: { params: Promise<{ uid: str
       { profile: { photos: data.profile.photos } },
       { merge: true }
     );
+    await noteUserListing(uid);
 
     return NextResponse.json({ message: 'Firebaseに保存しました', uid });
   } catch (error: any) {

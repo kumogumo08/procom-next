@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import bcrypt from 'bcryptjs';
 import { db } from '@/lib/firebase';
+import { noteUserListing } from '@/lib/listing/firestoreListing';
 import { getSessionUID, sessionOptions } from '@/lib/session';
 import { getIronSession } from 'iron-session';
 import type { SessionData } from '@/lib/session-types'; 
@@ -54,6 +55,7 @@ export async function POST(req: NextRequest) {
 
     if (Object.keys(updates).length > 0) {
       await userDocRef.update(updates);
+      if (newUsername) await noteUserListing(uid);
     }
 
     // 🔽 セッションを更新して保存

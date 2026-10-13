@@ -1,70 +1,145 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 
 const MAX_OSHI_PER_DAY = 5;
-const getTodayKey = (uid: string) => {
-  const today = new Date();
-  return `oshi-${uid}-${today.getFullYear()}-${today.getMonth() + 1}-${today.getDate()}`;
+const LIMIT_MESSAGE = '今日の推し活完了！また明日✨';
+
+type OshiResponse = {
+  success?: boolean;
+  reason?: string;
+  todayCount?: number;
+  totalCount?: number;
+  oshiCount?: number;
 };
+
+function readCount(value: unknown): number | null {
+  if (typeof value !== 'number' || !Number.isFinite(value) || value < 0) return null;
+  return Math.floor(value);
+}
 
 export default function OshiButton({ uid }: { uid: string }) {
   const [totalCount, setTotalCount] = useState(0);
   const [todayCount, setTodayCount] = useState(0);
-  const [animate, setAnimate] = useState(false); // 🔹 アニメーション制御用
+  const [ready, setReady] = useState(false);
+  const [posting, setPosting] = useState(false);
+  const [animate, setAnimate] = useState(false);
+  const abortRef = useRef<AbortController | null>(null);
+  const postingRef = useRef(false);
+
+  const applyCounts = useCallback((data: OshiResponse) => {
+    const today = readCount(data.todayCount);
+    if (today !== null) setTodayCount(today);
+    const total = readCount(data.totalCount) ?? readCount(data.oshiCount);
+    if (total !== null) setTotalCount(total);
+  }, []);
+
+  const refreshCounts = useCallback(() => {
+    if (postingRef.current) return;
+    abortRef.current?.abort();
+    const controller = new AbortController();
+    abortRef.current = controller;
+
+    fetch(`/api/oshi/${encodeURIComponent(uid)}`, {
+      cache: 'no-store',
+      signal: controller.signal,
+    })
+      .then((res) => res.json())
+      .then((data: OshiResponse) => {
+        if (controller.signal.aborted || postingRef.current) return;
+        applyCounts(data);
+      })
+      .catch((error: unknown) => {
+        if (error instanceof DOMException && error.name === 'AbortError') return;
+      })
+      .finally(() => {
+        if (!controller.signal.aborted) setReady(true);
+      });
+  }, [applyCounts, uid]);
 
   useEffect(() => {
-    const todayKey = getTodayKey(uid);
-    const today = parseInt(localStorage.getItem(todayKey) || '0', 10);
-    setTodayCount(today);
+    setTotalCount(0);
+    setReady(false);
+    refreshCounts();
+    return () => {
+      abortRef.current?.abort();
+    };
+  }, [refreshCounts]);
 
-    fetch(`/api/oshi/${uid}`)
-      .then(res => res.json())
-      .then(data => {
-        setTotalCount(data.oshiCount ?? 0);
-      });
-  }, [uid]);
+  useEffect(() => {
+    const onPageShow = (event: PageTransitionEvent) => {
+      if (event.persisted) refreshCounts();
+    };
+    const onVisible = () => {
+      if (document.visibilityState === 'visible') refreshCounts();
+    };
+    window.addEventListener('pageshow', onPageShow);
+    document.addEventListener('visibilitychange', onVisible);
+    return () => {
+      window.removeEventListener('pageshow', onPageShow);
+      document.removeEventListener('visibilitychange', onVisible);
+    };
+  }, [refreshCounts]);
+
+  const reached = todayCount >= MAX_OSHI_PER_DAY;
+  const disabled = !ready || posting || reached;
 
   const handleOshi = async () => {
-    const todayKey = getTodayKey(uid);
-    let today = parseInt(localStorage.getItem(todayKey) || '0', 10);
-
-    if (today >= MAX_OSHI_PER_DAY) {
-      alert('今日の推し活完了！また明日✨');
+    if (postingRef.current) return;
+    if (todayCount >= MAX_OSHI_PER_DAY) {
+      alert(LIMIT_MESSAGE);
       return;
     }
 
-    // アニメーション開始
+    postingRef.current = true;
+    setPosting(true);
     setAnimate(true);
+    abortRef.current?.abort();
 
-    // localStorage更新
-    today++;
-    localStorage.setItem(todayKey, String(today));
-    setTodayCount(today);
-
-    // Firestoreへ推し数を加算
-    const res = await fetch(`/api/oshi/${uid}`, { method: 'POST' });
-    if (res.ok) {
-      setTotalCount(prev => prev + 1);
-    } else {
+    try {
+      const res = await fetch(`/api/oshi/${encodeURIComponent(uid)}`, {
+        method: 'POST',
+        cache: 'no-store',
+      });
+      const data = (await res.json().catch(() => ({}))) as OshiResponse;
+      if (res.ok && data.success) {
+        applyCounts(data);
+        return;
+      }
+      if (data.reason === 'daily_limit') {
+        const today = readCount(data.todayCount);
+        setTodayCount(today ?? MAX_OSHI_PER_DAY);
+        alert(LIMIT_MESSAGE);
+        return;
+      }
       alert('推しに失敗しました...');
+    } catch {
+      alert('推しに失敗しました...');
+    } finally {
+      postingRef.current = false;
+      setPosting(false);
     }
   };
 
   return (
     <div className="oshi-container">
       <button
+        type="button"
         className={`oshi-button ${animate ? 'animate' : ''}`}
         onClick={handleOshi}
-        onAnimationEnd={() => setAnimate(false)} // 🔹 終了時にクラス解除
+        onAnimationEnd={() => setAnimate(false)}
+        disabled={disabled}
       >
         ❤️ 推す！
       </button>
-        <p style={{ fontSize: '0.9rem', color: '#666', marginTop: '6px' }}>
-      （1日{MAX_OSHI_PER_DAY}回まで押せます）
-        </p>
+      <p style={{ fontSize: '0.9rem', color: '#666', marginTop: '6px' }}>
+        （1日合計{MAX_OSHI_PER_DAY}回まで押せます）
+      </p>
+      {reached && (
+        <p style={{ fontSize: '0.9rem', color: '#666', marginTop: '6px' }}>{LIMIT_MESSAGE}</p>
+      )}
       <p>✨ 合計推し数：<span>{totalCount}</span></p>
-      <p>📅 今日の推し数：<span>{todayCount}</span> / {MAX_OSHI_PER_DAY}</p>
+      <p>📅 今日使った推し数：<span>{todayCount}</span> / {MAX_OSHI_PER_DAY}</p>
 
       <style jsx>{`
         .oshi-container {
@@ -89,9 +164,15 @@ export default function OshiButton({ uid }: { uid: string }) {
           transition: 0.3s ease;
         }
 
-        .oshi-button:hover {
+        .oshi-button:hover:not(:disabled) {
           opacity: 0.9;
           transform: scale(1.05);
+        }
+
+        .oshi-button:disabled {
+          opacity: 0.55;
+          cursor: not-allowed;
+          transform: none;
         }
 
         .oshi-button.animate {

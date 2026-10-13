@@ -35,43 +35,10 @@ function SpotlightUserThumb({ photoUrl }: { photoUrl: string }) {
 }
 
 /**
- * 「こんな人が使っています」— /api/category-users?category=new&withPhotos=1（画像あり・ランダム最大12件）
+ * 「こんな人が使っています」。画像ありの新着最大12件をサーバーから受け取る。
  */
-export default function TopSpotlightUsers() {
-  const [users, setUsers] = useState<CategoryUser[] | null>(null);
-
-  useEffect(() => {
-    let cancelled = false;
-    (async () => {
-      try {
-        const res = await fetch('/api/category-users?category=new&withPhotos=1', {
-          cache: 'no-store',
-        });
-        const data = (await res.json()) as { users?: CategoryUser[] };
-        const list = Array.isArray(data.users) ? data.users : [];
-        // API 側で絞り込み済み。クライアントでも無効 URL を除外（防御）
-        const usersWithProfileImage = list.filter((user) =>
-          Boolean(resolveFirstPhotoUrl(user.profile?.photos)),
-        );
-        if (!cancelled) setUsers(usersWithProfileImage);
-      } catch {
-        if (!cancelled) setUsers([]);
-      }
-    })();
-    return () => {
-      cancelled = true;
-    };
-  }, []);
-
-  if (users === null) {
-    return (
-      <section className={styles.section} aria-busy="true" aria-label="利用者の一例">
-        <div className={styles.inner}>
-          <p className={styles.muted}>読み込み中…</p>
-        </div>
-      </section>
-    );
-  }
+export default function TopSpotlightUsers({ initialUsers = [] }: { initialUsers?: CategoryUser[] }) {
+  const [users] = useState<CategoryUser[]>(initialUsers);
 
   if (users.length === 0) {
     return null;

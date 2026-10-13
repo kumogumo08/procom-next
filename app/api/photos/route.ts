@@ -1,6 +1,7 @@
 // app/api/photos/route.ts
 import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/firebase-admin';
+import { noteUserListing } from '@/lib/listing/firestoreListing';
 import { getSessionUID } from '@/lib/session';
 
 /** レガシー互換。呼び出し元が無い場合は削除可（PhotoSlider 等は /api/uploadPhotos + /api/user/[uid] を使用） */
@@ -50,6 +51,7 @@ export async function POST(req: NextRequest) {
       },
       { merge: true }
     );
+    await noteUserListing(uid);
 
     return NextResponse.json({ message: '✅ Firestoreに保存されました' });
   } catch (err: unknown) {

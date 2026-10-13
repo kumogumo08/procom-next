@@ -57,7 +57,10 @@ function countRegisteredLinks(profile: Record<string, unknown>): number {
 export async function GET() {
   const session = await getSessionServer();
   if (!isAdmin(session?.uid)) {
-    return NextResponse.json({ error: 'unauthorized' }, { status: 403 });
+    return NextResponse.json(
+      { error: 'unauthorized' },
+      { status: 403, headers: { 'Cache-Control': 'private, no-store' } }
+    );
   }
 
   try {
@@ -101,9 +104,12 @@ export async function GET() {
       return 0;
     });
 
-    return NextResponse.json({ users }, { status: 200 });
+    return NextResponse.json({ users }, { status: 200, headers: { 'Cache-Control': 'private, no-store' } });
   } catch (error) {
     console.error('GET /api/admin/users error:', error);
-    return NextResponse.json({ error: 'Failed to fetch users' }, { status: 500 });
+    return NextResponse.json(
+      { error: 'Failed to fetch users' },
+      { status: 500, headers: { 'Cache-Control': 'private, no-store' } }
+    );
   }
 }

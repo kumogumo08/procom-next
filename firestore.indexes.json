@@ -1,0 +1,21 @@
+{
+  "indexes": [
+    {
+      "collectionGroup": "publicProfiles",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "hasPhoto", "order": "ASCENDING" },
+        { "fieldPath": "sortAtMs", "order": "DESCENDING" }
+      ]
+    },
+    {
+      "collectionGroup": "publicProfiles",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "categorySlugs", "arrayConfig": "CONTAINS" },
+        { "fieldPath": "sortAtMs", "order": "DESCENDING" }
+      ]
+    }
+  ],
+  "fieldOverrides": []
+}

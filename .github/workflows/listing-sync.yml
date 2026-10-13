@@ -1,0 +1,41 @@
+name: listing-sync
+
+# 定期実行は、リポジトリ Variables の LISTING_SYNC_ENABLED が true になるまで HTTP を呼ばない。
+# 有効化は移行完了後。手順はリポジトリの移行報告を参照。
+on:
+  schedule:
+    - cron: '*/5 * * * *'
+  workflow_dispatch:
+    inputs:
+      confirm:
+        description: run と入力したときだけ手動実行する
+        required: true
+        type: string
+
+concurrency:
+  group: listing-sync
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  sync:
+    if: vars.LISTING_SYNC_ENABLED == 'true' && (github.event_name == 'schedule' || github.event.inputs.confirm == 'run')
+    runs-on: ubuntu-latest
+    timeout-minutes: 2
+    steps:
+      - name: Call listing sync
+        env:
+          LISTING_SYNC_SECRET: ${{ secrets.LISTING_SYNC_SECRET }}
+        run: |
+          set -euo pipefail
+          if [ -z "${LISTING_SYNC_SECRET:-}" ]; then
+            echo "LISTING_SYNC_SECRET is not set"
+            exit 1
+          fi
+          status="$(curl --silent --show-error --output /dev/null --write-out "%{http_code}" --request POST --header "Authorization: Bearer ${LISTING_SYNC_SECRET}" --max-time 60 "https://procom.jp/api/internal/listing-sync")"
+          echo "HTTP ${status}"
+          if [ "${status}" -lt 200 ] || [ "${status}" -ge 300 ]; then
+            exit 1
+          fi

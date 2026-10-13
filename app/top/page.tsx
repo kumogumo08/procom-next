@@ -5,6 +5,10 @@ import Link from 'next/link';
 import Footer from '@/components/Footer';
 import NewsList from '@/components/NewsList';
 import TopSpotlightUsers from '@/components/TopSpotlightUsers';
+import type { CategoryUser } from '@/components/TopCategoryUserCards';
+import { getPhotoNewestListed } from '@/lib/listing/firestoreListing';
+import { getLegacyDirectory } from '@/lib/listing/legacyDirectory';
+import { isListingDirectoryReady } from '@/lib/listing/readiness';
 import TopLandingBento from './TopLandingBento';
 import TopLandingHero from './TopLandingHero';
 
@@ -41,14 +45,46 @@ export const metadata = {
   },
 };
 
-export default function TopPage() {
+export const revalidate = 60;
+
+export default async function TopPage() {
+  let initialUsers: CategoryUser[] = [];
+  try {
+    if (!isListingDirectoryReady()) {
+      const rows = await getLegacyDirectory();
+      initialUsers = rows
+        .filter((row) => row.photoUrl.length > 0)
+        .slice(0, 12)
+        .map((row) => ({
+          uid: row.uid,
+          profile: {
+            name: row.name,
+            title: row.title,
+            photos: [{ url: row.photoUrl }],
+          },
+        }));
+    } else {
+      const cards = await getPhotoNewestListed();
+      initialUsers = cards.map((card) => ({
+        uid: card.uid,
+        profile: {
+          name: card.name,
+          title: card.title,
+          photos: card.photoUrl ? [{ url: card.photoUrl }] : [],
+        },
+      }));
+    }
+  } catch (err) {
+    console.error('spotlight listing failed:', err);
+  }
+
   return (
     <main className={styles.page}>
       <div className={`${styles.heroStrip} ${styles.topHeroBackground}`}>
         <TopLandingHero />
       </div>
 
-      <TopSpotlightUsers />
+      <TopSpotlightUsers initialUsers={initialUsers} />
 
       <section className={styles.aboutSection} aria-labelledby="about-heading">
         <div className={styles.aboutInner}>

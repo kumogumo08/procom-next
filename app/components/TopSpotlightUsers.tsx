@@ -1,9 +1,9 @@
 'use client';
 
 import Link from 'next/link';
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 
-import { resolveFirstPhotoUrl, type CategoryUser } from '@/components/TopCategoryUserCards';
+import { selectSpotlight, spotlightProfileHref, type SpotlightCandidate } from '@/lib/listing/spotlight';
 import styles from './TopSpotlight.module.css';
 
 function SpotlightUserThumb({ photoUrl }: { photoUrl: string }) {
@@ -35,12 +35,32 @@ function SpotlightUserThumb({ photoUrl }: { photoUrl: string }) {
 }
 
 /**
- * 「こんな人が使っています」。画像ありの新着最大12件をサーバーから受け取る。
+ * 「こんな人が使っています」。
+ * 初期表示はサーバーが時間単位で固定した12人。マウント後に同じ候補から一度だけ抽選し直す。
  */
-export default function TopSpotlightUsers({ initialUsers = [] }: { initialUsers?: CategoryUser[] }) {
-  const [users] = useState<CategoryUser[]>(initialUsers);
+export default function TopSpotlightUsers({
+  initialUsers,
+  featuredUid,
+  pool,
+  sampledAt,
+}: {
+  initialUsers: SpotlightCandidate[];
+  featuredUid: string | null;
+  pool: SpotlightCandidate[];
+  sampledAt: number;
+}) {
+  const [view, setView] = useState({ users: initialUsers, featuredUid });
+  const rolled = useRef(false);
 
-  if (users.length === 0) {
+  useEffect(() => {
+    if (rolled.current) return;
+    rolled.current = true;
+    const pick = selectSpotlight(pool, sampledAt, Math.random);
+    if (pick.users.length === 0) return;
+    setView({ users: pick.users, featuredUid: pick.featuredUid });
+  }, [pool, sampledAt]);
+
+  if (view.users.length === 0) {
     return null;
   }
 
@@ -51,15 +71,15 @@ export default function TopSpotlightUsers({ initialUsers = [] }: { initialUsers?
         <h2 className={styles.title}>こんな人が使っています</h2>
         <p className={styles.lead}>横にスワイプして、プロフィールをのぞいてみてください。</p>
         <div className={styles.track}>
-          {users.map(({ uid, profile }, index) => {
-            const name = profile?.name?.trim() || 'ユーザー';
-            const title = profile?.title?.trim() || '';
-            const photoUrl = resolveFirstPhotoUrl(profile?.photos);
-            const featured = index === 0;
+          {view.users.map((user) => {
+            const name = user.name.trim() || 'ユーザー';
+            const title = user.title.trim();
+            const photoUrl = user.photoUrl;
+            const featured = user.uid === view.featuredUid;
             return (
               <Link
-                key={uid}
-                href={`/user/${uid}`}
+                key={user.uid}
+                href={spotlightProfileHref(user.uid)}
                 className={`${styles.card} ${featured ? styles.cardFeatured : styles.cardStandard}`}
               >
                 <div className={styles.thumbWrap}>

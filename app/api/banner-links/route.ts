@@ -5,6 +5,8 @@ import { getFirestore } from 'firebase-admin/firestore';
 import { getStorage } from 'firebase-admin/storage';
 import { verifySessionFromRequest } from '@/lib/session';
 import { initializeFirebaseAdmin } from '@/lib/firebase';
+import { noteUserListing } from '@/lib/listing/firestoreListing';
+import { nextContentStamp } from '@/lib/profileContent';
 
 export const runtime = 'nodejs'; // ✅ Edge Runtime対策
 
@@ -51,19 +53,21 @@ export async function POST(req: NextRequest) {
   const existingProfile = existing.profile || {};
   const existingSettings = existingProfile.settings || {};
 
-  await profileRef.set(
-    {
-      profile: {
-        ...existingProfile,
-        bannerLinks,
-        settings: {
-          ...existingSettings,
-          showBanners: showBanners ?? true, // ✅ 上書き or デフォルトtrue
-        },
-      },
+  const nextProfile = {
+    ...existingProfile,
+    bannerLinks,
+    settings: {
+      ...existingSettings,
+      showBanners: showBanners ?? true,
     },
-    { merge: true }
-  );
+  };
+  const stamp = nextContentStamp(existingProfile, nextProfile);
+  if (stamp != null) {
+    (nextProfile as { contentUpdatedAtMs?: number }).contentUpdatedAtMs = stamp;
+  }
+
+  await profileRef.set({ profile: nextProfile }, { merge: true });
+  if (stamp != null) await noteUserListing(session.uid);
 
   return NextResponse.json({ success: true });
 }

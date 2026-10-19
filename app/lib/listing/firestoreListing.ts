@@ -5,6 +5,7 @@ import { unstable_cache } from 'next/cache';
 import type { DocumentData } from 'firebase-admin/firestore';
 
 import { db } from '@/lib/firebase-admin';
+import { positiveMillis, readContentUpdatedAtMs } from '@/lib/profileContent';
 import { createdAtToMillis } from '@/lib/publicUserDirectory';
 import { isProfilePublic } from '@/lib/userSeo';
 
@@ -62,6 +63,7 @@ export function fieldsFromUserData(data: Record<string, unknown> | undefined): L
     sortAtMs,
     missingCreatedAt: createdAtToMillis(data?.createdAt) == null,
     hasPhoto: photoUrl.length > 0,
+    contentUpdatedAtMs: readContentUpdatedAtMs(profile),
     searchTokens: searchTokensFor(name, title),
     categorySlugs: categorySlugsForTitle(title),
   };
@@ -80,6 +82,7 @@ function profileFromDoc(uid: string, data: DocumentData | undefined): StoredProf
     sortAtMs: typeof data.sortAtMs === 'number' ? data.sortAtMs : 0,
     missingCreatedAt: data.missingCreatedAt === true,
     hasPhoto: data.hasPhoto === true,
+    contentUpdatedAtMs: positiveMillis(data.contentUpdatedAtMs),
     searchTokens: Array.isArray(data.searchTokens) ? data.searchTokens.filter((t) => typeof t === 'string') : [],
     categorySlugs: Array.isArray(data.categorySlugs) ? data.categorySlugs.filter((t) => typeof t === 'string') : [],
     seq: typeof data.seq === 'number' ? data.seq : null,

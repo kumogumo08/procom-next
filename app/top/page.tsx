@@ -5,10 +5,14 @@ import Link from 'next/link';
 import Footer from '@/components/Footer';
 import NewsList from '@/components/NewsList';
 import TopSpotlightUsers from '@/components/TopSpotlightUsers';
-import type { CategoryUser } from '@/components/TopCategoryUserCards';
-import { getPhotoNewestListed } from '@/lib/listing/firestoreListing';
-import { getLegacyDirectory } from '@/lib/listing/legacyDirectory';
-import { isListingDirectoryReady } from '@/lib/listing/readiness';
+import {
+  buildSpotlightPool,
+  mulberry32,
+  selectSpotlight,
+  spotlightHourSeed,
+  type SpotlightCandidate,
+} from '@/lib/listing/spotlight';
+import { getSpotlightSource } from '@/lib/listing/spotlightSource';
 import TopLandingBento from './TopLandingBento';
 import TopLandingHero from './TopLandingHero';
 
@@ -48,32 +52,18 @@ export const metadata = {
 export const revalidate = 60;
 
 export default async function TopPage() {
-  let initialUsers: CategoryUser[] = [];
+  let pool: SpotlightCandidate[] = [];
+  let initialUsers: SpotlightCandidate[] = [];
+  let featuredUid: string | null = null;
+  let sampledAt = 0;
   try {
-    if (!isListingDirectoryReady()) {
-      const rows = await getLegacyDirectory();
-      initialUsers = rows
-        .filter((row) => row.photoUrl.length > 0)
-        .slice(0, 12)
-        .map((row) => ({
-          uid: row.uid,
-          profile: {
-            name: row.name,
-            title: row.title,
-            photos: [{ url: row.photoUrl }],
-          },
-        }));
-    } else {
-      const cards = await getPhotoNewestListed();
-      initialUsers = cards.map((card) => ({
-        uid: card.uid,
-        profile: {
-          name: card.name,
-          title: card.title,
-          photos: card.photoUrl ? [{ url: card.photoUrl }] : [],
-        },
-      }));
-    }
+    const source = await getSpotlightSource();
+    sampledAt = Date.now();
+    const seed = spotlightHourSeed(sampledAt);
+    pool = buildSpotlightPool(source, sampledAt, mulberry32(seed));
+    const initial = selectSpotlight(pool, sampledAt, mulberry32(seed + 1));
+    initialUsers = initial.users;
+    featuredUid = initial.featuredUid;
   } catch (err) {
     console.error('spotlight listing failed:', err);
   }
@@ -84,7 +74,12 @@ export default async function TopPage() {
         <TopLandingHero />
       </div>
 
-      <TopSpotlightUsers initialUsers={initialUsers} />
+      <TopSpotlightUsers
+        initialUsers={initialUsers}
+        featuredUid={featuredUid}
+        pool={pool}
+        sampledAt={sampledAt}
+      />
 
       <section className={styles.aboutSection} aria-labelledby="about-heading">
         <div className={styles.aboutInner}>

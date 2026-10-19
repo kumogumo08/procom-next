@@ -12,6 +12,7 @@ import type { SessionData } from '@/lib/session-types';
 import admin from 'firebase-admin';
 import { normalizeInstagramUrl } from '@/lib/sns';
 import { noteUserListing } from '@/lib/listing/firestoreListing';
+import { nextContentStamp, readContentUpdatedAtMs } from '@/lib/profileContent';
 import {
   coerceAppsFromFirestore,
   sanitizeAppsArray,
@@ -354,6 +355,10 @@ export async function POST(req: NextRequest, props: { params: Promise<{ uid: str
     });
 
     cleanedProfile.apps = appsForSave;
+    const stamp = nextContentStamp(existingProfile, cleanedProfile);
+    const existingStamp = readContentUpdatedAtMs(existingProfile);
+    if (stamp != null) cleanedProfile.contentUpdatedAtMs = stamp;
+    else if (existingStamp != null) cleanedProfile.contentUpdatedAtMs = existingStamp;
 
     if (process.env.NODE_ENV !== 'production') {
       console.log('[user POST] cleanedProfile.apps.length before Firestore', appsForSave.length);
@@ -412,6 +417,14 @@ export async function PATCH(req: NextRequest) {
     }
 
     const userRef = db.collection('users').doc(uid);
+    const existingSnap = await userRef.get();
+    const existingProfile =
+      existingSnap.exists && existingSnap.data()?.profile && typeof existingSnap.data()?.profile === 'object'
+        ? (existingSnap.data()?.profile as Record<string, unknown>)
+        : {};
+    const afterProfile: Record<string, unknown> = { ...existingProfile, ...updates.profile };
+    const stamp = nextContentStamp(existingProfile, afterProfile);
+    if (stamp != null) updates.profile.contentUpdatedAtMs = stamp;
     await userRef.set(updates, { merge: true });
     await noteUserListing(uid);
 

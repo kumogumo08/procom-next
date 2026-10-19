@@ -26,6 +26,7 @@ import {
 } from '@/lib/listing/migrate';
 import { categorySlugsForTitle, searchTokensFor } from '@/lib/listing/searchText';
 import { LEGACY_SCAN_LIMIT } from '@/lib/listing/readiness';
+import { positiveMillis, readContentUpdatedAtMs } from '@/lib/profileContent';
 import { createdAtToMillis } from '@/lib/publicUserDirectory';
 import { isProfilePublic } from '@/lib/userSeo';
 
@@ -63,6 +64,7 @@ function fieldsFromUser(data: admin.firestore.DocumentData | undefined): Listing
     sortAtMs: createdAtMs ?? 0,
     missingCreatedAt: createdAtMs == null,
     hasPhoto: photoUrl.length > 0,
+    contentUpdatedAtMs: readContentUpdatedAtMs(profile),
     searchTokens: searchTokensFor(name, title),
     categorySlugs: categorySlugsForTitle(title),
   };
@@ -79,6 +81,7 @@ function profileFromData(uid: string, data: admin.firestore.DocumentData | undef
     sortAtMs: typeof data.sortAtMs === 'number' ? data.sortAtMs : 0,
     missingCreatedAt: data.missingCreatedAt === true,
     hasPhoto: data.hasPhoto === true,
+    contentUpdatedAtMs: positiveMillis(data.contentUpdatedAtMs),
     searchTokens: Array.isArray(data.searchTokens) ? data.searchTokens.filter((item) => typeof item === 'string') : [],
     categorySlugs: Array.isArray(data.categorySlugs)
       ? data.categorySlugs.filter((item) => typeof item === 'string')

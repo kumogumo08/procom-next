@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import bcrypt from 'bcryptjs';
 import { db } from '@/lib/firebase';
 import { noteUserListing } from '@/lib/listing/firestoreListing';
+import { nextContentStamp } from '@/lib/profileContent';
 import { getSessionUID, sessionOptions } from '@/lib/session';
 import { getIronSession } from 'iron-session';
 import type { SessionData } from '@/lib/session-types'; 
@@ -25,6 +26,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'ユーザーが見つかりませんでした' }, { status: 404 });
     }
 
+    const currentProfile = userDoc.data()?.profile;
     const updates: Record<string, any> = {};
     if (newUsername) updates['profile.name'] = newUsername;
     const isValidEmail = (email: string) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
@@ -54,6 +56,17 @@ export async function POST(req: NextRequest) {
     }
 
     if (Object.keys(updates).length > 0) {
+      const currentName =
+        currentProfile && typeof currentProfile === 'object' && typeof currentProfile.name === 'string'
+          ? currentProfile.name
+          : '';
+      if (typeof newUsername === 'string' && newUsername.trim() && newUsername !== currentName) {
+        const stamp = nextContentStamp(currentProfile, {
+          ...(currentProfile && typeof currentProfile === 'object' ? currentProfile : {}),
+          name: newUsername,
+        });
+        if (stamp != null) updates['profile.contentUpdatedAtMs'] = stamp;
+      }
       await userDocRef.update(updates);
       if (newUsername) await noteUserListing(uid);
     }

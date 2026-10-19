@@ -77,6 +77,7 @@ function sameFields(profile: LiveProfile, fields: ListingFields): boolean {
     'sortAtMs',
     'missingCreatedAt',
     'hasPhoto',
+    'contentUpdatedAtMs',
   ];
   if (keys.some((key) => profile[key] !== fields[key])) return false;
   return (

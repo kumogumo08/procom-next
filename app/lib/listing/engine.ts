@@ -15,6 +15,8 @@ export type ListingFields = {
   sortAtMs: number;
   missingCreatedAt: boolean;
   hasPhoto: boolean;
+  /** 実質的なプロフィール更新。未記録は null。一覧の seq や並びには使わない。 */
+  contentUpdatedAtMs: number | null;
   searchTokens: string[];
   categorySlugs: string[];
 };

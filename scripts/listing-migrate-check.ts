@@ -20,6 +20,7 @@ function fields(name: string): ListingFields {
     sortAtMs: 0,
     missingCreatedAt: true,
     hasPhoto: false,
+    contentUpdatedAtMs: null,
     searchTokens: [],
     categorySlugs: [],
   };

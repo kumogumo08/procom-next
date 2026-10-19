@@ -50,6 +50,7 @@ function fields(name: string, title = ''): ListingFields {
     sortAtMs: 1,
     missingCreatedAt: false,
     hasPhoto: false,
+    contentUpdatedAtMs: null,
     searchTokens: searchTokensFor(name, title),
     categorySlugs: categorySlugsForTitle(title),
   };

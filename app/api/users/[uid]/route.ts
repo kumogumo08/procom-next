@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/firebase';
 import { noteUserListing } from '@/lib/listing/firestoreListing';
+import { nextContentStamp } from '@/lib/profileContent';
 import { getSessionUID } from '@/lib/session';
 
 /** リポジトリ内に fetch 呼び出し元なし。/api/user/[uid] へ統合済みなら削除候補 */
@@ -37,8 +38,21 @@ export async function POST(req: NextRequest, props: { params: Promise<{ uid: str
   }
 
   try {
-    await db.collection('users').doc(uid).set(
-      { profile: { photos: data.profile.photos } },
+    const userRef = db.collection('users').doc(uid);
+    const existingSnap = await userRef.get();
+    const existingProfile =
+      existingSnap.exists && existingSnap.data()?.profile && typeof existingSnap.data()?.profile === 'object'
+        ? (existingSnap.data()?.profile as Record<string, unknown>)
+        : {};
+    const nextPhotos = data.profile.photos;
+    const stamp = nextContentStamp(existingProfile, { ...existingProfile, photos: nextPhotos });
+    await userRef.set(
+      {
+        profile: {
+          photos: nextPhotos,
+          ...(stamp != null ? { contentUpdatedAtMs: stamp } : {}),
+        },
+      },
       { merge: true }
     );
     await noteUserListing(uid);

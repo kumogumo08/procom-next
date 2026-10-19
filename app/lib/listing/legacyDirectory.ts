@@ -3,6 +3,7 @@ import 'server-only';
 import { unstable_cache } from 'next/cache';
 
 import { db } from '@/lib/firebase-admin';
+import { positiveMillis } from '@/lib/profileContent';
 import { compareDirectoryOrder, createdAtToMillis } from '@/lib/publicUserDirectory';
 import { isProfilePublic } from '@/lib/userSeo';
 
@@ -15,6 +16,7 @@ export type LegacyListUser = {
   title: string;
   photoUrl: string;
   createdAtMs: number | null;
+  contentUpdatedAtMs: number | null;
 };
 
 function photoUrlOf(profile: Record<string, unknown>): string {
@@ -29,13 +31,20 @@ function photoUrlOf(profile: Record<string, unknown>): string {
   return '';
 }
 
-async function readLegacyUncached(): Promise<LegacyListUser[]> {
+export async function readLegacyDirectory(): Promise<LegacyListUser[]> {
   const counted = await db.collection('users').count().get();
   const total = counted.data().count;
   assertLegacyScanAllowed(total);
   const snap = await db
     .collection('users')
-    .select('createdAt', 'profile.isPublic', 'profile.name', 'profile.title', 'profile.photos')
+    .select(
+      'createdAt',
+      'profile.isPublic',
+      'profile.name',
+      'profile.title',
+      'profile.photos',
+      'profile.contentUpdatedAtMs'
+    )
     .get();
   const rows: LegacyListUser[] = [];
   for (const doc of snap.docs) {
@@ -49,6 +58,7 @@ async function readLegacyUncached(): Promise<LegacyListUser[]> {
       title: typeof profile.title === 'string' ? profile.title : '',
       photoUrl: photoUrlOf(profile),
       createdAtMs: createdAtToMillis(data.createdAt),
+      contentUpdatedAtMs: positiveMillis(profile.contentUpdatedAtMs),
     });
   }
   rows.sort((a, b) => compareDirectoryOrder(a, b));
@@ -56,7 +66,7 @@ async function readLegacyUncached(): Promise<LegacyListUser[]> {
 }
 
 /** 移行完了前だけ使う。500人を超えたら拒否する。 */
-export const getLegacyDirectory = unstable_cache(readLegacyUncached, ['legacy-directory-v1'], {
+export const getLegacyDirectory = unstable_cache(readLegacyDirectory, ['legacy-directory-v2'], {
   revalidate: 60,
 });
 

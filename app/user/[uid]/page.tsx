@@ -143,7 +143,6 @@ export default async function UserPage({
         src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"
         strategy="afterInteractive"
       />
-      <Script src="https://www.tiktok.com/embed.js" strategy="afterInteractive" />
       <Script src="https://platform.twitter.com/widgets.js" strategy="afterInteractive" />
     </>
   );

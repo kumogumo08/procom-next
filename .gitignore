@@ -42,3 +42,9 @@ next-env.d.ts
 
 user_data/
 firebase-key.json
+
+# Firebase Emulator logs
+firebase-debug.log
+firestore-debug.log
+ui-debug.log
+database-debug.log

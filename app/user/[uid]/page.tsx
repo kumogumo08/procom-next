@@ -25,6 +25,7 @@ import type { JSX } from 'react';
 import type { Metadata } from 'next';
 import UserPageSectionsClient from '@/components/UserPageSectionsClient';
 import { clampPhotoPositionY } from '@/lib/photoPosition';
+import { resolveSectionOrder } from '@/lib/blockLayout';
 import { buildProfileDocumentTitle, isProfilePublic } from '@/lib/userSeo';
 
 export async function generateMetadata({
@@ -93,30 +94,10 @@ export default async function UserPage({
     })
     .filter(Boolean) as { url: string; position: number }[];
 
-  const DEFAULT_SECTION_ORDER = [
-    'YouTube',
-    'X',
-    'Instagram',
-    'TikTok',
-    'Facebook',
-    'BannerLinks',
-    'AppProjects',
-    'SNSButtons',
-  ] as const;
-
-  const rawOrder: string[] = profile?.settings?.sectionOrder?.length
-    ? [...profile.settings.sectionOrder]
-    : [...DEFAULT_SECTION_ORDER];
-
-  /** 既存ユーザーに AppProjects が無い場合は SNSButtons の直前に挿入 */
-  const sectionOrder: string[] = (() => {
-    if (rawOrder.includes('AppProjects')) return rawOrder;
-    const snsIdx = rawOrder.indexOf('SNSButtons');
-    if (snsIdx >= 0) {
-      return [...rawOrder.slice(0, snsIdx), 'AppProjects', ...rawOrder.slice(snsIdx)];
-    }
-    return [...rawOrder, 'AppProjects'];
-  })();
+  const sectionOrder = resolveSectionOrder(
+    profile?.settings?.sectionOrder,
+    profile?.settings?.blockLayoutVersion
+  );
 
   const appProjectsInitial = coerceAppsFromFirestore(profile?.apps);
 

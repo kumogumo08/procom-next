@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from 'react';
 import SectionReorderBlock from '@/components/SectionReorderBlock';
+import { resolveSectionOrder } from '@/lib/blockLayout';
 
 declare global {
   interface Window {
@@ -41,6 +42,7 @@ type Profile = {
     showTikTok?: boolean;
     showFacebook?: boolean;
     sectionOrder?: string[];
+    blockLayoutVersion?: number;
   };
   facebookPageUrl?: string;
 };
@@ -52,37 +54,18 @@ type Props = {
   onSectionOrderChange?: (nextOrder: string[]) => void;
 };
 
-const DEFAULT_ORDER = [
-  'YouTube',
-  'X',
-  'Instagram',
-  'TikTok',
-  'Facebook',
-  'BannerLinks',
-  'AppProjects',
-  'SNSButtons',
-];
-
-function ensureAppProjectsInOrder(order: string[]): string[] {
-  if (order.includes('AppProjects')) return order;
-  const snsIdx = order.indexOf('SNSButtons');
-  if (snsIdx >= 0) {
-    return [...order.slice(0, snsIdx), 'AppProjects', ...order.slice(snsIdx)];
-  }
-  return [...order, 'AppProjects'];
-}
-
 const UserPageClient = ({ uid, profile, isEditable, onSectionOrderChange }: Props) => {
   const lastInstagramUrlRef = useRef<string | null>(null);
   const lastFacebookUrlRef = useRef<string | null>(null);
+  const layoutVersion = profile.settings?.blockLayoutVersion;
   const [isReorderMode, setIsReorderMode] = useState(false);
   const [sectionOrder, setSectionOrder] = useState<string[]>(() =>
-    ensureAppProjectsInOrder(profile.settings?.sectionOrder ?? DEFAULT_ORDER)
+    resolveSectionOrder(profile.settings?.sectionOrder, layoutVersion)
   );
   const orderBeforeReorderRef = useRef(sectionOrder);
 
   const startReorder = () => {
-    const current = ensureAppProjectsInOrder(sectionOrder);
+    const current = resolveSectionOrder(sectionOrder, layoutVersion);
     setSectionOrder(current);
     orderBeforeReorderRef.current = current;
     setIsReorderMode(true);
@@ -93,7 +76,7 @@ const UserPageClient = ({ uid, profile, isEditable, onSectionOrderChange }: Prop
   };
 
   const cancelReorder = () => {
-    const original = ensureAppProjectsInOrder(orderBeforeReorderRef.current);
+    const original = resolveSectionOrder(orderBeforeReorderRef.current, layoutVersion);
     setSectionOrder(original);
     onSectionOrderChange?.(original);
     setIsReorderMode(false);

@@ -22,6 +22,7 @@ import {
 } from '@/lib/appProjects';
 import { enrichAppsWithStoreIcons } from '@/lib/appIcons';
 import { clampPhotoPositionY } from '@/lib/photoPosition';
+import { mergeProfileSettings } from '@/lib/blockLayout';
 
 initializeFirebaseAdmin();
 const db = getFirestore();
@@ -348,10 +349,7 @@ export async function POST(req: NextRequest, props: { params: Promise<{ uid: str
       bannerLinks: pickArray(incomingProfile, 'bannerLinks', existingProfile.bannerLinks),
       customLinks: pickArray(incomingProfile, 'customLinks', existingProfile.customLinks),
       emailForContact: pickString(incomingProfile, 'emailForContact', existingProfile.emailForContact),
-      settings: {
-        ...(existingProfile.settings ?? {}),
-        ...(profile.settings ?? {}),
-      },
+      settings: mergeProfileSettings(existingProfile.settings, profile.settings),
     });
 
     cleanedProfile.apps = appsForSave;

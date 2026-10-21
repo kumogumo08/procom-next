@@ -18,6 +18,12 @@ import UserPageClientWrapper from '@/components/UserPageClientWrapper';
 import AppProjectBlock from '@/components/AppProjectBlock';
 import UnsavedChangesLeaveGuard from '@/components/UnsavedChangesLeaveGuard';
 import type { AppProject } from '@/lib/appProjects';
+import {
+  comparableLayoutFields,
+  layoutFieldsForSave,
+  resolveSectionOrder,
+  sectionOrderDraftFromReorder,
+} from '@/lib/blockLayout';
 
 type Photo = { url: string; position?: number };
 
@@ -52,15 +58,9 @@ type Profile = {
     showFacebook?: boolean;
     showBanners?: boolean;
     sectionOrder?: string[];
+    blockLayoutVersion?: number;
   };
 };
-
-function ensureAppProjectsInOrder(order: string[]): string[] {
-  if (order.includes('AppProjects')) return order;
-  const snsIdx = order.indexOf('SNSButtons');
-  if (snsIdx >= 0) return [...order.slice(0, snsIdx), 'AppProjects', ...order.slice(snsIdx)];
-  return [...order, 'AppProjects'];
-}
 
 function isUploadedBannerUrl(url: string | undefined): boolean {
   const trimmed = url?.trim() ?? '';
@@ -96,7 +96,7 @@ function buildDraftSavePayload(
       showTikTok: settings.showTikTok,
       showApps: settings.showApps,
       showBanners: settings.showBanners,
-      sectionOrder: settings.sectionOrder ?? fallbacks.sectionOrder,
+      ...layoutFieldsForSave(settings, fallbacks.sectionOrder),
     },
   };
 
@@ -130,7 +130,7 @@ function normalizePayloadForCompare(payload: Record<string, unknown>) {
       showTikTok: settings.showTikTok ?? SHOW_FLAG_DEFAULT,
       showApps: settings.showApps ?? SHOW_FLAG_DEFAULT,
       showBanners: settings.showBanners ?? SHOW_FLAG_DEFAULT,
-      sectionOrder: settings.sectionOrder,
+      ...comparableLayoutFields(settings),
     },
   };
 }
@@ -171,8 +171,8 @@ export default function UserPageSectionsClient({
   const draftProfileRef = useRef(draftProfile);
   draftProfileRef.current = draftProfile;
 
-  const [sectionOrder, setSectionOrder] = useState<string[]>(
-    ensureAppProjectsInOrder(initialSectionOrder)
+  const [sectionOrder, setSectionOrder] = useState<string[]>(() =>
+    resolveSectionOrder(initialSectionOrder, initialProfile?.settings?.blockLayoutVersion)
   );
   const [apps, setApps] = useState<AppProject[]>(initialApps);
   const [isSaving, setIsSaving] = useState(false);
@@ -196,7 +196,9 @@ export default function UserPageSectionsClient({
 
   const onSectionOrderDraftChange = useCallback(
     (nextOrder: string[]) => {
-      const normalized = ensureAppProjectsInOrder(nextOrder);
+      const version = draftProfileRef.current.settings?.blockLayoutVersion;
+      const normalized = sectionOrderDraftFromReorder(nextOrder, version);
+      if (normalized == null) return;
       setSectionOrder(normalized);
       updateDraftSettings({ sectionOrder: normalized });
     },
@@ -345,8 +347,10 @@ export default function UserPageSectionsClient({
       setProfile(savedProfile);
       setDraftProfile(savedProfile);
       setApps(savedApps);
-      if (savedSettings.sectionOrder) {
-        setSectionOrder(ensureAppProjectsInOrder(savedSettings.sectionOrder));
+      if (Array.isArray(savedSettings.sectionOrder)) {
+        setSectionOrder(
+          resolveSectionOrder(savedSettings.sectionOrder, savedSettings.blockLayoutVersion)
+        );
       }
       setSaveMessageTone('ok');
       setSaveMessage('保存しました');

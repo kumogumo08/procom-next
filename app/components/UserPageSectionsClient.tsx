@@ -17,12 +17,19 @@ import BannerLinksBlock from '@/components/BannerLinksBlock';
 import UserPageClientWrapper from '@/components/UserPageClientWrapper';
 import AppProjectBlock from '@/components/AppProjectBlock';
 import UnsavedChangesLeaveGuard from '@/components/UnsavedChangesLeaveGuard';
-import type { AppProject } from '@/lib/appProjects';
+import { BlockAddControl, BlockDetachControl } from '@/components/BlockPlacementControls';
+import { appProjectsContentEqual, type AppProject } from '@/lib/appProjects';
 import {
+  availableBlocks,
+  BLOCK_LABELS,
+  blockLayoutMode,
   comparableLayoutFields,
+  editBlockPlacement,
+  isKnownBlockType,
   layoutFieldsForSave,
   resolveSectionOrder,
   sectionOrderDraftFromReorder,
+  type BlockPlacementEdit,
 } from '@/lib/blockLayout';
 
 type Photo = { url: string; position?: number };
@@ -176,6 +183,7 @@ export default function UserPageSectionsClient({
   );
   const [apps, setApps] = useState<AppProject[]>(initialApps);
   const [isSaving, setIsSaving] = useState(false);
+  const [formEpoch, setFormEpoch] = useState(0);
   const savingLockRef = useRef(false);
   const [saveMessage, setSaveMessage] = useState<string | null>(null);
   const [saveMessageTone, setSaveMessageTone] = useState<'ok' | 'error'>('ok');
@@ -194,6 +202,28 @@ export default function UserPageSectionsClient({
     }));
   }, []);
 
+  const applyBlockEdit = useCallback(
+    (edit: BlockPlacementEdit) => {
+      const next = editBlockPlacement(draftProfileRef.current.settings, edit);
+      if (!next) return;
+      setSectionOrder(next.sectionOrder);
+      updateDraftSettings({
+        sectionOrder: next.sectionOrder,
+        blockLayoutVersion: next.blockLayoutVersion,
+      });
+    },
+    [updateDraftSettings]
+  );
+
+  const discardDraft = useCallback(() => {
+    setDraftProfile(profile);
+    setApps(Array.isArray(profile.apps) ? profile.apps : initialApps);
+    setSectionOrder(
+      resolveSectionOrder(profile.settings?.sectionOrder, profile.settings?.blockLayoutVersion)
+    );
+    setFormEpoch((current) => current + 1);
+  }, [initialApps, profile]);
+
   const onSectionOrderDraftChange = useCallback(
     (nextOrder: string[]) => {
       const version = draftProfileRef.current.settings?.blockLayoutVersion;
@@ -205,13 +235,23 @@ export default function UserPageSectionsClient({
     [updateDraftSettings]
   );
 
-  const onAppsDraftChange = useCallback(
-    (draft: { apps: AppProject[]; showApps: boolean }) => {
-      updateDraftProfile({ apps: draft.apps });
-      updateDraftSettings({ showApps: draft.showApps });
-    },
-    [updateDraftProfile, updateDraftSettings]
-  );
+  const onAppsDraftChange = useCallback((draft: { apps: AppProject[]; showApps: boolean }) => {
+    setDraftProfile((prev) => {
+      const prevApps = Array.isArray(prev.apps) ? prev.apps : [];
+      const prevShow = prev.settings?.showApps ?? true;
+      if (prevShow === draft.showApps && appProjectsContentEqual(prevApps, draft.apps)) {
+        return prev;
+      }
+      return {
+        ...prev,
+        apps: draft.apps,
+        settings: {
+          ...(prev.settings ?? {}),
+          showApps: draft.showApps,
+        },
+      };
+    });
+  }, []);
 
   const onYouTubeDraftChange = useCallback(
     (draft: {
@@ -399,10 +439,10 @@ export default function UserPageSectionsClient({
           uid={uid}
           isEditable={isEditable}
           hasInitialProfile
-          initialMode={profile?.youtubeMode}
-          initialChannelId={profile?.youtubeChannelId}
-          initialManualUrls={profile?.manualYouTubeUrls}
-          initialShowYouTube={profile?.settings?.showYouTube}
+          initialMode={draftProfile?.youtubeMode}
+          initialChannelId={draftProfile?.youtubeChannelId}
+          initialManualUrls={draftProfile?.manualYouTubeUrls}
+          initialShowYouTube={draftProfile?.settings?.showYouTube}
           onDraftChange={isEditable ? onYouTubeDraftChange : undefined}
         />
       ),
@@ -411,8 +451,8 @@ export default function UserPageSectionsClient({
           uid={uid}
           isEditable={isEditable}
           hasInitialProfile
-          initialUsername={profile?.xUsername}
-          initialShowX={profile?.settings?.showX}
+          initialUsername={draftProfile?.xUsername}
+          initialShowX={draftProfile?.settings?.showX}
           onDraftChange={isEditable ? onXDraftChange : undefined}
         />
       ),
@@ -421,8 +461,8 @@ export default function UserPageSectionsClient({
           uid={uid}
           isEditable={isEditable}
           hasInitialProfile
-          initialInstagramUrl={profile?.instagramPostUrl}
-          initialShowInstagram={profile?.settings?.showInstagram}
+          initialInstagramUrl={draftProfile?.instagramPostUrl}
+          initialShowInstagram={draftProfile?.settings?.showInstagram}
           onDraftChange={isEditable ? onInstagramDraftChange : undefined}
         />
       ),
@@ -431,8 +471,8 @@ export default function UserPageSectionsClient({
           uid={uid}
           isEditable={isEditable}
           hasInitialProfile
-          initialUrls={profile?.tiktokUrls}
-          initialShowTikTok={profile?.settings?.showTikTok}
+          initialUrls={draftProfile?.tiktokUrls}
+          initialShowTikTok={draftProfile?.settings?.showTikTok}
           onDraftChange={isEditable ? onTikTokDraftChange : undefined}
         />
       ),
@@ -441,9 +481,9 @@ export default function UserPageSectionsClient({
           uid={uid}
           isEditable={isEditable}
           hasInitialProfile
-          initialUrl={profile?.facebookUrl}
-          initialFacebookUsername={profile?.facebookUsername}
-          initialShowFacebook={profile?.settings?.showFacebook}
+          initialUrl={draftProfile?.facebookUrl}
+          initialFacebookUsername={draftProfile?.facebookUsername}
+          initialShowFacebook={draftProfile?.settings?.showFacebook}
           onDraftChange={isEditable ? onFacebookDraftChange : undefined}
         />
       ),
@@ -451,14 +491,20 @@ export default function UserPageSectionsClient({
         <BannerLinksBlock
           uid={uid}
           isEditable={isEditable}
+          {...(Array.isArray(draftProfile.bannerLinks)
+            ? {
+                initialBannerLinks: draftProfile.bannerLinks,
+                initialShowBanners: draftProfile.settings?.showBanners,
+              }
+            : {})}
           onDraftChange={isEditable ? onBannerDraftChange : undefined}
         />
       ),
       AppProjects: (
         <AppProjectBlock
           uid={uid}
-          initialApps={apps}
-          initialShowApps={profile?.settings?.showApps}
+          initialApps={Array.isArray(draftProfile.apps) ? draftProfile.apps : apps}
+          initialShowApps={draftProfile?.settings?.showApps}
           isEditable={isEditable}
           onDraftChange={isEditable ? onAppsDraftChange : undefined}
         />
@@ -466,7 +512,7 @@ export default function UserPageSectionsClient({
       SNSButtons: (
         <UserPageClientWrapper
           uid={uid}
-          profile={profile}
+          profile={draftProfile}
           isEditable={isEditable}
           onCustomLinksChange={isEditable ? onCustomLinksDraftChange : undefined}
         />
@@ -483,26 +529,43 @@ export default function UserPageSectionsClient({
       onTikTokDraftChange,
       onXDraftChange,
       onYouTubeDraftChange,
-      profile,
+      draftProfile,
       uid,
     ]
   );
 
   /** Phase1: 常にワンカラム縦積み（PC で隣接セクションを横並びにしない） */
+  const layoutMode = blockLayoutMode(draftProfile.settings?.blockLayoutVersion);
+  const canEditBlocks = isEditable && layoutMode !== 'unsupported';
+
   const renderedSections = useMemo(() => {
     return sectionOrder.map((key) => {
       const node = sectionMap[key];
       if (!node) return null;
+      const label = isKnownBlockType(key) ? BLOCK_LABELS[key] : key;
       return (
-        <div className="user-page-section" key={key}>
-          {node}
+        <div className="user-page-section" key={`${key}-${formEpoch}`}>
+          {canEditBlocks ? (
+            <div className="block-edit-frame">
+              <BlockDetachControl label={label} onDetach={() => applyBlockEdit({ op: 'remove', block: key })} />
+              {node}
+            </div>
+          ) : (
+            node
+          )}
         </div>
       );
     });
-  }, [sectionMap, sectionOrder]);
+  }, [applyBlockEdit, canEditBlocks, formEpoch, sectionMap, sectionOrder]);
 
   return (
-    <div className={isEditable ? 'profile-edit-with-save-bar' : undefined}>
+    <div
+      className={
+        isEditable
+          ? `profile-edit-with-save-bar${showSaveBar ? ' profile-save-bar-open' : ''}`
+          : undefined
+      }
+    >
       {profile?.name && (
         <h2
           style={{
@@ -522,6 +585,7 @@ export default function UserPageSectionsClient({
         <XShareButton uid={uid} name={profile?.name} />
 
         <UserProfileSection
+          key={`profile-${formEpoch}`}
           uid={uid}
           isEditable={isEditable}
           initialProfile={profile}
@@ -530,13 +594,24 @@ export default function UserPageSectionsClient({
         />
 
         <UserPageClient
+          key={`reorder-${formEpoch}`}
           uid={uid}
           profile={profile}
           isEditable={isEditable}
+          layoutOrder={sectionOrder}
+          blockLayoutVersion={draftProfile.settings?.blockLayoutVersion}
+          allowReorder={canEditBlocks}
           onSectionOrderChange={isEditable ? onSectionOrderDraftChange : undefined}
         />
 
         {renderedSections}
+
+        {canEditBlocks ? (
+          <BlockAddControl
+            available={availableBlocks(sectionOrder)}
+            onAdd={(block) => applyBlockEdit({ op: 'add', block })}
+          />
+        ) : null}
 
         <div className="user-page-section">
           <QRCodeBlock uid={uid} initialName={profile?.name} />
@@ -566,6 +641,14 @@ export default function UserPageSectionsClient({
                 }}
               >
                 {isSaving ? '保存中...' : '変更を保存'}
+              </button>
+              <button
+                type="button"
+                className="block-placement-btn"
+                onClick={discardDraft}
+                disabled={isSaving}
+              >
+                変更を破棄
               </button>
             </>
           ) : null}

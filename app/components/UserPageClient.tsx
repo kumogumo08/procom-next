@@ -51,18 +51,38 @@ type Props = {
   uid: string;
   profile: Profile;
   isEditable: boolean;
+  /** 親が解決した表示順。追加・取り外し後の並び替えに使う。 */
+  layoutOrder?: string[];
+  blockLayoutVersion?: number;
+  /** false のとき並び替えを出さない。未指定は従来どおり isEditable に従う。 */
+  allowReorder?: boolean;
   onSectionOrderChange?: (nextOrder: string[]) => void;
 };
 
-const UserPageClient = ({ uid, profile, isEditable, onSectionOrderChange }: Props) => {
+const UserPageClient = ({
+  uid,
+  profile,
+  isEditable,
+  layoutOrder,
+  blockLayoutVersion,
+  allowReorder,
+  onSectionOrderChange,
+}: Props) => {
   const lastInstagramUrlRef = useRef<string | null>(null);
   const lastFacebookUrlRef = useRef<string | null>(null);
-  const layoutVersion = profile.settings?.blockLayoutVersion;
+  const layoutVersion = blockLayoutVersion ?? profile.settings?.blockLayoutVersion;
+  const canReorder = isEditable && allowReorder !== false;
   const [isReorderMode, setIsReorderMode] = useState(false);
   const [sectionOrder, setSectionOrder] = useState<string[]>(() =>
-    resolveSectionOrder(profile.settings?.sectionOrder, layoutVersion)
+    layoutOrder ?? resolveSectionOrder(profile.settings?.sectionOrder, layoutVersion)
   );
   const orderBeforeReorderRef = useRef(sectionOrder);
+
+  useEffect(() => {
+    if (isReorderMode || !layoutOrder) return;
+    setSectionOrder(layoutOrder);
+    orderBeforeReorderRef.current = layoutOrder;
+  }, [isReorderMode, layoutOrder]);
 
   const startReorder = () => {
     const current = resolveSectionOrder(sectionOrder, layoutVersion);
@@ -190,7 +210,7 @@ if (profile.youtubeMode === 'manual') {
   // ✅ 編集モードボタン + 並び替えUI（isEditableのときだけ表示）
   return (
           <>
-      {isEditable && !isReorderMode && (
+      {canReorder && !isReorderMode && (
         <div style={{ textAlign: 'center', margin: '30px 0' }}>
           <button
             onClick={startReorder}
@@ -209,7 +229,7 @@ if (profile.youtubeMode === 'manual') {
         </div>
       )}
 
-      {isEditable && isReorderMode && (
+      {canReorder && isReorderMode && (
         <SectionReorderBlock
           sectionOrder={sectionOrder}
           onChange={(newOrder) => {

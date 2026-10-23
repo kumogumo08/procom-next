@@ -6,6 +6,7 @@ import type { AppProject, AppProjectReleaseStatus } from '@/lib/appProjects';
 import SnsVisibilityToggle from '@/components/SnsVisibilityToggle';
 import SnsHelpTooltip from '@/components/SnsHelpTooltip';
 import {
+  appProjectsContentEqual,
   filterAppsForPublicView,
   isValidAppStoreUrl,
   isValidGooglePlayUrl,
@@ -163,9 +164,12 @@ export default function AppProjectBlock({
   /** 未確定の新規が1件でもあると「＋追加」を抑止する（再描画用） */
   const [hasUnsavedNewApp, setHasUnsavedNewApp] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
+  const appsRef = useRef(apps);
+  appsRef.current = apps;
 
   useEffect(() => {
-    setApps(initialApps.map((a) => ({ ...a })));
+    if (appProjectsContentEqual(appsRef.current, initialApps)) return;
+    setApps(initialApps.map((app) => ({ ...app })));
     pendingNewAppIdsRef.current.clear();
     setHasUnsavedNewApp(false);
     setEditingAppId(null);

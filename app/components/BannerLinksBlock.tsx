@@ -17,10 +17,18 @@ type Banner = {
 type Props = {
   uid: string;
   isEditable: boolean;
+  initialBannerLinks?: Banner[];
+  initialShowBanners?: boolean;
   onDraftChange?: (draft: { bannerLinks: Banner[]; showBanners: boolean }) => void;
 };
 
-export default function BannerLinksBlock({ uid, isEditable, onDraftChange }: Props) {
+export default function BannerLinksBlock({
+  uid,
+  isEditable,
+  initialBannerLinks,
+  initialShowBanners,
+  onDraftChange,
+}: Props) {
   const [banners, setBanners] = useState<Banner[]>([]);
   const [cropIndex, setCropIndex] = useState<number | null>(null);
   const [showBanners, setShowBanners] = useState(true);
@@ -66,6 +74,17 @@ export default function BannerLinksBlock({ uid, isEditable, onDraftChange }: Pro
   useEffect(() => {
     if (!uid) return;
 
+    if (initialBannerLinks) {
+      const padded = [...initialBannerLinks];
+      while (padded.length < 3) {
+        padded.push({ imageUrl: '', linkUrl: '' });
+      }
+      setBanners(padded);
+      setShowBanners(initialShowBanners ?? true);
+      setHasLoadedBanners(true);
+      return;
+    }
+
     const fetchBannerLinks = async () => {
       try {
         const res = await fetch(`/api/banner-links?uid=${encodeURIComponent(uid)}`);
@@ -89,6 +108,8 @@ export default function BannerLinksBlock({ uid, isEditable, onDraftChange }: Pro
     };
 
     fetchBannerLinks();
+    // 初期値はマウント時だけ使う。入力のたびに引き戻さない。
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [uid]);
 
   useEffect(() => {

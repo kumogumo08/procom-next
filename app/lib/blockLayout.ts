@@ -21,6 +21,17 @@ export const BLOCK_TYPES = [
 
 export type BlockType = (typeof BLOCK_TYPES)[number];
 
+export const BLOCK_LABELS: Record<BlockType, string> = {
+  YouTube: 'YouTube',
+  X: 'X（旧Twitter）',
+  Instagram: 'Instagram',
+  TikTok: 'TikTok',
+  Facebook: 'Facebook',
+  BannerLinks: 'リンクバナー',
+  AppProjects: 'アプリ紹介',
+  SNSButtons: 'SNSボタン',
+};
+
 /** 新形式の現在バージョン。旧データには書き込まない。 */
 export const BLOCK_LAYOUT_VERSION = 1;
 
@@ -222,6 +233,10 @@ export function mergeProfileSettings(existing: unknown, incoming: unknown): Reco
     }
   }
 
+  if (merged.blockLayoutVersion === BLOCK_LAYOUT_VERSION && Array.isArray(merged.sectionOrder)) {
+    merged.sectionOrder = uniqueKnownBlocks(merged.sectionOrder);
+  }
+
   return merged;
 }
 
@@ -230,6 +245,34 @@ export function mergeProfileSettings(existing: unknown, incoming: unknown): Reco
  * 旧形式では、切り替えた瞬間の表示順を sectionOrder に固定する。
  * 未対応バージョンは変換しない。保存処理からは呼ばない。
  */
+export type BlockPlacementEdit =
+  | { op: 'add'; block: string }
+  | { op: 'remove'; block: string };
+
+/**
+ * ブロックの追加・取り外し。
+ * 旧形式のときだけ activateBlockLayout で表示順を固定してから操作する。
+ * 未対応バージョンは null。並び替えからは呼ばない。
+ */
+export function editBlockPlacement(
+  settings: { sectionOrder?: unknown; blockLayoutVersion?: unknown } | undefined,
+  edit: BlockPlacementEdit
+): { blockLayoutVersion: typeof BLOCK_LAYOUT_VERSION; sectionOrder: string[] } | null {
+  const version = settings?.blockLayoutVersion;
+  if (blockLayoutMode(version) === 'unsupported') return null;
+  const base =
+    version === BLOCK_LAYOUT_VERSION
+      ? {
+          blockLayoutVersion: BLOCK_LAYOUT_VERSION,
+          sectionOrder: resolveSectionOrder(settings?.sectionOrder, version),
+        }
+      : activateBlockLayout(settings?.sectionOrder, version);
+  if (!base) return null;
+  const sectionOrder =
+    edit.op === 'add' ? addBlock(base.sectionOrder, edit.block) : removeBlock(base.sectionOrder, edit.block);
+  return { blockLayoutVersion: BLOCK_LAYOUT_VERSION, sectionOrder };
+}
+
 export function activateBlockLayout(
   sectionOrder: unknown,
   blockLayoutVersion: unknown

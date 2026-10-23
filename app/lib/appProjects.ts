@@ -37,6 +37,15 @@ export type AppProject = {
 /** 1プロフィールあたりのアプリ掲載上限（クライアント・サーバー共通） */
 export const MAX_APP_PROJECTS_PER_PROFILE = 5;
 
+/** 並びと中身が同じなら true。参照が違うだけのエコーを更新と扱わない。 */
+export function appProjectsContentEqual(a: readonly AppProject[], b: readonly AppProject[]): boolean {
+  if (a.length !== b.length) return false;
+  for (let i = 0; i < a.length; i++) {
+    if (JSON.stringify(a[i]) !== JSON.stringify(b[i])) return false;
+  }
+  return true;
+}
+
 const MAX_SCREENSHOTS = 3;
 const MAX_TITLE = 120;
 

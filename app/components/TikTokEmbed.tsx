@@ -133,9 +133,10 @@ function enqueueUnprocessedTikTokRender(): Promise<void> {
   const run = tiktokRenderQueue.then(async () => {
     const nodes = collectUnprocessedTikTokEmbeds();
     if (nodes.length === 0) return;
-    const render = tiktokEmbedLib()?.render;
-    if (render) {
-      await Promise.resolve(render(nodes));
+    const lib = tiktokEmbedLib();
+    if (typeof lib?.render === 'function') {
+      // メソッドを切り離すと this が外れ、addPreConnectInstruction が落ちる
+      await Promise.resolve(lib.render(nodes));
       return;
     }
     tiktokHostWindow().tiktokEmbedLoad?.();
@@ -158,10 +159,12 @@ async function syncTikTokEmbeds(isCancelled: () => boolean): Promise<void> {
   while (!isCancelled() && Date.now() - started < TIKTOK_SYNC_TIMEOUT_MS) {
     if (collectUnprocessedTikTokEmbeds().length === 0) return;
 
-    if (typeof tiktokEmbedLib()?.render === 'function') {
+    if (typeof tiktokEmbedLib()?.render === 'function' && !tiktokMountInProgress()) {
       // 公式 mount が同じ turn で id を付けるのを先に終わらせる
       await delay(0);
-      if (isCancelled() || collectUnprocessedTikTokEmbeds().length === 0) return;
+      if (isCancelled() || collectUnprocessedTikTokEmbeds().length === 0 || tiktokMountInProgress()) {
+        continue;
+      }
       await enqueueUnprocessedTikTokRender();
       return;
     }
@@ -169,7 +172,7 @@ async function syncTikTokEmbeds(isCancelled: () => boolean): Promise<void> {
     await delay(50);
   }
 
-  if (isCancelled() || collectUnprocessedTikTokEmbeds().length === 0) return;
+  if (isCancelled() || collectUnprocessedTikTokEmbeds().length === 0 || tiktokMountInProgress()) return;
   await enqueueUnprocessedTikTokRender();
 }
 

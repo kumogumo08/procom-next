@@ -7,8 +7,10 @@ import {
   addBlock,
   availableBlocks,
   blockLayoutMode,
+  BLOCK_TYPES,
   comparableLayoutFields,
   DEFAULT_SECTION_ORDER,
+  editBlockPlacement,
   isBlockPlaced,
   layoutFieldsForSave,
   mergeProfileSettings,
@@ -264,5 +266,57 @@ same(
   ['SNSButtons', 'YouTube'],
   '新形式の並び替え結果は補完しない'
 );
+
+const legacySettings = { showYouTube: false, sectionOrder: ['YouTube', 'X'] as string[] };
+assert(editBlockPlacement(undefined, { op: 'remove', block: 'YouTube' })?.blockLayoutVersion === 1, '未設定のプロフィールは追加・削除のときだけ version 1 になる');
+assert(resolveSectionOrder(undefined, undefined).includes('YouTube'), '読み込みだけでは YouTube を外さない');
+const removedYouTube = editBlockPlacement(legacySettings, { op: 'remove', block: 'YouTube' });
+assert(removedYouTube?.blockLayoutVersion === 1, 'ブロックを外すと version 1 になる');
+same(removedYouTube?.sectionOrder, ['X', 'AppProjects'], '外したキーは補完されない');
+assert(legacySettings.showYouTube === false, '取り外し関数は表示フラグを変えない');
+assert(JSON.stringify(content) === contentBefore, '取り外し関数は動画 URL を受け取らない');
+const discarded = legacySettings;
+assert(discarded.sectionOrder.includes('YouTube') && !('blockLayoutVersion' in discarded), '結果を採用しなければ旧形式のまま');
+
+let added = editBlockPlacement({ blockLayoutVersion: 1, sectionOrder: [] }, { op: 'add', block: 'YouTube' });
+for (const block of BLOCK_TYPES) {
+  if (block === 'YouTube') continue;
+  added = editBlockPlacement(added ?? undefined, { op: 'add', block });
+}
+same(added?.sectionOrder, [...BLOCK_TYPES], '空の新形式から8種類を追加できる');
+same(
+  editBlockPlacement(added ?? undefined, { op: 'add', block: 'YouTube' })?.sectionOrder,
+  [...BLOCK_TYPES],
+  '同じ種類は2個にならない'
+);
+const placedAgain = editBlockPlacement(removedYouTube ?? undefined, { op: 'add', block: 'YouTube' });
+assert(placedAgain?.sectionOrder.includes('YouTube') === true, '外したブロックを再追加できる');
+assert(placedAgain?.blockLayoutVersion === 1, '再追加後も version 1');
+
+let cleared = editBlockPlacement({ blockLayoutVersion: 1, sectionOrder: [...BLOCK_TYPES] }, { op: 'remove', block: BLOCK_TYPES[0] });
+for (const block of BLOCK_TYPES.slice(1)) {
+  cleared = editBlockPlacement(cleared ?? undefined, { op: 'remove', block });
+}
+same(cleared?.sectionOrder, [], 'すべてのブロックを外せる');
+same(resolveSectionOrder(cleared?.sectionOrder, 1), [], '保存後の再読込でも外したブロックは戻らない');
+assert(editBlockPlacement({ blockLayoutVersion: 2, sectionOrder: ['YouTube'] }, { op: 'remove', block: 'YouTube' }) === null, '未対応バージョンでは追加・削除しない');
+assert(
+  sectionOrderDraftFromReorder(['X', 'YouTube'], undefined) !== null &&
+    !('blockLayoutVersion' in (legacySettings as object)),
+  '並び替えだけでは version を作らない'
+);
+
+const noisy = mergeProfileSettings(
+  { blockLayoutVersion: 1, sectionOrder: ['YouTube', 'Nope', 'YouTube'], showYouTube: false },
+  { blockLayoutVersion: 1, sectionOrder: ['YouTube', 'Nope', 'YouTube'], showYouTube: false }
+);
+same(noisy.sectionOrder, ['YouTube'], '新形式の保存では重複と不明キーを落とす');
+assert(noisy.showYouTube === false, '検証後も表示フラグは残る');
+const legacyNoisy = mergeProfileSettings(
+  { sectionOrder: ['YouTube', 'YouTube'], showX: true },
+  { sectionOrder: ['YouTube', 'YouTube'], showX: true }
+);
+same(legacyNoisy.sectionOrder, ['YouTube', 'YouTube'], '旧形式の保存では重複を落とさない');
+assert(!('blockLayoutVersion' in legacyNoisy), '旧形式の保存検証で version を足さない');
 
 console.log('block-layout-check ok');

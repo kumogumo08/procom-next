@@ -998,14 +998,25 @@ body {
   margin: 0 auto; /* ✅ 1つだけのとき中央寄せ */
 }
 
-  /* ✅ TikTok：2カラム用に全体を囲う */
+  /* 動画と投稿リンクを1枚のカードにする */
     .tiktok-wrapper {
       display: flex;
-      flex-direction: row;
-      flex-wrap: wrap;
-      gap: 20px;
-      justify-content: center;
-      margin-top: 32px;
+      flex-direction: column;
+      align-items: center;
+      gap: 8px;
+      width: min(325px, 100%);
+      max-width: 325px;
+      flex: 0 1 325px;
+      min-width: 0;
+      margin-top: 0;
+    }
+
+    .tiktok-wrapper > a {
+      display: block;
+      width: 100%;
+      text-align: center;
+      font-size: 14px;
+      line-height: 1.4;
     }
 
 .video-container {
@@ -1059,9 +1070,10 @@ body {
   #tiktok-container {
   display: flex;
   flex-wrap: wrap;
-  gap: 35px;
+  gap: 20px;
   justify-content: center;
-  margin-top: 20px;
+  align-items: flex-start;
+  margin-top: 12px;
 }
 
      .tiktok-input {
@@ -1142,9 +1154,11 @@ body {
   }
   
   .tiktok-grid iframe {
-  flex: 1 1 300px;
-  max-width: 400px;
-  height: 800px; /* TikTok動画に適した高さ */
+  width: 100%;
+  max-width: 325px;
+  height: auto;
+  aspect-ratio: 325 / 578;
+  flex: none;
   border-radius: 12px;
   box-shadow: 0 4px 8px rgba(0,0,0,0.1);
   border: none;

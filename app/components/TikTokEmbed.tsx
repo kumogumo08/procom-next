@@ -205,12 +205,7 @@ export default function TikTokEmbed({
                         title="TikTok動画"
                         allow="fullscreen; encrypted-media; picture-in-picture"
                       />
-                      <a
-                        href={url}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        style={{ flex: '1 1 100%', textAlign: 'center' }}
-                      >
+                      <a href={url} target="_blank" rel="noopener noreferrer">
                         TikTokで投稿を見る
                       </a>
                     </div>

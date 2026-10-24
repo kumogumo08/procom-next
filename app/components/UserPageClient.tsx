@@ -1,8 +1,6 @@
 'use client';
 
-import { useEffect, useRef, useState } from 'react';
-import SectionReorderBlock from '@/components/SectionReorderBlock';
-import { resolveSectionOrder } from '@/lib/blockLayout';
+import { useEffect, useRef } from 'react';
 
 declare global {
   interface Window {
@@ -51,57 +49,15 @@ type Props = {
   uid: string;
   profile: Profile;
   isEditable: boolean;
-  /** 親が解決した表示順。追加・取り外し後の並び替えに使う。 */
-  layoutOrder?: string[];
-  blockLayoutVersion?: number;
-  /** false のとき並び替えを出さない。未指定は従来どおり isEditable に従う。 */
-  allowReorder?: boolean;
-  onSectionOrderChange?: (nextOrder: string[]) => void;
 };
 
 const UserPageClient = ({
   uid,
   profile,
   isEditable,
-  layoutOrder,
-  blockLayoutVersion,
-  allowReorder,
-  onSectionOrderChange,
 }: Props) => {
   const lastInstagramUrlRef = useRef<string | null>(null);
   const lastFacebookUrlRef = useRef<string | null>(null);
-  const layoutVersion = blockLayoutVersion ?? profile.settings?.blockLayoutVersion;
-  const canReorder = isEditable && allowReorder !== false;
-  const [isReorderMode, setIsReorderMode] = useState(false);
-  const [sectionOrder, setSectionOrder] = useState<string[]>(() =>
-    layoutOrder ?? resolveSectionOrder(profile.settings?.sectionOrder, layoutVersion)
-  );
-  const orderBeforeReorderRef = useRef(sectionOrder);
-
-  useEffect(() => {
-    if (isReorderMode || !layoutOrder) return;
-    setSectionOrder(layoutOrder);
-    orderBeforeReorderRef.current = layoutOrder;
-  }, [isReorderMode, layoutOrder]);
-
-  const startReorder = () => {
-    const current = resolveSectionOrder(sectionOrder, layoutVersion);
-    setSectionOrder(current);
-    orderBeforeReorderRef.current = current;
-    setIsReorderMode(true);
-  };
-
-  const completeReorder = () => {
-    setIsReorderMode(false);
-  };
-
-  const cancelReorder = () => {
-    const original = resolveSectionOrder(orderBeforeReorderRef.current, layoutVersion);
-    setSectionOrder(original);
-    onSectionOrderChange?.(original);
-    setIsReorderMode(false);
-  };
-
 
   useEffect(() => {
     if (!uid) return;
@@ -207,41 +163,7 @@ if (profile.youtubeMode === 'manual') {
 
   }, [uid, profile, isEditable]);
 
-  // ✅ 編集モードボタン + 並び替えUI（isEditableのときだけ表示）
-  return (
-          <>
-      {canReorder && !isReorderMode && (
-        <div style={{ textAlign: 'center', margin: '30px 0' }}>
-          <button
-            onClick={startReorder}
-            style={{
-              backgroundColor: '#0070f3',
-              color: '#fff',
-              padding: '10px 20px',
-              fontSize: '1rem',
-              borderRadius: '6px',
-              border: 'none',
-              cursor: 'pointer',
-            }}
-          >
-            📦 並び替えモードを開始
-          </button>
-        </div>
-      )}
-
-      {canReorder && isReorderMode && (
-        <SectionReorderBlock
-          sectionOrder={sectionOrder}
-          onChange={(newOrder) => {
-            setSectionOrder(newOrder);
-            onSectionOrderChange?.(newOrder);
-          }}
-          onComplete={completeReorder}
-          onCancel={cancelReorder}
-        />
-      )}
-    </>
-  );
+  return null;
 };
 
 export default UserPageClient;

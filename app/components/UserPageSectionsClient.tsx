@@ -2,6 +2,25 @@
 
 import type { JSX } from 'react';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import {
+  DndContext,
+  DragOverlay,
+  KeyboardSensor,
+  MouseSensor,
+  TouchSensor,
+  useSensor,
+  useSensors,
+  type CollisionDetection,
+  type DragEndEvent,
+  type DragStartEvent,
+} from '@dnd-kit/core';
+import { restrictToVerticalAxis } from '@dnd-kit/modifiers';
+import {
+  SortableContext,
+  arrayMove,
+  sortableKeyboardCoordinates,
+  type SortingStrategy,
+} from '@dnd-kit/sortable';
 import { buttonPrimary } from '@/components/ui/cardStyles';
 import OshiButton from '@/components/OshiButton';
 import XShareButton from '@/components/XShareButton';
@@ -17,7 +36,7 @@ import BannerLinksBlock from '@/components/BannerLinksBlock';
 import UserPageClientWrapper from '@/components/UserPageClientWrapper';
 import AppProjectBlock from '@/components/AppProjectBlock';
 import UnsavedChangesLeaveGuard from '@/components/UnsavedChangesLeaveGuard';
-import { BlockAddControl, BlockDetachControl } from '@/components/BlockPlacementControls';
+import { BlockAddControl, BlockDragPreview, SortableProfileBlock } from '@/components/BlockPlacementControls';
 import { appProjectsContentEqual, type AppProject } from '@/lib/appProjects';
 import {
   availableBlocks,
@@ -115,6 +134,139 @@ function buildDraftSavePayload(
 }
 
 const SHOW_FLAG_DEFAULT = true;
+const BLOCK_DRAG_PREVIEW_HEIGHT = 76;
+const BLOCK_DRAG_PREVIEW_STYLE = {
+  width: 'min(220px, calc(100vw - 32px))',
+  height: BLOCK_DRAG_PREVIEW_HEIGHT,
+  pointerEvents: 'none' as const,
+};
+/** 動画の高さでは動かさない。隙間が分かる程度だけ隣をずらす */
+const INSERT_NUDGE_PX = 36;
+const INSERT_ADOPT_PX = 28;
+const INSERT_HYSTERESIS_PX = 10;
+
+type LayoutRow = { id: string; top: number; bottom: number };
+type InsertGap = { y: number; upper: number | null; lower: number | null };
+type InsertGuide = { lineId: string; edge: 'before' | 'after' };
+
+/**
+ * プレビュー中心がブロック境界の近くに来たときだけ挿入先を切り替える。
+ * 掴んだ直後はブロック内側なので、上の境界へは飛ばない。
+ */
+function pickBlockInsertion(
+  rows: LayoutRow[],
+  activeId: string,
+  y: number,
+  previousGapIndex: number | null
+): { overId: string; guide: InsertGuide | null; gapIndex: number | null } {
+  const activeIndex = rows.findIndex((row) => row.id === activeId);
+  if (activeIndex < 0 || rows.length === 0) {
+    return { overId: activeId, guide: null, gapIndex: null };
+  }
+
+  const active = rows[activeIndex];
+  const gaps: InsertGap[] = [{ y: rows[0].top, upper: null, lower: 0 }];
+  for (let index = 0; index < rows.length - 1; index += 1) {
+    gaps.push({
+      y: (rows[index].bottom + rows[index + 1].top) / 2,
+      upper: index,
+      lower: index + 1,
+    });
+  }
+  gaps.push({
+    y: rows[rows.length - 1].bottom,
+    upper: rows.length - 1,
+    lower: null,
+  });
+
+  let nearest = 0;
+  let nearestDist = Math.abs(y - gaps[0].y);
+  for (let index = 1; index < gaps.length; index += 1) {
+    const dist = Math.abs(y - gaps[index].y);
+    if (dist < nearestDist) {
+      nearest = index;
+      nearestDist = dist;
+    }
+  }
+
+  const insideActive = y >= active.top && y <= active.bottom;
+  let chosen: number | null = previousGapIndex;
+  if (nearestDist <= INSERT_ADOPT_PX) {
+    chosen = nearest;
+    if (
+      previousGapIndex != null &&
+      previousGapIndex !== nearest &&
+      previousGapIndex >= 0 &&
+      previousGapIndex < gaps.length &&
+      Math.abs(y - gaps[previousGapIndex].y) <= nearestDist + INSERT_HYSTERESIS_PX
+    ) {
+      chosen = previousGapIndex;
+    }
+  } else if (
+    previousGapIndex != null &&
+    previousGapIndex >= 0 &&
+    previousGapIndex < gaps.length &&
+    Math.abs(y - gaps[previousGapIndex].y) <= INSERT_ADOPT_PX + INSERT_HYSTERESIS_PX
+  ) {
+    chosen = previousGapIndex;
+  } else if (insideActive) {
+    chosen = null;
+  } else if (previousGapIndex == null) {
+    chosen = nearest;
+  }
+
+  if (chosen == null) {
+    return { overId: activeId, guide: null, gapIndex: null };
+  }
+
+  const gap = gaps[chosen];
+  const target = insertionTargetIndex(activeIndex, gap, rows.length);
+  const overId = rows[target].id;
+  if (target === activeIndex) {
+    return { overId, guide: null, gapIndex: chosen };
+  }
+  return { overId, guide: insertionGuide(rows, activeId, gap), gapIndex: chosen };
+}
+
+function insertionTargetIndex(activeIndex: number, gap: InsertGap, count: number): number {
+  if (gap.upper == null && gap.lower != null) return 0;
+  if (gap.lower == null && gap.upper != null) return count - 1;
+  if (gap.upper == null || gap.lower == null) return activeIndex;
+  if (activeIndex <= gap.upper) {
+    return activeIndex === gap.upper ? gap.lower : gap.upper;
+  }
+  return activeIndex === gap.lower ? gap.upper : gap.lower;
+}
+
+function insertionGuide(rows: LayoutRow[], activeId: string, gap: InsertGap): InsertGuide | null {
+  if (gap.upper == null && gap.lower != null) {
+    return { lineId: rows[gap.lower].id, edge: 'before' };
+  }
+  if (gap.lower == null && gap.upper != null) {
+    return { lineId: rows[gap.upper].id, edge: 'after' };
+  }
+  if (gap.lower != null && rows[gap.lower].id !== activeId) {
+    return { lineId: rows[gap.lower].id, edge: 'before' };
+  }
+  if (gap.upper != null) {
+    return { lineId: rows[gap.upper].id, edge: 'after' };
+  }
+  return null;
+}
+
+const sectionSortingStrategy: SortingStrategy = ({ activeIndex, index, overIndex }) => {
+  const idle = { x: 0, y: 0, scaleX: 1, scaleY: 1 };
+  if (activeIndex < 0 || overIndex < 0 || index === activeIndex || activeIndex === overIndex) {
+    return idle;
+  }
+  if (index > activeIndex && index <= overIndex) {
+    return { x: 0, y: -INSERT_NUDGE_PX, scaleX: 1, scaleY: 1 };
+  }
+  if (index < activeIndex && index >= overIndex) {
+    return { x: 0, y: INSERT_NUDGE_PX, scaleX: 1, scaleY: 1 };
+  }
+  return idle;
+};
 
 /** buildDraftSavePayload と同じ形を、未指定の表示フラグと bannerLinks 欠落だけ揃えて比較する */
 function normalizePayloadForCompare(payload: Record<string, unknown>) {
@@ -147,8 +299,21 @@ function isDraftDirty(
   draft: Profile,
   fallbacks: { apps: AppProject[]; sectionOrder: string[] }
 ) {
-  const savedPayload = normalizePayloadForCompare(buildDraftSavePayload(saved, fallbacks));
-  const draftPayload = normalizePayloadForCompare(buildDraftSavePayload(draft, fallbacks));
+  const savedPayload = normalizePayloadForCompare(
+    buildDraftSavePayload(saved, {
+      apps: fallbacks.apps,
+      sectionOrder: resolveSectionOrder(
+        saved.settings?.sectionOrder,
+        saved.settings?.blockLayoutVersion
+      ),
+    })
+  );
+  const draftPayload = normalizePayloadForCompare(
+    buildDraftSavePayload(draft, {
+      apps: fallbacks.apps,
+      sectionOrder: fallbacks.sectionOrder,
+    })
+  );
   return JSON.stringify(savedPayload) !== JSON.stringify(draftPayload);
 }
 
@@ -187,6 +352,13 @@ export default function UserPageSectionsClient({
   const savingLockRef = useRef(false);
   const [saveMessage, setSaveMessage] = useState<string | null>(null);
   const [saveMessageTone, setSaveMessageTone] = useState<'ok' | 'error'>('ok');
+  const [draggingBlockId, setDraggingBlockId] = useState<string | null>(null);
+  const [insertGuide, setInsertGuide] = useState<InsertGuide | null>(null);
+  const layoutSnapshotRef = useRef<{ anchorId: string; anchorTop: number; rows: LayoutRow[] } | null>(
+    null
+  );
+  const gapIndexRef = useRef<number | null>(null);
+  const insertGuideRef = useRef<InsertGuide | null>(null);
 
   const updateDraftProfile = useCallback((patch: Partial<Profile>) => {
     setDraftProfile((prev) => ({ ...prev, ...patch }));
@@ -538,6 +710,90 @@ export default function UserPageSectionsClient({
   const layoutMode = blockLayoutMode(draftProfile.settings?.blockLayoutVersion);
   const canEditBlocks = isEditable && layoutMode !== 'unsupported';
 
+  const sensors = useSensors(
+    useSensor(MouseSensor, { activationConstraint: { distance: 8 } }),
+    useSensor(TouchSensor, { activationConstraint: { delay: 250, tolerance: 8 } }),
+    useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates })
+  );
+
+  const clearDragVisual = useCallback(() => {
+    layoutSnapshotRef.current = null;
+    gapIndexRef.current = null;
+    insertGuideRef.current = null;
+    setDraggingBlockId(null);
+    setInsertGuide(null);
+  }, []);
+
+  const publishInsertGuide = useCallback(() => {
+    const next = insertGuideRef.current;
+    setInsertGuide((prev) => {
+      if (prev?.lineId === next?.lineId && prev?.edge === next?.edge) return prev;
+      if (!prev && !next) return prev;
+      return next;
+    });
+  }, []);
+
+  const sectionCollisionDetection = useCallback<CollisionDetection>((args) => {
+    const activeId = String(args.active.id);
+    const activeRect = args.droppableRects.get(args.active.id);
+    let snapshot = layoutSnapshotRef.current;
+    if (!snapshot || snapshot.anchorId !== activeId) {
+      const rows: LayoutRow[] = [];
+      for (const container of args.droppableContainers) {
+        const rect = args.droppableRects.get(container.id);
+        if (!rect) continue;
+        rows.push({ id: String(container.id), top: rect.top, bottom: rect.bottom });
+      }
+      rows.sort((left, right) => left.top - right.top || left.id.localeCompare(right.id));
+      if (activeRect && rows.length > 0) {
+        snapshot = { anchorId: activeId, anchorTop: activeRect.top, rows };
+        layoutSnapshotRef.current = snapshot;
+      }
+    }
+
+    const scrollDelta = snapshot && activeRect ? activeRect.top - snapshot.anchorTop : 0;
+    const rows =
+      snapshot?.rows.map((row) => ({
+        ...row,
+        top: row.top + scrollDelta,
+        bottom: row.bottom + scrollDelta,
+      })) ?? [];
+    const previewHeight =
+      args.collisionRect.height > BLOCK_DRAG_PREVIEW_HEIGHT + 8
+        ? BLOCK_DRAG_PREVIEW_HEIGHT
+        : args.collisionRect.height;
+    const y = args.collisionRect.top + previewHeight / 2;
+    const picked = pickBlockInsertion(rows, activeId, y, gapIndexRef.current);
+    gapIndexRef.current = picked.gapIndex;
+    insertGuideRef.current = picked.guide;
+    return [{ id: picked.overId }];
+  }, []);
+
+  const handleSectionDragStart = useCallback((event: DragStartEvent) => {
+    layoutSnapshotRef.current = null;
+    gapIndexRef.current = null;
+    insertGuideRef.current = null;
+    setInsertGuide(null);
+    setDraggingBlockId(String(event.active.id));
+  }, []);
+
+  const handleSectionDragCancel = useCallback(() => {
+    clearDragVisual();
+  }, [clearDragVisual]);
+
+  const handleSectionDragEnd = useCallback(
+    (event: DragEndEvent) => {
+      clearDragVisual();
+      const { active, over } = event;
+      if (!over || active.id === over.id) return;
+      const oldIndex = sectionOrder.indexOf(String(active.id));
+      const newIndex = sectionOrder.indexOf(String(over.id));
+      if (oldIndex < 0 || newIndex < 0) return;
+      onSectionOrderDraftChange(arrayMove(sectionOrder, oldIndex, newIndex));
+    },
+    [clearDragVisual, onSectionOrderDraftChange, sectionOrder]
+  );
+
   const renderedSections = useMemo(() => {
     return sectionOrder.map((key) => {
       const node = sectionMap[key];
@@ -546,17 +802,21 @@ export default function UserPageSectionsClient({
       return (
         <div className="user-page-section" key={`${key}-${formEpoch}`}>
           {canEditBlocks ? (
-            <div className="block-edit-frame">
-              <BlockDetachControl label={label} onDetach={() => applyBlockEdit({ op: 'remove', block: key })} />
+            <SortableProfileBlock
+              id={key}
+              label={label}
+              insertEdge={insertGuide?.lineId === key ? insertGuide.edge : null}
+              onDetach={() => applyBlockEdit({ op: 'remove', block: key })}
+            >
               {node}
-            </div>
+            </SortableProfileBlock>
           ) : (
             node
           )}
         </div>
       );
     });
-  }, [applyBlockEdit, canEditBlocks, formEpoch, sectionMap, sectionOrder]);
+  }, [applyBlockEdit, canEditBlocks, formEpoch, insertGuide, sectionMap, sectionOrder]);
 
   return (
     <div
@@ -594,17 +854,41 @@ export default function UserPageSectionsClient({
         />
 
         <UserPageClient
-          key={`reorder-${formEpoch}`}
+          key={`effects-${formEpoch}`}
           uid={uid}
           profile={profile}
           isEditable={isEditable}
-          layoutOrder={sectionOrder}
-          blockLayoutVersion={draftProfile.settings?.blockLayoutVersion}
-          allowReorder={canEditBlocks}
-          onSectionOrderChange={isEditable ? onSectionOrderDraftChange : undefined}
         />
 
-        {renderedSections}
+        {canEditBlocks ? (
+          <DndContext
+            sensors={sensors}
+            collisionDetection={sectionCollisionDetection}
+            modifiers={[restrictToVerticalAxis]}
+            onDragStart={handleSectionDragStart}
+            onDragMove={publishInsertGuide}
+            onDragCancel={handleSectionDragCancel}
+            onDragEnd={handleSectionDragEnd}
+          >
+            <SortableContext
+              items={sectionOrder.filter((key) => Boolean(sectionMap[key]))}
+              strategy={sectionSortingStrategy}
+            >
+              {renderedSections}
+            </SortableContext>
+            <DragOverlay
+              adjustScale={false}
+              dropAnimation={null}
+              modifiers={[restrictToVerticalAxis]}
+              zIndex={900}
+              style={BLOCK_DRAG_PREVIEW_STYLE}
+            >
+              {draggingBlockId ? <BlockDragPreview id={draggingBlockId} /> : null}
+            </DragOverlay>
+          </DndContext>
+        ) : (
+          renderedSections
+        )}
 
         {canEditBlocks ? (
           <BlockAddControl

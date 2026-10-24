@@ -1,7 +1,10 @@
 'use client';
 
+import type { ReactNode } from 'react';
 import { useCallback, useEffect, useId, useRef, useState } from 'react';
-import { BLOCK_LABELS, type BlockType } from '@/lib/blockLayout';
+import { useSortable } from '@dnd-kit/sortable';
+import { CSS } from '@dnd-kit/utilities';
+import { BLOCK_LABELS, isKnownBlockType, type BlockType } from '@/lib/blockLayout';
 
 function focusableIn(root: HTMLElement | null): HTMLElement[] {
   if (!root) return [];
@@ -129,6 +132,79 @@ export function BlockAddControl({
         <span className="block-add-fab__label">ブロック追加</span>
       </button>
     </>
+  );
+}
+
+export function SortableProfileBlock({
+  id,
+  label,
+  onDetach,
+  insertEdge = null,
+  children,
+}: {
+  id: string;
+  label: string;
+  onDetach: () => void;
+  insertEdge?: 'before' | 'after' | null;
+  children: ReactNode;
+}) {
+  const { attributes, listeners, setNodeRef, setActivatorNodeRef, transform, transition, isDragging } =
+    useSortable({ id });
+  const insertClass =
+    insertEdge === 'before'
+      ? ' block-edit-frame--insert-before'
+      : insertEdge === 'after'
+        ? ' block-edit-frame--insert-after'
+        : '';
+
+  return (
+    <div
+      ref={setNodeRef}
+      className={`block-edit-frame${isDragging ? ' block-edit-frame--dragging' : ''}${insertClass}`}
+      style={{
+        // Overlay がある間、掴んでいる本体には移動 transform を載せない
+        transform: isDragging ? undefined : CSS.Transform.toString(transform),
+        transition: isDragging ? undefined : transition,
+      }}
+    >
+      <button
+        type="button"
+        className="block-drag-handle"
+        aria-label={`${label}を移動`}
+        ref={setActivatorNodeRef}
+        {...attributes}
+        {...listeners}
+      >
+        <span aria-hidden="true">≡</span>
+      </button>
+      <BlockDetachControl label={label} onDetach={onDetach} />
+      {children}
+    </div>
+  );
+}
+
+const BLOCK_DRAG_MARK: Record<BlockType, string> = {
+  YouTube: '▶',
+  X: 'X',
+  Instagram: 'IG',
+  TikTok: 'TT',
+  Facebook: 'f',
+  BannerLinks: 'URL',
+  AppProjects: 'App',
+  SNSButtons: 'SNS',
+};
+
+export function BlockDragPreview({ id }: { id: string }) {
+  const label = isKnownBlockType(id) ? BLOCK_LABELS[id] : id;
+  const mark = isKnownBlockType(id) ? BLOCK_DRAG_MARK[id] : '≡';
+
+  return (
+    <div className="block-drag-preview" role="presentation">
+      <span className="block-drag-preview__mark" aria-hidden="true">
+        {mark}
+      </span>
+      <span className="block-drag-preview__label">{label}</span>
+    </div>
   );
 }
 

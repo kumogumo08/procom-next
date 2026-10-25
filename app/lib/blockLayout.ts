@@ -17,6 +17,7 @@ export const BLOCK_TYPES = [
   'BannerLinks',
   'AppProjects',
   'SNSButtons',
+  'Calendar',
 ] as const;
 
 export type BlockType = (typeof BLOCK_TYPES)[number];
@@ -30,13 +31,26 @@ export const BLOCK_LABELS: Record<BlockType, string> = {
   BannerLinks: 'リンクバナー',
   AppProjects: 'アプリ紹介',
   SNSButtons: 'SNSボタン',
+  Calendar: '配信・イベントカレンダー',
 };
 
 /** 新形式の現在バージョン。旧データには書き込まない。 */
 export const BLOCK_LAYOUT_VERSION = 1;
 
-/** 旧形式で sectionOrder が無いとき、および空配列のときの表示順。 */
-export const DEFAULT_SECTION_ORDER: readonly BlockType[] = BLOCK_TYPES;
+/**
+ * 旧形式で sectionOrder が無いとき、および空配列のときの表示順。
+ * Calendar は含めない。未設定のプロフィールへ自動では足さない。
+ */
+export const DEFAULT_SECTION_ORDER: readonly BlockType[] = [
+  'YouTube',
+  'X',
+  'Instagram',
+  'TikTok',
+  'Facebook',
+  'BannerLinks',
+  'AppProjects',
+  'SNSButtons',
+];
 
 export type BlockLayoutMode = 'legacy' | 'v1' | 'unsupported';
 
@@ -155,6 +169,15 @@ export function moveBlock(order: readonly string[], block: string, toIndex: numb
 
 export function isBlockPlaced(order: readonly string[], block: string): boolean {
   return isKnownBlockType(block) && order.includes(block);
+}
+
+/**
+ * 自己紹介カード内のカレンダーを出すか。
+ * 並びにあるとき、または利用者が独立ブロックとして扱い始めたあとは出さない。
+ */
+export function showsFixedCalendar(calendarLayout: unknown, sectionOrder: readonly string[]): boolean {
+  if (sectionOrder.includes('Calendar')) return false;
+  return calendarLayout !== 'section';
 }
 
 export function availableBlocks(order: readonly string[]): BlockType[] {

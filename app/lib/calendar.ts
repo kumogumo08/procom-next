@@ -60,7 +60,8 @@ export async function createCalendar(
     await fetchCalendarEventsFromServer(uid);
   }
 
-  const calendar = document.getElementById('calendar') as HTMLElement;
+  const calendar = document.getElementById('calendar');
+  if (!calendar) return;
   const year = date.getFullYear();
   const month = date.getMonth();
   const firstDay = new Date(year, month, 1);
@@ -173,12 +174,13 @@ export async function createCalendar(
     }
   }
 
-  const prevBtn = document.getElementById('prev-month') as HTMLButtonElement;
-  const nextBtn = document.getElementById('next-month') as HTMLButtonElement;
+  const prevBtn = document.getElementById('prev-month') as HTMLButtonElement | null;
+  const nextBtn = document.getElementById('next-month') as HTMLButtonElement | null;
+  if (!prevBtn || !nextBtn) return;
 
   prevBtn.onclick = () => {
     currentDate.setMonth(currentDate.getMonth() - 1);
-    createCalendar(new Date(), isEditable, true, uid);
+    createCalendar(currentDate, isEditable, true, uid);
   };
 
   nextBtn.onclick = () => {

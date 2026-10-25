@@ -68,6 +68,9 @@ export default function CalendarBlock({
           </label>
           <br />
           <button id="add-event-btn">追加</button>
+          <p className="text-sm" style={{ color: '#64748b', margin: '8px 0 0' }}>
+            予定の追加と削除は、すぐに保存されます。
+          </p>
         </div>
       )}
 

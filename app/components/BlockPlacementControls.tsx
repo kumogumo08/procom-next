@@ -90,6 +90,7 @@ function PaletteAddOption({
         data-block-add-option
         onClick={() => onAdd(block)}
       >
+        {block === 'Calendar' ? '📅 ' : ''}
         {label}
       </button>
     </div>
@@ -298,6 +299,7 @@ const BLOCK_DRAG_MARK: Record<BlockType, string> = {
   BannerLinks: 'URL',
   AppProjects: 'App',
   SNSButtons: 'SNS',
+  Calendar: '📅',
 };
 
 export function BlockDragPreview({ id }: { id: string }) {

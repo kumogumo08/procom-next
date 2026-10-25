@@ -149,8 +149,10 @@ export default function OshiButton({ uid }: { uid: string }) {
           border-radius: 12px;
           box-shadow: 0 4px 12px rgba(0, 100, 255, 0.1);
           font-family: 'Segoe UI', sans-serif;
+          flex: 1 1 260px;
+          width: min(300px, 100%);
           max-width: 300px;
-          margin: 20px auto;
+          margin: 0;
         }
 
         .oshi-button {

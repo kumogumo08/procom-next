@@ -18,6 +18,7 @@ import {
   removeBlock,
   resolveSectionOrder,
   sectionOrderDraftFromReorder,
+  showsFixedCalendar,
 } from '@/lib/blockLayout';
 import { meaningfulProfileChanged, nextContentStamp } from '@/lib/profileContent';
 import { buildProfileDocumentTitle, isProfilePublic } from '@/lib/userSeo';
@@ -161,10 +162,10 @@ assert(!isBlockPlaced(['YouTube'], 'X'), '未配置を判定できる');
 assert(!isBlockPlaced(['YouTube', 'Foo'], 'Foo'), '不明なキーは配置済みにしない');
 same(
   availableBlocks(['YouTube', 'X']),
-  ['Instagram', 'TikTok', 'Facebook', 'BannerLinks', 'AppProjects', 'SNSButtons'],
+  ['Instagram', 'TikTok', 'Facebook', 'BannerLinks', 'AppProjects', 'SNSButtons', 'Calendar'],
   '未配置の種類だけを返す'
 );
-same(availableBlocks(HISTORICAL_DEFAULT), [], '8件すべて配置済みなら追加候補は空');
+same(availableBlocks(HISTORICAL_DEFAULT), ['Calendar'], '従来の8件が配置済みでもカレンダーは明示追加できる');
 
 const settings = {
   showYouTube: false,
@@ -307,15 +308,34 @@ const discarded = legacySettings;
 assert(discarded.sectionOrder.includes('YouTube') && !('blockLayoutVersion' in discarded), '結果を採用しなければ旧形式のまま');
 
 let added = editBlockPlacement({ blockLayoutVersion: 1, sectionOrder: [] }, { op: 'add', block: 'YouTube' });
-for (const block of BLOCK_TYPES) {
+for (const block of HISTORICAL_DEFAULT) {
   if (block === 'YouTube') continue;
   added = editBlockPlacement(added ?? undefined, { op: 'add', block });
 }
-same(added?.sectionOrder, [...BLOCK_TYPES], '空の新形式から8種類を追加できる');
+same(added?.sectionOrder, [...HISTORICAL_DEFAULT], '空の新形式から従来の8種類を追加できる');
 same(
   editBlockPlacement(added ?? undefined, { op: 'add', block: 'YouTube' })?.sectionOrder,
-  [...BLOCK_TYPES],
+  [...HISTORICAL_DEFAULT],
   '同じ種類は2個にならない'
+);
+assert(!resolveSectionOrder(undefined, undefined).includes('Calendar'), '旧形式の既定順にカレンダーを足さない');
+assert(!resolveSectionOrder([...HISTORICAL_DEFAULT], 1).includes('Calendar'), '新形式の既存順にカレンダーを足さない');
+assert(showsFixedCalendar(undefined, HISTORICAL_DEFAULT), '配置フラグが無い旧表示はカード内カレンダー');
+assert(showsFixedCalendar(undefined, []), '配置フラグが無い空の新形式もカード内カレンダー');
+assert(!showsFixedCalendar('section', HISTORICAL_DEFAULT), '独立化後に外したカレンダーはカード内へ戻さない');
+assert(!showsFixedCalendar('section', ['YouTube', 'Calendar']), '独立ブロックとカード内を同時に出さない');
+assert(!showsFixedCalendar(undefined, ['YouTube', 'Calendar']), '並びにあるカレンダーはカード内に出さない');
+same(
+  editBlockPlacement({ blockLayoutVersion: 1, sectionOrder: [...HISTORICAL_DEFAULT] }, { op: 'add', block: 'Calendar', index: 1 })
+    ?.sectionOrder,
+  ['YouTube', 'Calendar', 'X', 'Instagram', 'TikTok', 'Facebook', 'BannerLinks', 'AppProjects', 'SNSButtons'],
+  'カレンダーを指定位置へ追加できる'
+);
+same(
+  editBlockPlacement({ blockLayoutVersion: 1, sectionOrder: ['YouTube', 'Calendar'] }, { op: 'remove', block: 'Calendar' })
+    ?.sectionOrder,
+  ['YouTube'],
+  'カレンダーを外しても他の並びと予定用フィールドは関数が触らない'
 );
 const placedAgain = editBlockPlacement(removedYouTube ?? undefined, { op: 'add', block: 'YouTube' });
 assert(placedAgain?.sectionOrder.includes('YouTube') === true, '外したブロックを再追加できる');

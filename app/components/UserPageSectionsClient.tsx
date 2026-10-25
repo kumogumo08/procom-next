@@ -25,6 +25,7 @@ import {
 } from '@dnd-kit/sortable';
 import { buttonPrimary } from '@/components/ui/cardStyles';
 import OshiButton from '@/components/OshiButton';
+import { WorkRequestButton } from '@/components/ContactButtonBlock';
 import XShareButton from '@/components/XShareButton';
 import UserProfileSection from '@/components/UserProfileSection';
 import UserPageClient from '@/components/UserPageClient';
@@ -37,6 +38,7 @@ import QRCodeBlock from '@/components/QRCodeBlock';
 import BannerLinksBlock from '@/components/BannerLinksBlock';
 import UserPageClientWrapper from '@/components/UserPageClientWrapper';
 import AppProjectBlock from '@/components/AppProjectBlock';
+import CalendarBlock from '@/components/CalendarBlock';
 import UnsavedChangesLeaveGuard from '@/components/UnsavedChangesLeaveGuard';
 import {
   BlockAddControl,
@@ -59,6 +61,7 @@ import {
   layoutFieldsForSave,
   resolveSectionOrder,
   sectionOrderDraftFromReorder,
+  showsFixedCalendar,
   type BlockPlacementEdit,
 } from '@/lib/blockLayout';
 
@@ -96,6 +99,7 @@ type Profile = {
     showBanners?: boolean;
     sectionOrder?: string[];
     blockLayoutVersion?: number;
+    calendarLayout?: 'section';
   };
 };
 
@@ -134,6 +138,7 @@ function buildDraftSavePayload(
       showApps: settings.showApps,
       showBanners: settings.showBanners,
       ...layoutFieldsForSave(settings, fallbacks.sectionOrder),
+      ...(settings.calendarLayout === 'section' ? { calendarLayout: 'section' as const } : {}),
     },
   };
 
@@ -509,6 +514,7 @@ export default function UserPageSectionsClient({
       updateDraftSettings({
         sectionOrder: next.sectionOrder,
         blockLayoutVersion: next.blockLayoutVersion,
+        ...(edit.block === 'Calendar' ? { calendarLayout: 'section' as const } : {}),
       });
       return true;
     },
@@ -817,6 +823,7 @@ export default function UserPageSectionsClient({
           onCustomLinksChange={isEditable ? onCustomLinksDraftChange : undefined}
         />
       ),
+      Calendar: <CalendarBlock isEditable={isEditable} uid={uid} />,
     }),
     [
       apps,
@@ -988,21 +995,26 @@ export default function UserPageSectionsClient({
       }
     >
       {profile?.name && (
-        <h2
-          style={{
-            textAlign: 'center',
-            fontWeight: 'bold',
-            fontSize: 'clamp(1rem, 2.8vw, 1.25rem)',
-            margin: '0.5em 0 0.45em',
-            color: '#0f172a',
-          }}
-        >
-          {profile.name}さんのプロフィールページ
+        <h2 className="profile-page-heading">
+          <span className="profile-page-heading__kicker" lang="en" aria-hidden="true">
+            CREATOR PROFILE
+          </span>
+          <span className="profile-page-heading__name">{profile.name}</span>
+          <span className="profile-page-heading__rule" aria-hidden="true" />
+          <span className="profile-page-heading__page">
+            <span className="sr-only">さんの</span>
+            プロフィールページ
+          </span>
         </h2>
       )}
 
       <main>
-        <OshiButton uid={uid} />
+        <div className="profile-action-row">
+          <OshiButton uid={uid} />
+          {typeof profile.emailForContact === 'string' && profile.emailForContact.trim() ? (
+            <WorkRequestButton email={profile.emailForContact} />
+          ) : null}
+        </div>
         <XShareButton uid={uid} name={profile?.name} />
 
         <UserProfileSection
@@ -1010,6 +1022,7 @@ export default function UserPageSectionsClient({
           uid={uid}
           isEditable={isEditable}
           initialProfile={profile}
+          showFixedCalendar={showsFixedCalendar(draftProfile.settings?.calendarLayout, sectionOrder)}
           onBasicDraftChange={isEditable ? onBasicDraftChange : undefined}
           onContactDraftChange={isEditable ? onContactDraftChange : undefined}
         />

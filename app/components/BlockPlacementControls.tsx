@@ -2,9 +2,24 @@
 
 import type { ReactNode } from 'react';
 import { useCallback, useEffect, useId, useRef, useState } from 'react';
+import { useDraggable, useDroppable } from '@dnd-kit/core';
 import { useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 import { BLOCK_LABELS, isKnownBlockType, type BlockType } from '@/lib/blockLayout';
+
+export const PALETTE_DRAG_PREFIX = 'palette:';
+export const PROFILE_INSERT_COLUMN_ID = 'profile-insert-column';
+export const PROFILE_ADD_PANEL_ID = 'profile-add-panel';
+
+export function paletteDragId(block: string): string {
+  return `${PALETTE_DRAG_PREFIX}${block}`;
+}
+
+export function blockIdFromPaletteDrag(id: string): string | null {
+  if (!id.startsWith(PALETTE_DRAG_PREFIX)) return null;
+  const block = id.slice(PALETTE_DRAG_PREFIX.length);
+  return isKnownBlockType(block) ? block : null;
+}
 
 function focusableIn(root: HTMLElement | null): HTMLElement[] {
   if (!root) return [];
@@ -15,19 +30,110 @@ function focusableIn(root: HTMLElement | null): HTMLElement[] {
   ).filter((element) => !element.hasAttribute('disabled'));
 }
 
+export function ProfileInsertColumn({
+  empty,
+  highlighted,
+  children,
+}: {
+  empty: boolean;
+  highlighted: boolean;
+  children: ReactNode;
+}) {
+  const { setNodeRef } = useDroppable({ id: PROFILE_INSERT_COLUMN_ID });
+  return (
+    <div
+      ref={setNodeRef}
+      className={
+        empty
+          ? `profile-insert-column block-insert-empty${highlighted ? ' block-insert-empty--active' : ''}`
+          : 'profile-insert-column'
+      }
+    >
+      {empty ? <p className="block-insert-empty__label">ここにドロップしてブロックを追加</p> : null}
+      {children}
+    </div>
+  );
+}
+
+function PaletteAddOption({
+  block,
+  canDrag,
+  onAdd,
+}: {
+  block: BlockType;
+  canDrag: boolean;
+  onAdd: (block: BlockType) => void;
+}) {
+  const { attributes, listeners, setNodeRef, setActivatorNodeRef } = useDraggable({
+    id: paletteDragId(block),
+    disabled: !canDrag,
+  });
+  const label = BLOCK_LABELS[block];
+
+  return (
+    <div ref={setNodeRef} className="block-add-option-row">
+      {canDrag ? (
+        <button
+          type="button"
+          className="block-add-handle"
+          aria-label={`${label}をドラッグして追加`}
+          ref={setActivatorNodeRef}
+          {...attributes}
+          {...listeners}
+        >
+          <span aria-hidden="true">≡</span>
+        </button>
+      ) : null}
+      <button
+        type="button"
+        className="block-placement-btn block-add-option"
+        data-block-add-option
+        onClick={() => onAdd(block)}
+      >
+        {label}
+      </button>
+    </div>
+  );
+}
+
 export function BlockAddControl({
   available,
   onAdd,
+  closeTick = 0,
+  dragActive = false,
 }: {
   available: readonly BlockType[];
   onAdd: (block: BlockType) => void;
+  closeTick?: number;
+  dragActive?: boolean;
 }) {
   const [open, setOpen] = useState(false);
+  const [canDragAdd, setCanDragAdd] = useState(false);
   const panelId = useId();
   const titleId = useId();
   const panelRef = useRef<HTMLDivElement>(null);
+  const { setNodeRef: setPanelDropRef } = useDroppable({ id: PROFILE_ADD_PANEL_ID });
+  const setPanelNodeRef = useCallback((node: HTMLDivElement | null) => {
+    panelRef.current = node;
+    setPanelDropRef(node);
+  }, [setPanelDropRef]);
   const fabRef = useRef<HTMLButtonElement>(null);
   const wasOpenRef = useRef(false);
+  const closeTickRef = useRef(closeTick);
+
+  useEffect(() => {
+    const media = window.matchMedia('(min-width: 641px) and (pointer: fine)');
+    const update = () => setCanDragAdd(media.matches);
+    update();
+    media.addEventListener('change', update);
+    return () => media.removeEventListener('change', update);
+  }, []);
+
+  useEffect(() => {
+    if (closeTickRef.current === closeTick) return;
+    closeTickRef.current = closeTick;
+    setOpen(false);
+  }, [closeTick]);
 
   useEffect(() => {
     if (!open) {
@@ -70,10 +176,13 @@ export function BlockAddControl({
     <>
       {open ? (
         <div className="block-add-layer">
-          <div className="block-add-backdrop" onMouseDown={() => setOpen(false)} />
+          <div
+            className={`block-add-backdrop${dragActive ? ' block-add-backdrop--passthrough' : ''}`}
+            onMouseDown={() => setOpen(false)}
+          />
           <div
             id={panelId}
-            ref={panelRef}
+            ref={setPanelNodeRef}
             className="block-add-panel"
             role="dialog"
             aria-modal="true"
@@ -99,18 +208,15 @@ export function BlockAddControl({
                 </p>
               ) : (
                 available.map((block) => (
-                  <button
+                  <PaletteAddOption
                     key={block}
-                    type="button"
-                    className="block-placement-btn block-add-option"
-                    data-block-add-option
-                    onClick={() => {
-                      onAdd(block);
+                    block={block}
+                    canDrag={canDragAdd}
+                    onAdd={(next) => {
+                      onAdd(next);
                       setOpen(false);
                     }}
-                  >
-                    {BLOCK_LABELS[block]}
-                  </button>
+                  />
                 ))
               )}
             </div>

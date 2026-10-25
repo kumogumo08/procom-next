@@ -13,6 +13,8 @@ import {
   type CollisionDetection,
   type DragEndEvent,
   type DragStartEvent,
+  type Modifier,
+  type UniqueIdentifier,
 } from '@dnd-kit/core';
 import { restrictToVerticalAxis } from '@dnd-kit/modifiers';
 import {
@@ -36,7 +38,16 @@ import BannerLinksBlock from '@/components/BannerLinksBlock';
 import UserPageClientWrapper from '@/components/UserPageClientWrapper';
 import AppProjectBlock from '@/components/AppProjectBlock';
 import UnsavedChangesLeaveGuard from '@/components/UnsavedChangesLeaveGuard';
-import { BlockAddControl, BlockDragPreview, SortableProfileBlock } from '@/components/BlockPlacementControls';
+import {
+  BlockAddControl,
+  BlockDragPreview,
+  PALETTE_DRAG_PREFIX,
+  PROFILE_ADD_PANEL_ID,
+  PROFILE_INSERT_COLUMN_ID,
+  ProfileInsertColumn,
+  SortableProfileBlock,
+  blockIdFromPaletteDrag,
+} from '@/components/BlockPlacementControls';
 import { appProjectsContentEqual, type AppProject } from '@/lib/appProjects';
 import {
   availableBlocks,
@@ -134,9 +145,10 @@ function buildDraftSavePayload(
 }
 
 const SHOW_FLAG_DEFAULT = true;
+const BLOCK_DRAG_PREVIEW_WIDTH = 220;
 const BLOCK_DRAG_PREVIEW_HEIGHT = 76;
 const BLOCK_DRAG_PREVIEW_STYLE = {
-  width: 'min(220px, calc(100vw - 32px))',
+  width: `min(${BLOCK_DRAG_PREVIEW_WIDTH}px, calc(100vw - 32px))`,
   height: BLOCK_DRAG_PREVIEW_HEIGHT,
   pointerEvents: 'none' as const,
 };
@@ -268,6 +280,113 @@ const sectionSortingStrategy: SortingStrategy = ({ activeIndex, index, overIndex
   return idle;
 };
 
+const restrictPlacedBlockAxis: Modifier = (args) => {
+  const id = args.active == null ? '' : String(args.active.id);
+  if (id.startsWith(PALETTE_DRAG_PREFIX)) return args.transform;
+  return restrictToVerticalAxis(args);
+};
+
+function placedLayoutRows(
+  containers: { id: UniqueIdentifier }[],
+  rects: { get: (id: UniqueIdentifier) => { top: number; bottom: number } | null | undefined }
+): LayoutRow[] {
+  const rows: LayoutRow[] = [];
+  for (const container of containers) {
+    const id = String(container.id);
+    if (
+      id === PROFILE_INSERT_COLUMN_ID ||
+      id === PROFILE_ADD_PANEL_ID ||
+      id.startsWith(PALETTE_DRAG_PREFIX)
+    ) {
+      continue;
+    }
+    const rect = rects.get(container.id);
+    if (!rect) continue;
+    rows.push({ id, top: rect.top, bottom: rect.bottom });
+  }
+  rows.sort((left, right) => left.top - right.top || left.id.localeCompare(right.id));
+  return rows;
+}
+
+function guideForNewBlock(rows: LayoutRow[], gapIndex: number): InsertGuide | null {
+  if (rows.length === 0) return { lineId: '__empty__', edge: 'before' };
+  if (gapIndex <= 0) return { lineId: rows[0].id, edge: 'before' };
+  if (gapIndex >= rows.length) return { lineId: rows[rows.length - 1].id, edge: 'after' };
+  return { lineId: rows[gapIndex].id, edge: 'before' };
+}
+
+/** 追加パネルからのドラッグ。プロフィール列の中に入ったときだけ、境目へ挿入する */
+function pickPaletteInsertion(
+  rows: LayoutRow[],
+  x: number,
+  y: number,
+  column: { left: number; right: number; top: number; bottom: number } | null,
+  panel: { left: number; right: number; top: number; bottom: number } | null,
+  previousGapIndex: number | null
+): { index: number; guide: InsertGuide | null; gapIndex: number | null } | null {
+  if (panel && x >= panel.left && x <= panel.right && y >= panel.top && y <= panel.bottom) return null;
+  if (!column) return null;
+  const xInside = x >= column.left && x <= column.right;
+  const yInside = y >= column.top - 40 && y <= column.bottom + 40;
+  if (!xInside || !yInside) return null;
+  if (rows.length === 0) {
+    const yInside = y >= column.top - 24 && y <= column.bottom + 48;
+    if (!yInside) return null;
+    return { index: 0, guide: guideForNewBlock(rows, 0), gapIndex: 0 };
+  }
+
+  const gaps: InsertGap[] = [{ y: rows[0].top, upper: null, lower: 0 }];
+  for (let index = 0; index < rows.length - 1; index += 1) {
+    gaps.push({
+      y: (rows[index].bottom + rows[index + 1].top) / 2,
+      upper: index,
+      lower: index + 1,
+    });
+  }
+  gaps.push({
+    y: rows[rows.length - 1].bottom,
+    upper: rows.length - 1,
+    lower: null,
+  });
+
+  let nearest = 0;
+  let nearestDist = Math.abs(y - gaps[0].y);
+  for (let index = 1; index < gaps.length; index += 1) {
+    const dist = Math.abs(y - gaps[index].y);
+    if (dist < nearestDist) {
+      nearest = index;
+      nearestDist = dist;
+    }
+  }
+
+  let chosen: number | null = previousGapIndex;
+  if (nearestDist <= INSERT_ADOPT_PX) {
+    chosen = nearest;
+    if (
+      previousGapIndex != null &&
+      previousGapIndex !== nearest &&
+      previousGapIndex >= 0 &&
+      previousGapIndex < gaps.length &&
+      Math.abs(y - gaps[previousGapIndex].y) <= nearestDist + INSERT_HYSTERESIS_PX
+    ) {
+      chosen = previousGapIndex;
+    }
+  } else if (
+    previousGapIndex != null &&
+    previousGapIndex >= 0 &&
+    previousGapIndex < gaps.length &&
+    Math.abs(y - gaps[previousGapIndex].y) <= INSERT_ADOPT_PX + INSERT_HYSTERESIS_PX
+  ) {
+    chosen = previousGapIndex;
+  } else if (previousGapIndex == null) {
+    chosen = nearest;
+  }
+
+  if (chosen == null) return null;
+  const index = Math.min(Math.max(chosen, 0), rows.length);
+  return { index, guide: guideForNewBlock(rows, index), gapIndex: chosen };
+}
+
 /** buildDraftSavePayload と同じ形を、未指定の表示フラグと bannerLinks 欠落だけ揃えて比較する */
 function normalizePayloadForCompare(payload: Record<string, unknown>) {
   const settings = (payload.settings ?? {}) as Record<string, unknown>;
@@ -353,11 +472,15 @@ export default function UserPageSectionsClient({
   const [saveMessage, setSaveMessage] = useState<string | null>(null);
   const [saveMessageTone, setSaveMessageTone] = useState<'ok' | 'error'>('ok');
   const [draggingBlockId, setDraggingBlockId] = useState<string | null>(null);
+  const [paletteDrag, setPaletteDrag] = useState(false);
+  const [addPanelCloseTick, setAddPanelCloseTick] = useState(0);
   const [insertGuide, setInsertGuide] = useState<InsertGuide | null>(null);
   const layoutSnapshotRef = useRef<{ anchorId: string; anchorTop: number; rows: LayoutRow[] } | null>(
     null
   );
   const gapIndexRef = useRef<number | null>(null);
+  const paletteGapRef = useRef<number | null>(null);
+  const paletteInsertRef = useRef<number | null>(null);
   const insertGuideRef = useRef<InsertGuide | null>(null);
 
   const updateDraftProfile = useCallback((patch: Partial<Profile>) => {
@@ -377,12 +500,17 @@ export default function UserPageSectionsClient({
   const applyBlockEdit = useCallback(
     (edit: BlockPlacementEdit) => {
       const next = editBlockPlacement(draftProfileRef.current.settings, edit);
-      if (!next) return;
+      if (!next) return false;
+      const current = draftProfileRef.current.settings;
+      const sameOrder = JSON.stringify(next.sectionOrder) === JSON.stringify(current?.sectionOrder ?? []);
+      const sameVersion = next.blockLayoutVersion === current?.blockLayoutVersion;
+      if (sameOrder && sameVersion) return false;
       setSectionOrder(next.sectionOrder);
       updateDraftSettings({
         sectionOrder: next.sectionOrder,
         blockLayoutVersion: next.blockLayoutVersion,
       });
+      return true;
     },
     [updateDraftSettings]
   );
@@ -719,8 +847,11 @@ export default function UserPageSectionsClient({
   const clearDragVisual = useCallback(() => {
     layoutSnapshotRef.current = null;
     gapIndexRef.current = null;
+    paletteGapRef.current = null;
+    paletteInsertRef.current = null;
     insertGuideRef.current = null;
     setDraggingBlockId(null);
+    setPaletteDrag(false);
     setInsertGuide(null);
   }, []);
 
@@ -735,16 +866,32 @@ export default function UserPageSectionsClient({
 
   const sectionCollisionDetection = useCallback<CollisionDetection>((args) => {
     const activeId = String(args.active.id);
+    const previewHeight =
+      args.collisionRect.height > BLOCK_DRAG_PREVIEW_HEIGHT + 8
+        ? BLOCK_DRAG_PREVIEW_HEIGHT
+        : args.collisionRect.height;
+    const previewWidth =
+      args.collisionRect.width > BLOCK_DRAG_PREVIEW_WIDTH + 8
+        ? BLOCK_DRAG_PREVIEW_WIDTH
+        : args.collisionRect.width;
+    const y = args.collisionRect.top + previewHeight / 2;
+    const x = args.collisionRect.left + previewWidth / 2;
+
+    if (activeId.startsWith(PALETTE_DRAG_PREFIX)) {
+      const rows = placedLayoutRows(args.droppableContainers, args.droppableRects);
+      const column = args.droppableRects.get(PROFILE_INSERT_COLUMN_ID) ?? null;
+      const panel = args.droppableRects.get(PROFILE_ADD_PANEL_ID) ?? null;
+      const picked = pickPaletteInsertion(rows, x, y, column, panel, paletteGapRef.current);
+      paletteGapRef.current = picked?.gapIndex ?? null;
+      paletteInsertRef.current = picked?.index ?? null;
+      insertGuideRef.current = picked?.guide ?? null;
+      return [{ id: picked ? PROFILE_INSERT_COLUMN_ID : activeId }];
+    }
+
     const activeRect = args.droppableRects.get(args.active.id);
     let snapshot = layoutSnapshotRef.current;
     if (!snapshot || snapshot.anchorId !== activeId) {
-      const rows: LayoutRow[] = [];
-      for (const container of args.droppableContainers) {
-        const rect = args.droppableRects.get(container.id);
-        if (!rect) continue;
-        rows.push({ id: String(container.id), top: rect.top, bottom: rect.bottom });
-      }
-      rows.sort((left, right) => left.top - right.top || left.id.localeCompare(right.id));
+      const rows = placedLayoutRows(args.droppableContainers, args.droppableRects);
       if (activeRect && rows.length > 0) {
         snapshot = { anchorId: activeId, anchorTop: activeRect.top, rows };
         layoutSnapshotRef.current = snapshot;
@@ -758,23 +905,24 @@ export default function UserPageSectionsClient({
         top: row.top + scrollDelta,
         bottom: row.bottom + scrollDelta,
       })) ?? [];
-    const previewHeight =
-      args.collisionRect.height > BLOCK_DRAG_PREVIEW_HEIGHT + 8
-        ? BLOCK_DRAG_PREVIEW_HEIGHT
-        : args.collisionRect.height;
-    const y = args.collisionRect.top + previewHeight / 2;
     const picked = pickBlockInsertion(rows, activeId, y, gapIndexRef.current);
     gapIndexRef.current = picked.gapIndex;
     insertGuideRef.current = picked.guide;
+    paletteInsertRef.current = null;
     return [{ id: picked.overId }];
   }, []);
 
   const handleSectionDragStart = useCallback((event: DragStartEvent) => {
+    const activeId = String(event.active.id);
+    const paletteBlock = blockIdFromPaletteDrag(activeId);
     layoutSnapshotRef.current = null;
     gapIndexRef.current = null;
+    paletteGapRef.current = null;
+    paletteInsertRef.current = null;
     insertGuideRef.current = null;
     setInsertGuide(null);
-    setDraggingBlockId(String(event.active.id));
+    setPaletteDrag(paletteBlock != null);
+    setDraggingBlockId(paletteBlock ?? activeId);
   }, []);
 
   const handleSectionDragCancel = useCallback(() => {
@@ -783,6 +931,17 @@ export default function UserPageSectionsClient({
 
   const handleSectionDragEnd = useCallback(
     (event: DragEndEvent) => {
+      const activeId = String(event.active.id);
+      const paletteBlock = blockIdFromPaletteDrag(activeId);
+      if (paletteBlock) {
+        const index = paletteInsertRef.current;
+        clearDragVisual();
+        if (index == null) return;
+        const added = applyBlockEdit({ op: 'add', block: paletteBlock, index });
+        if (added) setAddPanelCloseTick((current) => current + 1);
+        return;
+      }
+
       clearDragVisual();
       const { active, over } = event;
       if (!over || active.id === over.id) return;
@@ -791,8 +950,10 @@ export default function UserPageSectionsClient({
       if (oldIndex < 0 || newIndex < 0) return;
       onSectionOrderDraftChange(arrayMove(sectionOrder, oldIndex, newIndex));
     },
-    [clearDragVisual, onSectionOrderDraftChange, sectionOrder]
+    [applyBlockEdit, clearDragVisual, onSectionOrderDraftChange, sectionOrder]
   );
+
+  const visibleSectionIds = sectionOrder.filter((key) => Boolean(sectionMap[key]));
 
   const renderedSections = useMemo(() => {
     return sectionOrder.map((key) => {
@@ -864,38 +1025,39 @@ export default function UserPageSectionsClient({
           <DndContext
             sensors={sensors}
             collisionDetection={sectionCollisionDetection}
-            modifiers={[restrictToVerticalAxis]}
+            modifiers={[restrictPlacedBlockAxis]}
             onDragStart={handleSectionDragStart}
             onDragMove={publishInsertGuide}
             onDragCancel={handleSectionDragCancel}
             onDragEnd={handleSectionDragEnd}
           >
-            <SortableContext
-              items={sectionOrder.filter((key) => Boolean(sectionMap[key]))}
-              strategy={sectionSortingStrategy}
+            <ProfileInsertColumn
+              empty={visibleSectionIds.length === 0}
+              highlighted={insertGuide?.lineId === '__empty__'}
             >
-              {renderedSections}
-            </SortableContext>
+              <SortableContext items={visibleSectionIds} strategy={sectionSortingStrategy}>
+                {renderedSections}
+              </SortableContext>
+            </ProfileInsertColumn>
             <DragOverlay
               adjustScale={false}
               dropAnimation={null}
-              modifiers={[restrictToVerticalAxis]}
-              zIndex={900}
+              modifiers={[restrictPlacedBlockAxis]}
+              zIndex={paletteDrag ? 1080 : 900}
               style={BLOCK_DRAG_PREVIEW_STYLE}
             >
               {draggingBlockId ? <BlockDragPreview id={draggingBlockId} /> : null}
             </DragOverlay>
+            <BlockAddControl
+              available={availableBlocks(sectionOrder)}
+              closeTick={addPanelCloseTick}
+              dragActive={paletteDrag}
+              onAdd={(block) => applyBlockEdit({ op: 'add', block })}
+            />
           </DndContext>
         ) : (
           renderedSections
         )}
-
-        {canEditBlocks ? (
-          <BlockAddControl
-            available={availableBlocks(sectionOrder)}
-            onAdd={(block) => applyBlockEdit({ op: 'add', block })}
-          />
-        ) : null}
 
         <div className="user-page-section">
           <QRCodeBlock uid={uid} initialName={profile?.name} />

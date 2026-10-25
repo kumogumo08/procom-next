@@ -119,6 +119,34 @@ same(restored, ['YouTube', 'X', 'TikTok'], '再追加で同じ種類を戻せる
 same(addBlock(restored, 'YouTube'), restored, '同じブロックは重複追加しない');
 same(addBlock(['X'], 'Twitch'), ['X'], '不明なキーは追加しない');
 same(addBlock(['X'], 'YouTube', 0), ['YouTube', 'X'], '追加位置を指定できる');
+same(
+  editBlockPlacement(
+    { blockLayoutVersion: 1, sectionOrder: ['Instagram', 'TikTok'] },
+    { op: 'add', block: 'YouTube', index: 1 }
+  )?.sectionOrder,
+  ['Instagram', 'YouTube', 'TikTok'],
+  '追加と挿入位置を1回で反映する'
+);
+same(
+  editBlockPlacement(
+    { sectionOrder: ['TikTok', 'Instagram'] },
+    { op: 'add', block: 'YouTube', index: 1 }
+  )?.sectionOrder,
+  ['TikTok', 'YouTube', 'Instagram', 'AppProjects'],
+  '旧形式への挿入は表示順を固定してから指定位置へ入れる'
+);
+assert(
+  editBlockPlacement(
+    { sectionOrder: ['TikTok', 'Instagram'] },
+    { op: 'add', block: 'YouTube', index: 0 }
+  )?.blockLayoutVersion === 1,
+  '挿入追加でも旧形式は明示操作のときだけ version 1 になる'
+);
+assert(
+  editBlockPlacement({ blockLayoutVersion: 2, sectionOrder: ['TikTok'] }, { op: 'add', block: 'YouTube', index: 0 }) ===
+    null,
+  '未対応バージョンでは挿入追加しない'
+);
 same(addBlock(['X'], 'YouTube', 99), ['X', 'YouTube'], '範囲外の追加位置は末尾');
 
 same(moveBlock(['YouTube', 'X', 'Instagram'], 'YouTube', 2), ['X', 'Instagram', 'YouTube'], '指定位置へ移動する');

@@ -246,7 +246,7 @@ export function mergeProfileSettings(existing: unknown, incoming: unknown): Reco
  * 未対応バージョンは変換しない。保存処理からは呼ばない。
  */
 export type BlockPlacementEdit =
-  | { op: 'add'; block: string }
+  | { op: 'add'; block: string; index?: number }
   | { op: 'remove'; block: string };
 
 /**
@@ -269,7 +269,9 @@ export function editBlockPlacement(
       : activateBlockLayout(settings?.sectionOrder, version);
   if (!base) return null;
   const sectionOrder =
-    edit.op === 'add' ? addBlock(base.sectionOrder, edit.block) : removeBlock(base.sectionOrder, edit.block);
+    edit.op === 'add'
+      ? addBlock(base.sectionOrder, edit.block, edit.index)
+      : removeBlock(base.sectionOrder, edit.block);
   return { blockLayoutVersion: BLOCK_LAYOUT_VERSION, sectionOrder };
 }
 

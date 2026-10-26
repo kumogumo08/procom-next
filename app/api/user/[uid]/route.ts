@@ -68,6 +68,47 @@ function pickArray<T>(incoming: Record<string, unknown>, key: string, existing: 
   return Array.isArray(value) ? (value as T[]) : [];
 }
 
+const PHOTO_DOWNLOAD_HOST = 'firebasestorage.googleapis.com';
+
+/**
+ * 差し替えで削除してよいオブジェクト。
+ * このサーバーのバケットで、本人の photos/{uid}/ 直下だけ。
+ * 解釈できないURLは null。例外にはしない。
+ */
+function ownedReplacementPhotoPath(rawUrl: unknown, uid: string, bucketName: string): string | null {
+  if (typeof rawUrl !== 'string' || !uid || !bucketName) return null;
+  let url: URL;
+  try {
+    url = new URL(rawUrl.trim());
+  } catch {
+    return null;
+  }
+  if (url.protocol !== 'https:' || url.username || url.password || url.port) return null;
+  if (url.hostname !== PHOTO_DOWNLOAD_HOST) return null;
+  if (url.searchParams.get('alt') !== 'media') return null;
+  const parts = url.pathname.split('/');
+  if (parts.length < 6 || parts[1] !== 'v0' || parts[2] !== 'b' || parts[4] !== 'o') return null;
+  if (parts[3] !== bucketName) return null;
+  let objectPath = '';
+  try {
+    objectPath = decodeURIComponent(parts.slice(5).join('/'));
+  } catch {
+    return null;
+  }
+  if (
+    !objectPath ||
+    objectPath.includes('\\') ||
+    objectPath.includes('..') ||
+    objectPath.includes('\0') ||
+    objectPath.includes('%')
+  ) {
+    return null;
+  }
+  const segments = objectPath.split('/');
+  if (segments.length !== 3 || segments[0] !== 'photos' || segments[1] !== uid || !segments[2]) return null;
+  return objectPath;
+}
+
 // --- GET: プロフィール情報取得 ---
 export async function GET(
   req: NextRequest,
@@ -226,11 +267,12 @@ export async function POST(req: NextRequest, props: { params: Promise<{ uid: str
           const deletedSet = new Set();
           for (const old of existingProfile.photos) {
             try {
-              const match = decodeURIComponent(old.url).match(/\/o\/(.+)\?alt=media/);
-              if (match && match[1] && !deletedSet.has(match[1])) {
-                await bucket.file(match[1]).delete();
-                deletedSet.add(match[1]);
-              }
+              const rawUrl =
+                typeof old === 'string' ? old : old && typeof old === 'object' ? (old as { url?: unknown }).url : undefined;
+              const objectPath = ownedReplacementPhotoPath(rawUrl, uid, bucket.name);
+              if (!objectPath || deletedSet.has(objectPath)) continue;
+              await bucket.file(objectPath).delete({ ignoreNotFound: true });
+              deletedSet.add(objectPath);
             } catch (e) {
               console.warn('⚠️ 古い画像削除失敗:', e);
             }

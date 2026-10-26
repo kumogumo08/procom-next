@@ -313,6 +313,67 @@ body {
   outline-offset: 3px;
 }
 
+.profile-request-card--editor {
+  flex-direction: column;
+  align-items: stretch;
+  justify-content: center;
+  gap: 10px;
+  padding: 16px;
+}
+
+.profile-request-editor__label {
+  color: #334155;
+  font-size: 0.85rem;
+  font-weight: 700;
+  line-height: 1.4;
+  text-align: center;
+}
+
+.profile-request-editor__note {
+  display: block;
+  margin-top: 2px;
+  color: #64748b;
+  font-size: 0.75rem;
+  font-weight: 600;
+}
+
+.profile-request-editor__input {
+  box-sizing: border-box;
+  width: 100%;
+  max-width: 100%;
+  min-height: 44px;
+  padding: 10px 12px;
+  border: 1px solid #bfdbfe;
+  border-radius: 8px;
+  background: #fff;
+  color: #0f172a;
+  font-size: 16px;
+}
+
+.profile-request-editor__hint {
+  margin: 0;
+  color: #94a3b8;
+  font-size: 0.75rem;
+  font-weight: 500;
+  line-height: 1.45;
+  text-align: center;
+}
+
+.profile-request-button--compact {
+  min-height: 0;
+  padding: 12px 10px;
+}
+
+.profile-request-button--compact .profile-request-button__icon {
+  width: 22px;
+  height: 22px;
+  margin-bottom: 4px;
+}
+
+.profile-request-button--compact .profile-request-button__title {
+  font-size: 1rem;
+}
+
 @media (prefers-reduced-motion: reduce) {
   .profile-request-card,
   .profile-request-button {

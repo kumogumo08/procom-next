@@ -25,7 +25,7 @@ import {
 } from '@dnd-kit/sortable';
 import { buttonPrimary } from '@/components/ui/cardStyles';
 import OshiButton from '@/components/OshiButton';
-import { WorkRequestButton } from '@/components/ContactButtonBlock';
+import ContactButtonBlock, { WorkRequestButton } from '@/components/ContactButtonBlock';
 import XShareButton from '@/components/XShareButton';
 import UserProfileSection from '@/components/UserProfileSection';
 import UserPageClient from '@/components/UserPageClient';
@@ -1011,7 +1011,16 @@ export default function UserPageSectionsClient({
       <main>
         <div className="profile-action-row">
           <OshiButton uid={uid} />
-          {typeof profile.emailForContact === 'string' && profile.emailForContact.trim() ? (
+          {isEditable ? (
+            <ContactButtonBlock
+              key={`contact-${formEpoch}`}
+              uid={uid}
+              isEditable
+              initialEmail={profile.emailForContact ?? undefined}
+              savedEmail={profile.emailForContact ?? ''}
+              onDraftChange={onContactDraftChange}
+            />
+          ) : typeof profile.emailForContact === 'string' && profile.emailForContact.trim() ? (
             <WorkRequestButton email={profile.emailForContact} />
           ) : null}
         </div>
@@ -1024,7 +1033,6 @@ export default function UserPageSectionsClient({
           initialProfile={profile}
           showFixedCalendar={showsFixedCalendar(draftProfile.settings?.calendarLayout, sectionOrder)}
           onBasicDraftChange={isEditable ? onBasicDraftChange : undefined}
-          onContactDraftChange={isEditable ? onContactDraftChange : undefined}
         />
 
         <UserPageClient

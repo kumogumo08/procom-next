@@ -2,7 +2,6 @@
 
 import ProfileEditor from './ProfileEditor';
 import CalendarBlock from './CalendarBlock';
-import ContactButtonBlock from './ContactButtonBlock';
 import { cardBase } from '@/components/ui/cardStyles';
 
 export default function UserProfileSection({
@@ -10,7 +9,6 @@ export default function UserProfileSection({
   isEditable,
   initialProfile,
   onBasicDraftChange,
-  onContactDraftChange,
   showFixedCalendar = true,
 }: {
   uid: string;
@@ -20,10 +18,8 @@ export default function UserProfileSection({
     name?: string;
     title?: string;
     bio?: string;
-    emailForContact?: string | null;
   };
   onBasicDraftChange?: (draft: { name?: string; title?: string; bio?: string }) => void;
-  onContactDraftChange?: (emailForContact: string) => void;
 }) {
   return (
     <section className="profile" style={{ ...cardBase, marginBottom: 24 }}>
@@ -38,19 +34,9 @@ export default function UserProfileSection({
             onDraftChange={onBasicDraftChange}
           />
         </div>
-        {isEditable || showFixedCalendar ? (
+        {showFixedCalendar ? (
           <div id="calendar-container">
-            {isEditable ? (
-              <div style={{ marginBottom: '20px', textAlign: 'center' }}>
-                <ContactButtonBlock
-                  uid={uid}
-                  isEditable={isEditable}
-                  initialEmail={initialProfile?.emailForContact ?? undefined}
-                  onDraftChange={onContactDraftChange}
-                />
-              </div>
-            ) : null}
-            {showFixedCalendar ? <CalendarBlock isEditable={isEditable} uid={uid} /> : null}
+            <CalendarBlock isEditable={isEditable} uid={uid} />
           </div>
         ) : null}
       </div>

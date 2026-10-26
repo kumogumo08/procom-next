@@ -6,6 +6,7 @@ type Props = {
   uid: string;
   isEditable: boolean;
   initialEmail?: string;
+  savedEmail?: string;
   onDraftChange?: (emailForContact: string) => void;
 };
 
@@ -36,11 +37,14 @@ export function WorkRequestButton({ email }: { email: string }) {
 }
 
 export default function ContactButtonBlock({
+  uid,
   isEditable,
   initialEmail,
+  savedEmail,
   onDraftChange,
 }: Props) {
   const [email, setEmail] = useState(initialEmail || '');
+  const saved = (savedEmail ?? initialEmail ?? '').trim();
 
   useEffect(() => {
     setEmail(initialEmail || '');
@@ -53,18 +57,32 @@ export default function ContactButtonBlock({
   if (!isEditable) return null;
 
   return (
-    <div className="my-6 text-center">
-      <p className="text-sm mb-2">📩 お仕事用メールアドレス（訪問者に表示されます）</p>
+    <div className="profile-request-card profile-request-card--editor">
+      <label className="profile-request-editor__label" htmlFor={`contact-email-${uid}`}>
+        お仕事用メールアドレス
+        <span className="profile-request-editor__note">訪問者に表示されます</span>
+      </label>
       <input
+        id={`contact-email-${uid}`}
         type="email"
+        inputMode="email"
+        autoComplete="email"
         placeholder="contact@example.com"
         value={email}
         onChange={(e) => setEmail(e.target.value)}
-        className="border px-3 py-2 rounded w-[280px] text-sm"
+        className="profile-request-editor__input"
       />
-      <p className="text-sm mt-2" style={{ color: '#64748b' }}>
-        保存すると、上の推しボタンの横に「お仕事依頼」が表示されます。
-      </p>
+      <p className="profile-request-editor__hint">※未入力の場合、お仕事依頼ボタンは表示されません。</p>
+      {saved ? (
+        <a href={contactMailtoHref(saved)} className="profile-request-button profile-request-button--compact">
+          <svg className="profile-request-button__icon" viewBox="0 0 24 24" aria-hidden="true">
+            <rect x="3" y="5.5" width="18" height="13" rx="2" fill="none" stroke="currentColor" strokeWidth="1.8" />
+            <path d="M4 7l8 6 8-6" fill="none" stroke="currentColor" strokeWidth="1.8" />
+          </svg>
+          <span className="profile-request-button__label">お仕事依頼</span>
+          <span className="profile-request-button__title">お問い合わせ</span>
+        </a>
+      ) : null}
     </div>
   );
 }

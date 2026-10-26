@@ -8,23 +8,26 @@
     "build": "next build",
     "postbuild": "shx cp -r .next/static .next/standalone/.next/static && shx cp -r public .next/standalone/public",
     "start": "node .next/standalone/server.js",
-    "lint": "next lint"
+    "lint": "next lint",
+    "emulators:start": "firebase emulators:start --only auth,firestore,storage --project demo-procom-local --config scripts/onboarding-emulator/firebase.json",
+    "dev:emulator": "npx tsx scripts/onboarding-emulator/dev-server.ts",
+    "test:onboarding:integration": "npx tsx scripts/onboarding-emulator/run.ts",
+    "test:withdraw:integration": "npx tsx scripts/onboarding-emulator/withdraw.ts"
   },
-  
   "dependencies": {
     "@dnd-kit/core": "^6.3.1",
     "@dnd-kit/modifiers": "^9.0.0",
     "@dnd-kit/sortable": "^10.0.0",
     "@fortawesome/fontawesome-free": "^6.7.2",
+    "@types/node": "24.0.0",
+    "@types/react": "^19.1.8",
+    "@types/react-dom": "^19.1.6",
     "bcryptjs": "^3.0.2",
     "cookie": "^1.0.2",
     "dotenv": "^17.0.0",
     "firebase": "^11.10.0",
     "firebase-admin": "^13.4.0",
     "iron-session": "^8.0.4",
-    "@types/node": "24.0.0",
-    "@types/react": "^19.1.8",
-    "@types/react-dom": "^19.1.6",
     "next": "^15.4.4",
     "next-sitemap": "^4.2.3",
     "qrcode": "^1.5.4",
@@ -42,9 +45,9 @@
     "autoprefixer": "^10.4.21",
     "eslint": "^9",
     "eslint-config-next": "15.4.4",
+    "firebase-tools": "^14.27.0",
     "postcss": "^8.5.4",
     "shx": "^0.4.0",
     "tailwindcss": "^3.4.17"
   }
 }
-

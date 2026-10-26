@@ -36,7 +36,7 @@ import { sitemapIndexPaths } from '@/lib/listing/sitemapXml';
 import { nextRateCount } from '@/lib/rateLimit';
 import { sliceDirectoryPage } from '@/lib/publicUserDirectory';
 import { createdAtToMillis } from '@/lib/publicUserDirectory';
-import { isProfilePublic } from '@/lib/userSeo';
+import { isProfilePublicWithOnboarding } from '@/lib/onboarding';
 
 function assert(condition: boolean, message: string): void {
   if (!condition) throw new Error(message);
@@ -365,14 +365,14 @@ async function dryRunExistingUsers(): Promise<void> {
   const counted = await db.collection('users').count().get();
   const total = counted.data().count;
   assert(total <= 500, `users が ${total} 件あるため全件読みを中止しました`);
-  const snap = await db.collection('users').select('createdAt', 'profile.isPublic').get();
+  const snap = await db.collection('users').select('createdAt', 'profile.isPublic', 'profile.onboardingStatus').get();
   assert(snap.size === total, 'select の件数と count が一致しない');
   const rows = snap.docs.map((doc) => {
     const data = doc.data();
     return {
       uid: doc.id,
       createdAtMs: createdAtToMillis(data.createdAt),
-      isPublic: isProfilePublic(data.profile),
+      isPublic: isProfilePublicWithOnboarding(data.profile),
     };
   });
   const planned = planBackfill(rows);

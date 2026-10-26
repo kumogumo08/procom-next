@@ -2,30 +2,16 @@
 export const runtime = 'nodejs'; // ⬅️ 必ず入れる！
 
 import { NextRequest, NextResponse } from 'next/server';
-import { getIronSession, SessionOptions } from 'iron-session';
-import type { SessionData } from '@/lib/session-types';
-import { cookies } from 'next/headers';
 import { bucket } from '@/lib/firebase';
+import { getSessionUID } from '@/lib/session';
 import { v4 as uuidv4 } from 'uuid';
 
-
-// ✅ セッションオプション
-const sessionOptions: SessionOptions = {
-  cookieName: 'procom_session',
-  password: process.env.SESSION_PASSWORD!,
-  cookieOptions: {
-    secure: process.env.NODE_ENV === 'production',
-  },
-};
-
 export async function POST(req: NextRequest) {
-  const cookieStore = await cookies(); // ✅ await 必須（Next.js 15以降）
-  const session = await getIronSession<SessionData>(cookieStore, sessionOptions);
+  const uid = await getSessionUID(req);
 
-  if (!session.uid) {
+  if (!uid) {
     return NextResponse.json({ error: '未ログインです' }, { status: 401 });
   }
-  const uid = session.uid;
 
   try {
     const { base64Images } = await req.json();

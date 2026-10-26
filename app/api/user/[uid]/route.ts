@@ -6,9 +6,6 @@ import { getFirestore } from 'firebase-admin/firestore';
 import { getStorage } from 'firebase-admin/storage';
 import { v4 as uuidv4 } from 'uuid';
 import { initializeFirebaseAdmin } from '@/lib/firebase';
-import { getIronSession } from 'iron-session';
-import { sessionOptions } from '@/lib/session';
-import type { SessionData } from '@/lib/session-types';
 import admin from 'firebase-admin';
 import { normalizeInstagramUrl } from '@/lib/sns';
 import { noteUserListing } from '@/lib/listing/firestoreListing';
@@ -23,6 +20,8 @@ import {
 import { enrichAppsWithStoreIcons } from '@/lib/appIcons';
 import { clampPhotoPositionY } from '@/lib/photoPosition';
 import { mergeProfileSettings } from '@/lib/blockLayout';
+import { isOnboardingBlocked } from '@/lib/onboarding';
+import { getSessionUID } from '@/lib/session';
 
 initializeFirebaseAdmin();
 const db = getFirestore();
@@ -90,7 +89,16 @@ export async function GET(
     }
 
     const data = userDoc.data();
+    if (data?.deletionPending === true) {
+      return NextResponse.json({ error: 'ユーザーが存在しません' }, { status: 404 });
+    }
     const rawProfile = data?.profile || {};
+    if (isOnboardingBlocked(rawProfile)) {
+      const sessionUid = await getSessionUID(req);
+      if (sessionUid !== uid) {
+        return NextResponse.json({ error: 'ユーザーが存在しません' }, { status: 404 });
+      }
+    }
 
     const photos = Array.isArray(rawProfile.photos)
       ? rawProfile.photos
@@ -151,8 +159,8 @@ export async function POST(req: NextRequest, props: { params: Promise<{ uid: str
       return NextResponse.json({ error: 'uidが指定されていません' }, { status: 400 });
     }
 
-    const session = await getIronSession<SessionData>(req, new NextResponse(), sessionOptions);
-    if (!session?.uid || session.uid !== uid) {
+    const sessionUid = await getSessionUID(req);
+    if (!sessionUid || sessionUid !== uid) {
       return NextResponse.json({ error: '権限がありません' }, { status: 403 });
     }
 
@@ -172,6 +180,9 @@ export async function POST(req: NextRequest, props: { params: Promise<{ uid: str
     }
 
     const existing = userDoc.data() || {};
+    if (existing.deletionPending === true) {
+      return NextResponse.json({ error: 'ユーザーが存在しません' }, { status: 404 });
+    }
     const existingProfile = existing.profile || {};
     const existingBannerLinks = existing.bannerLinks ?? [];
 
@@ -383,8 +394,8 @@ export async function PATCH(req: NextRequest) {
       return NextResponse.json({ error: 'uidが指定されていません' }, { status: 400 });
     }
 
-    const session = await getIronSession<SessionData>(req, new NextResponse(), sessionOptions);
-    if (!session?.uid || session.uid !== uid) {
+    const sessionUid = await getSessionUID(req);
+    if (!sessionUid || sessionUid !== uid) {
       return NextResponse.json({ error: '権限がありません' }, { status: 403 });
     }
 
@@ -416,6 +427,9 @@ export async function PATCH(req: NextRequest) {
 
     const userRef = db.collection('users').doc(uid);
     const existingSnap = await userRef.get();
+    if (!existingSnap.exists || existingSnap.get('deletionPending') === true) {
+      return NextResponse.json({ error: 'ユーザーが存在しません' }, { status: 404 });
+    }
     const existingProfile =
       existingSnap.exists && existingSnap.data()?.profile && typeof existingSnap.data()?.profile === 'object'
         ? (existingSnap.data()?.profile as Record<string, unknown>)

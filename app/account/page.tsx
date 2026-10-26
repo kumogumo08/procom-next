@@ -12,6 +12,7 @@ export default function AccountSettingsPage() {
   const [newEmail, setNewEmail] = useState('');
   const [newPassword, setNewPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
+  const [withdrawing, setWithdrawing] = useState(false);
 
   const handleSubmit = async (e: React.FormEvent) => {
   e.preventDefault();
@@ -45,15 +46,18 @@ export default function AccountSettingsPage() {
 };
 
   const handleWithdraw = async () => {
+    if (withdrawing) return;
     const confirmed = confirm("本当にアカウントを削除しますか？この操作は元に戻せません。");
     if (!confirmed) return;
 
+    setWithdrawing(true);
     try {
       const res = await fetch('/api/account/delete', { method: 'DELETE' });
       if (res.ok) {
-        await fetch('/api/logout');
+        await fetch('/api/logout').catch(() => undefined);
         alert("退会処理が完了しました。ご利用ありがとうございました。");
         router.push('/deleted');
+        return;
       } else {
         const msg = await res.text();
         alert("退会に失敗しました：" + msg);
@@ -62,6 +66,7 @@ export default function AccountSettingsPage() {
       alert("退会処理中にエラーが発生しました。");
       console.error(err);
     }
+    setWithdrawing(false);
   };
 
   return (
@@ -119,8 +124,12 @@ export default function AccountSettingsPage() {
         <div className="account-container" style={{ marginTop: 30, borderTop: '2px solid #f55' }}>
           <h2 style={{ color: '#c00' }}>アカウントを削除する</h2>
           <p>この操作は元に戻せません。本当に退会される場合のみ実行してください。</p>
-          <button onClick={handleWithdraw} style={{ backgroundColor: '#d9534f', marginTop: 10 }}>
-            退会する
+          <button
+            onClick={handleWithdraw}
+            disabled={withdrawing}
+            style={{ backgroundColor: '#d9534f', marginTop: 10 }}
+          >
+            {withdrawing ? '退会処理中...' : '退会する'}
           </button>
         </div>
       </main>

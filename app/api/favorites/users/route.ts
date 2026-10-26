@@ -1,4 +1,5 @@
 import { db } from '@/lib/firebase';
+import { isOnboardingBlocked } from '@/lib/onboarding';
 import { getSessionUID } from '@/lib/session';
 import { NextRequest, NextResponse } from 'next/server';
 import admin from 'firebase-admin';
@@ -39,6 +40,7 @@ export async function GET(req: NextRequest) {
         if (!data?.profile) continue;
 
         const profile = data.profile;
+        if (isOnboardingBlocked(profile)) continue;
         const photos = profile.photos;
         let photoUrl = '';
 

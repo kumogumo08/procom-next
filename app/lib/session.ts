@@ -4,6 +4,7 @@ import { getIronSession, IronSession } from 'iron-session';
 import type { SessionOptions } from 'iron-session';
 import type { SessionData } from './session-types';
 import { NextResponse, NextRequest } from 'next/server';
+import { confirmActiveUid } from '@/lib/activeSession';
 
 export async function getSessionServer() {
   // cookies() を await で解決
@@ -19,7 +20,8 @@ export async function getLoggedInUid(): Promise<string | null> {
   try {
     const session = await getSessionServer();
     const uid = session?.uid ?? null;
-    return typeof uid === 'string' && uid.length > 0 ? uid : null;
+    if (typeof uid !== 'string' || uid.length === 0) return null;
+    return confirmActiveUid(uid);
   } catch {
     return null;
   }
@@ -60,15 +62,9 @@ export async function verifySession(): Promise<IronSession<SessionData> | null> 
 }
 
 // ✅ API Route 内で使用（NextRequest 経由）
-export async function verifySessionFromRequest(
-  req: NextRequest
-): Promise<IronSession<SessionData> | null> {
+async function readIronSession(req: NextRequest): Promise<IronSession<SessionData> | null> {
   try {
-    const session = await getIronSession<SessionData>(
-      req,
-      new NextResponse(),
-      sessionOptions
-    );
+    const session = await getIronSession<SessionData>(req, new NextResponse(), sessionOptions);
     return session?.uid ? session : null;
   } catch (err) {
     console.error('❌ verifySessionFromRequest 失敗:', err);
@@ -76,7 +72,22 @@ export async function verifySessionFromRequest(
   }
 }
 
-// ✅ UIDだけを返す簡易関数
+/** Cookie の UID。退会の再試行だけが、Auth 削除後もこれを使う。 */
+export async function readSessionUid(req: NextRequest): Promise<string | null> {
+  const session = await readIronSession(req);
+  return session?.uid ?? null;
+}
+
+export async function verifySessionFromRequest(
+  req: NextRequest
+): Promise<IronSession<SessionData> | null> {
+  const session = await readIronSession(req);
+  if (!session?.uid) return null;
+  const live = await confirmActiveUid(session.uid);
+  return live ? session : null;
+}
+
+// ✅ UIDだけを返す簡易関数。Auth から消えたユーザーは null。
 export async function getSessionUID(
   req: NextRequest
 ): Promise<string | null> {
@@ -101,6 +112,12 @@ export async function setSessionCookie(
   };
 
   await session.save();
+  return res;
+}
+
+export async function clearSessionCookie(req: NextRequest, res: NextResponse): Promise<NextResponse> {
+  const session = await getIronSession<SessionData>(req, res, sessionOptions);
+  session.destroy();
   return res;
 }
 

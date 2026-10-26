@@ -367,4 +367,39 @@ const legacyNoisy = mergeProfileSettings(
 same(legacyNoisy.sectionOrder, ['YouTube', 'YouTube'], '旧形式の保存では重複を落とさない');
 assert(!('blockLayoutVersion' in legacyNoisy), '旧形式の保存検証で version を足さない');
 
+const freshLayout = { blockLayoutVersion: 1, sectionOrder: [] as string[], calendarLayout: 'section' as const };
+same(resolveSectionOrder(freshLayout.sectionOrder, freshLayout.blockLayoutVersion), [], '新規の空配列は既定順にしない');
+assert(!showsFixedCalendar(freshLayout.calendarLayout, freshLayout.sectionOrder), '新規の空配置ではカード内カレンダーを出さない');
+assert(showsFixedCalendar(undefined, []), '配置フラグが無い既存の空配置はカード内カレンダーのまま');
+let freshAdded = editBlockPlacement(freshLayout, { op: 'add', block: 'YouTube' });
+same(freshAdded?.sectionOrder, ['YouTube'], '空の新規配置へ1件だけ追加する');
+freshAdded = editBlockPlacement(freshAdded ?? undefined, { op: 'add', block: 'X', index: 0 });
+same(freshAdded?.sectionOrder, ['X', 'YouTube'], '2件目は指定位置へ追加する');
+freshAdded = editBlockPlacement(freshAdded ?? undefined, { op: 'add', block: 'Calendar', index: 1 });
+same(freshAdded?.sectionOrder, ['X', 'Calendar', 'YouTube'], 'Calendarは追加したときだけ入る');
+const freshMoved = freshAdded
+  ? { ...freshAdded, sectionOrder: moveBlock(freshAdded.sectionOrder, 'YouTube', 0) }
+  : null;
+same(freshMoved?.sectionOrder, ['YouTube', 'X', 'Calendar'], '追加後の並びを移動できる');
+const freshRemoved = editBlockPlacement(freshMoved ?? undefined, { op: 'remove', block: 'X' });
+same(freshRemoved?.sectionOrder, ['YouTube', 'Calendar'], '外したブロックは既定順で戻らない');
+const freshCalendarOff = editBlockPlacement(freshRemoved ?? undefined, { op: 'remove', block: 'Calendar' });
+same(freshCalendarOff?.sectionOrder, ['YouTube'], 'Calendarを外しても他のブロックは残る');
+assert(
+  !showsFixedCalendar('section', freshCalendarOff?.sectionOrder ?? []),
+  'Calendarを外した新規配置ではカード内へ戻さない'
+);
+const freshSaved = mergeProfileSettings(
+  freshLayout,
+  layoutFieldsForSave(freshCalendarOff ?? undefined, HISTORICAL_DEFAULT)
+);
+same(freshSaved.sectionOrder, ['YouTube'], '保存と再マージ後も追加分だけ');
+assert(freshSaved.blockLayoutVersion === 1, '保存後もversion 1');
+assert(freshSaved.calendarLayout === 'section', '保存後も新規のカレンダーフラグを維持');
+same(
+  resolveSectionOrder(freshSaved.sectionOrder, freshSaved.blockLayoutVersion),
+  ['YouTube'],
+  '再読込でも既定ブロックを補完しない'
+);
+
 console.log('block-layout-check ok');

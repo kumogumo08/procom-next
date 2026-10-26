@@ -5,7 +5,11 @@
 // 開発: env 未設定時のみ embeddedFallback を使用可能
 //
 // lib/firebaseClient.ts
-import { initializeApp, getApps, type FirebaseOptions } from 'firebase/app';
+import { initializeApp, getApps, type FirebaseApp, type FirebaseOptions } from 'firebase/app';
+import { connectAuthEmulator, getAuth } from 'firebase/auth';
+import { connectFirestoreEmulator, getFirestore } from 'firebase/firestore';
+import { connectStorageEmulator, getStorage } from 'firebase/storage';
+import { assertClientEmulator, splitLoopbackHost } from '@/lib/firebaseEmulator';
 
 const embeddedFallback = {
   apiKey: 'AIzaSyCMbC5f6vAFufLN-_F72iXvVhEugalzDfo',
@@ -38,6 +42,17 @@ function required(value: string | undefined, name: string): string {
 }
 
 function buildFirebaseConfig(): FirebaseOptions {
+  if (process.env.NEXT_PUBLIC_PROCOM_EMULATOR === '1') {
+    const isolated = assertClientEmulator();
+    return {
+      apiKey: 'demo-local-api-key',
+      authDomain: 'localhost',
+      projectId: isolated.projectId,
+      storageBucket: isolated.storageBucket,
+      appId: 'demo-local',
+    };
+  }
+
   if (isDev) {
     return {
       apiKey: envApiKey ?? embeddedFallback.apiKey,
@@ -70,7 +85,23 @@ const firebaseConfig = buildFirebaseConfig();
 export const firebaseApp =
   getApps().length === 0 ? initializeApp(firebaseConfig) : getApps()[0];
 
-if (typeof window !== 'undefined') {
+function connectIsolatedEmulators(app: FirebaseApp): void {
+  const isolated = assertClientEmulator();
+  const marker = globalThis as { __procomClientEmulator?: boolean };
+  if (marker.__procomClientEmulator) return;
+  connectAuthEmulator(getAuth(app), `http://${isolated.authHost}`, { disableWarnings: true });
+  const firestore = splitLoopbackHost(isolated.firestoreHost);
+  connectFirestoreEmulator(getFirestore(app), firestore.host, firestore.port);
+  const storage = splitLoopbackHost(isolated.storageHost);
+  connectStorageEmulator(getStorage(app), storage.host, storage.port);
+  marker.__procomClientEmulator = true;
+}
+
+if (process.env.NEXT_PUBLIC_PROCOM_EMULATOR === '1') {
+  connectIsolatedEmulators(firebaseApp);
+}
+
+if (typeof window !== 'undefined' && process.env.NEXT_PUBLIC_PROCOM_EMULATOR !== '1') {
   console.log('[firebaseClient] NODE_ENV:', process.env.NODE_ENV);
   console.log('[firebaseClient] env exists:', {
     apiKey: Boolean(envApiKey),

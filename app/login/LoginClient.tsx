@@ -9,6 +9,7 @@ import Link from 'next/link'
 import { FirebaseError } from 'firebase/app';
 import { getAuth, signInWithEmailAndPassword } from 'firebase/auth';
 import { firebaseApp } from '@/lib/firebaseClient';
+import { safeLoginRedirect } from '@/lib/onboarding';
 
 /** ユーザー向け（Firebase の code / 英語メッセージは出さない） */
 const LOGIN_FAIL_TITLE = 'ログインに失敗しました';
@@ -84,6 +85,11 @@ export default function LoginPage({ initialMode }: LoginPageProps) {
         router.push(result.redirectTo);
       } else {
         const msg = await res.text();
+        if (res.status === 409 && msg.includes('ログイン')) {
+          setMode('login');
+          setLoginError({ title: 'ログインして続きを行ってください', detail: msg });
+          return;
+        }
         alert('登録失敗: ' + msg);
       }
     } catch {
@@ -144,7 +150,7 @@ export default function LoginPage({ initialMode }: LoginPageProps) {
       }
 
       loginStep = 'res.json() session response';
-      let data: { uid?: string; ok?: boolean };
+      let data: { uid?: string; ok?: boolean; redirectTo?: string };
       try {
         data = await res.json();
       } catch (parseErr) {
@@ -160,7 +166,7 @@ export default function LoginPage({ initialMode }: LoginPageProps) {
         setLoginError({ title: LOGIN_FAIL_TITLE, detail: LOGIN_FAIL_GENERIC_DETAIL });
         return;
       }
-      router.push(`/user/${data.uid}`);
+      router.push(safeLoginRedirect(data.uid, data.redirectTo));
     } catch (e: unknown) {
       console.error('[LOGIN] FAILED at step:', loginStep, e);
 

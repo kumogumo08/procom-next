@@ -1,7 +1,7 @@
 // GET /api/admin/users — 新規登録者一覧（管理者のみ）
 import { NextResponse } from 'next/server';
 import { db } from '@/lib/firebase-admin';
-import { getSessionServer } from '@/lib/session';
+import { getLoggedInUid } from '@/lib/session';
 import { isAdmin } from '@/lib/isAdmin';
 
 export const runtime = 'nodejs';
@@ -55,8 +55,8 @@ function countRegisteredLinks(profile: Record<string, unknown>): number {
 }
 
 export async function GET() {
-  const session = await getSessionServer();
-  if (!isAdmin(session?.uid)) {
+  const uid = await getLoggedInUid();
+  if (!isAdmin(uid ?? undefined)) {
     return NextResponse.json(
       { error: 'unauthorized' },
       { status: 403, headers: { 'Cache-Control': 'private, no-store' } }

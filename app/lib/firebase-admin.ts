@@ -11,26 +11,38 @@ if (process.env.NODE_ENV !== 'production') {
   require('dotenv').config();
 }
 
-import * as admin from 'firebase-admin';
+import admin from 'firebase-admin';
 import fs from 'fs';
 import path from 'path';
+import { assertServerEmulator } from '@/lib/firebaseEmulator';
+import { emulatorServiceAccount, markEmulatorCredential } from '@/lib/firebaseEmulatorCredential';
 
 if (!admin.apps.length) {
-  const keyPath = process.env.FIREBASE_KEY_PATH;
-  if (!keyPath) throw new Error('環境変数 FIREBASE_KEY_PATH が未設定です');
+  if (process.env.PROCOM_EMULATOR === '1') {
+    const isolated = assertServerEmulator();
+    admin.initializeApp({
+      projectId: isolated.projectId,
+      storageBucket: isolated.storageBucket,
+      credential: admin.credential.cert(emulatorServiceAccount(isolated.projectId)),
+    });
+    markEmulatorCredential();
+  } else {
+    const keyPath = process.env.FIREBASE_KEY_PATH;
+    if (!keyPath) throw new Error('環境変数 FIREBASE_KEY_PATH が未設定です');
 
-  const resolvedPath = path.resolve(keyPath);
-  if (!fs.existsSync(resolvedPath)) throw new Error(`秘密鍵ファイルが見つかりません: ${resolvedPath}`);
+    const resolvedPath = path.resolve(keyPath);
+    if (!fs.existsSync(resolvedPath)) throw new Error(`秘密鍵ファイルが見つかりません: ${resolvedPath}`);
 
-  const serviceAccount: any = JSON.parse(fs.readFileSync(resolvedPath, 'utf8'));
-  if (serviceAccount.private_key && typeof serviceAccount.private_key === 'string') {
-    serviceAccount.private_key = serviceAccount.private_key.replace(/\\n/g, '\n');
+    const serviceAccount: any = JSON.parse(fs.readFileSync(resolvedPath, 'utf8'));
+    if (serviceAccount.private_key && typeof serviceAccount.private_key === 'string') {
+      serviceAccount.private_key = serviceAccount.private_key.replace(/\\n/g, '\n');
+    }
+
+    admin.initializeApp({
+      credential: admin.credential.cert(serviceAccount),
+      storageBucket: process.env.FIREBASE_STORAGE_BUCKET,
+    });
   }
-
-  admin.initializeApp({
-    credential: admin.credential.cert(serviceAccount),
-    storageBucket: process.env.FIREBASE_STORAGE_BUCKET,
-  });
 }
 
 export const db = admin.firestore();

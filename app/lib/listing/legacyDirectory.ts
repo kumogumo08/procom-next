@@ -5,7 +5,7 @@ import { unstable_cache } from 'next/cache';
 import { db } from '@/lib/firebase-admin';
 import { positiveMillis } from '@/lib/profileContent';
 import { compareDirectoryOrder, createdAtToMillis } from '@/lib/publicUserDirectory';
-import { isProfilePublic } from '@/lib/userSeo';
+import { isProfilePublicWithOnboarding } from '@/lib/onboarding';
 
 import { assertLegacyScanAllowed } from './readiness';
 import { normalizeSearchText } from './searchText';
@@ -40,6 +40,7 @@ export async function readLegacyDirectory(): Promise<LegacyListUser[]> {
     .select(
       'createdAt',
       'profile.isPublic',
+      'profile.onboardingStatus',
       'profile.name',
       'profile.title',
       'profile.photos',
@@ -51,7 +52,7 @@ export async function readLegacyDirectory(): Promise<LegacyListUser[]> {
     const data = doc.data();
     const profile =
       data.profile && typeof data.profile === 'object' ? (data.profile as Record<string, unknown>) : {};
-    if (!isProfilePublic(profile)) continue;
+    if (!isProfilePublicWithOnboarding(profile)) continue;
     rows.push({
       uid: doc.id,
       name: typeof profile.name === 'string' ? profile.name : '',
@@ -66,7 +67,7 @@ export async function readLegacyDirectory(): Promise<LegacyListUser[]> {
 }
 
 /** 移行完了前だけ使う。500人を超えたら拒否する。 */
-export const getLegacyDirectory = unstable_cache(readLegacyDirectory, ['legacy-directory-v2'], {
+export const getLegacyDirectory = unstable_cache(readLegacyDirectory, ['legacy-directory-v3'], {
   revalidate: 60,
 });
 

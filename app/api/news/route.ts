@@ -1,7 +1,7 @@
 // app/api/news/route.ts
 import { NextRequest, NextResponse } from "next/server";
 import { db, FieldValue } from "@/lib/firebase-admin";
-import { getSessionServer } from "@/lib/session";
+import { getLoggedInUid } from "@/lib/session";
 import { isAdmin } from "@/lib/isAdmin";
 
 export const runtime = "nodejs";
@@ -47,8 +47,8 @@ export async function GET(req: NextRequest) {
 }
 
 export async function POST(req: NextRequest) {
-  const session = await getSessionServer();
-  if (!isAdmin(session?.uid)) {
+  const uid = await getLoggedInUid();
+  if (!isAdmin(uid ?? undefined)) {
     return NextResponse.json({ error: "unauthorized" }, { status: 403 });
   }
 

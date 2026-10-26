@@ -3,6 +3,7 @@ import { getIronSession } from "iron-session";
 import { sessionOptions } from "@/lib/session";
 import type { SessionData } from "@/lib/session-types";
 import { isAdmin } from "@/lib/isAdmin";
+import { confirmActiveUid } from "@/lib/activeSession";
 
 export const runtime = "nodejs";
 
@@ -12,15 +13,15 @@ export async function GET(req: NextRequest) {
     const res = new NextResponse();
     const session = await getIronSession<SessionData>(req, res, sessionOptions);
 
-    const uid = session?.uid ?? null;
-    const username = session?.username ?? null;
+    const rawUid = typeof session?.uid === 'string' ? session.uid : null;
+    const uid = await confirmActiveUid(rawUid);
 
     return NextResponse.json({
       loggedIn: !!uid,
       uid,
-      username,
-      name: session?.user?.name ?? null,
-      isAdmin: isAdmin(uid),         // ★これが重要
+      username: uid ? session?.username ?? null : null,
+      name: uid ? session?.user?.name ?? null : null,
+      isAdmin: isAdmin(uid ?? undefined),
     });
   } catch {
     return NextResponse.json({ loggedIn: false, isAdmin: false }, { status: 200 });

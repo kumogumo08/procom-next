@@ -6,6 +6,7 @@ import { getStorage } from 'firebase-admin/storage';
 import { verifySessionFromRequest } from '@/lib/session';
 import { initializeFirebaseAdmin } from '@/lib/firebase';
 import { noteUserListing } from '@/lib/listing/firestoreListing';
+import { isOnboardingBlocked } from '@/lib/onboarding';
 import { nextContentStamp } from '@/lib/profileContent';
 
 export const runtime = 'nodejs'; // ✅ Edge Runtime対策
@@ -28,6 +29,15 @@ export async function GET(req: NextRequest) {
   }
 
   const data = doc.data();
+  if (data?.deletionPending === true) {
+    return NextResponse.json({ error: 'ユーザーが見つかりません' }, { status: 404 });
+  }
+  if (isOnboardingBlocked(data?.profile)) {
+    const session = await verifySessionFromRequest(req);
+    if (session?.uid !== uid) {
+      return NextResponse.json({ error: 'ユーザーが見つかりません' }, { status: 404 });
+    }
+  }
   const banners = data?.profile?.bannerLinks ?? [];
   const settings = data?.profile?.settings ?? {}; // ✅ 追加！
 

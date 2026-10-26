@@ -1,0 +1,42 @@
+name: account-deletion-resume
+
+# 定期実行は、リポジトリ Variables の ACCOUNT_DELETION_RESUME_ENABLED が true になるまで HTTP を呼ばない。
+# listing-sync とは別の concurrency で、そちらの実行は止めない。
+# 有効化前に Render の署名鍵・Bearer と、同名の Actions secret を入れる。値はこのファイルへ書かない。
+on:
+  schedule:
+    - cron: '15 18 * * *'
+  workflow_dispatch:
+    inputs:
+      confirm:
+        description: run と入力したときだけ手動実行する
+        required: true
+        type: string
+
+concurrency:
+  group: account-deletion-resume
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  resume:
+    if: vars.ACCOUNT_DELETION_RESUME_ENABLED == 'true' && (github.event_name == 'schedule' || github.event.inputs.confirm == 'run')
+    runs-on: ubuntu-latest
+    timeout-minutes: 2
+    steps:
+      - name: Call account deletion resume
+        env:
+          ACCOUNT_DELETION_RESUME_SECRET: ${{ secrets.ACCOUNT_DELETION_RESUME_SECRET }}
+        run: |
+          set -euo pipefail
+          if [ -z "${ACCOUNT_DELETION_RESUME_SECRET:-}" ]; then
+            echo "ACCOUNT_DELETION_RESUME_SECRET is not set"
+            exit 1
+          fi
+          status="$(curl --silent --show-error --output /dev/null --write-out "%{http_code}" --request POST --header "Authorization: Bearer ${ACCOUNT_DELETION_RESUME_SECRET}" --max-time 90 "https://procom.jp/api/internal/account-deletion-resume")"
+          echo "HTTP ${status}"
+          if [ "${status}" -lt 200 ] || [ "${status}" -ge 300 ]; then
+            exit 1
+          fi

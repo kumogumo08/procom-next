@@ -1,12 +1,26 @@
 // app/lib/firebase.ts
-import * as admin from 'firebase-admin';
+import admin from 'firebase-admin';
 import fs from 'fs';
 import path from 'path';
+import { assertServerEmulator } from '@/lib/firebaseEmulator';
+import { emulatorServiceAccount, markEmulatorCredential } from '@/lib/firebaseEmulatorCredential';
 
 let initialized = false;
 
 export function initializeFirebaseAdmin(): void {
   if (admin.apps.length > 0) return;
+
+  if (process.env.PROCOM_EMULATOR === '1') {
+    const isolated = assertServerEmulator();
+    admin.initializeApp({
+      projectId: isolated.projectId,
+      storageBucket: isolated.storageBucket,
+      credential: admin.credential.cert(emulatorServiceAccount(isolated.projectId)),
+    });
+    markEmulatorCredential();
+    initialized = true;
+    return;
+  }
 
   const keyPath = process.env.FIREBASE_KEY_PATH;
   if (!keyPath) throw new Error('FIREBASE_KEY_PATH が .env に設定されていません');

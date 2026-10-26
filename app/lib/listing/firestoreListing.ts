@@ -7,7 +7,7 @@ import type { DocumentData } from 'firebase-admin/firestore';
 import { db } from '@/lib/firebase-admin';
 import { positiveMillis, readContentUpdatedAtMs } from '@/lib/profileContent';
 import { createdAtToMillis } from '@/lib/publicUserDirectory';
-import { isProfilePublic } from '@/lib/userSeo';
+import { isProfilePublicWithOnboarding } from '@/lib/onboarding';
 
 import {
   commitDecision,
@@ -129,7 +129,8 @@ export async function enqueueUserListing(uid: string): Promise<void> {
     }
 
     const userData = userSnap.data() as Record<string, unknown> | undefined;
-    const listed = userSnap.exists && isProfilePublic(userData?.profile);
+    const deleting = userData?.deletionPending === true;
+    const listed = userSnap.exists && !deleting && isProfilePublicWithOnboarding(userData?.profile);
     const { state: next, revision } = listed
       ? enqueueListing(state, uid, 'upsert', fieldsFromUserData(userData))
       : enqueueListing(state, uid, 'remove');

@@ -1,28 +1,26 @@
 // ファイル: app/api/account/delete/route.ts
 import { NextRequest, NextResponse } from 'next/server';
-import { db, bucket } from '@/lib/firebase';
-import { noteUserListing } from '@/lib/listing/firestoreListing';
-import { getSessionUID } from '@/lib/session';
+import { firebaseDeletionPorts, runAccountDeletion } from '@/lib/accountDeletion';
+import { clearSessionCookie, readSessionUid } from '@/lib/session';
 
 export async function DELETE(req: NextRequest) {
-  const uid = await getSessionUID(req); 
+  const uid = await readSessionUid(req);
   if (!uid) {
     return NextResponse.json({ message: 'ログインが必要です' }, { status: 401 });
   }
 
   try {
-    // Firestoreのユーザーデータ削除
-    await db.collection('users').doc(uid).delete();
-    await noteUserListing(uid);
-
-    // Firebase Storageの写真も削除
-    const [files] = await bucket.getFiles({ prefix: `photos/${uid}` });
-    await Promise.all(files.map((file) => file.delete()));
-
-    // セッション破棄はここではできないため、フロントで /api/logout へリダイレクト推奨
-    return NextResponse.json({ success: true });
-  } catch (err) {
-    console.error('❌ 退会処理エラー:', err);
+    const result = await runAccountDeletion(uid, firebaseDeletionPorts());
+    if (!result.ok) {
+      return NextResponse.json({ message: result.message }, { status: result.status });
+    }
+  } catch (err: unknown) {
+    const code = (err as { code?: string }).code;
+    console.error('退会処理エラー:', code ?? (err instanceof Error ? err.name : 'error'));
     return NextResponse.json({ message: '退会処理に失敗しました' }, { status: 500 });
   }
+
+  const res = NextResponse.json({ success: true });
+  await clearSessionCookie(req, res);
+  return res;
 }

@@ -42,11 +42,14 @@ export async function POST(
     issueVisitorId = actor.issueVisitorId;
     const result = await commitOshi(uid, actor.actorKey);
     if (!result.ok) {
-      return oshiJson(
-        { success: false, reason: result.reason, todayCount: result.todayCount },
-        429,
-        issueVisitorId
-      );
+      if (result.reason === 'daily_limit') {
+        return oshiJson(
+          { success: false, reason: result.reason, todayCount: result.todayCount },
+          429,
+          issueVisitorId
+        );
+      }
+      return oshiJson({ success: false, error: 'not_found' }, 404, issueVisitorId);
     }
     return oshiJson(
       { success: true, todayCount: result.todayCount, totalCount: result.totalCount },

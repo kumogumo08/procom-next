@@ -1,6 +1,7 @@
 import { createHash, randomUUID } from 'crypto';
 import type { NextRequest } from 'next/server';
 import { admin, db } from '@/lib/firebase';
+import { isProfilePublicWithOnboarding } from '@/lib/onboarding';
 import { getSessionUID } from '@/lib/session';
 
 export const MAX_OSHI_PER_DAY = 5;
@@ -20,16 +21,13 @@ export type OshiActor = {
 
 export type OshiCommitResult =
   | { ok: true; todayCount: number; totalCount: number }
-  | { ok: false; reason: 'daily_limit'; todayCount: number };
+  | { ok: false; reason: 'daily_limit'; todayCount: number }
+  | { ok: false; reason: 'unavailable' };
 
-class DailyLimitError extends Error {
-  readonly todayCount: number;
-
-  constructor(todayCount: number) {
-    super('daily_limit');
-    this.name = 'DailyLimitError';
-    this.todayCount = todayCount;
-  }
+function canReceiveOshi(snap: admin.firestore.DocumentSnapshot): boolean {
+  if (!snap.exists) return false;
+  if (snap.get('deletionPending') === true) return false;
+  return isProfilePublicWithOnboarding(snap.get('profile'));
 }
 
 export function isSafeProfileUid(uid: string): boolean {
@@ -134,39 +132,45 @@ export async function commitOshi(
   const userRef = db.collection('users').doc(targetUid);
   const expiresAt = admin.firestore.Timestamp.fromDate(getOshiDailyExpiresAt(date));
 
-  return db.runTransaction(async (tx) => {
-    const dailySnap = await tx.get(dailyRef);
-    const userSnap = await tx.get(userRef);
-    const todayCount = readNonNegative(dailySnap.exists ? dailySnap.data()?.totalCount : 0);
+  try {
+    return await db.runTransaction(async (tx) => {
+      const userSnap = await tx.get(userRef);
+      if (!canReceiveOshi(userSnap)) {
+        return { ok: false as const, reason: 'unavailable' as const };
+      }
 
-    if (todayCount >= MAX_OSHI_PER_DAY) {
-      throw new DailyLimitError(todayCount);
-    }
+      const dailySnap = await tx.get(dailyRef);
+      const todayCount = readNonNegative(dailySnap.exists ? dailySnap.data()?.totalCount : 0);
+      if (todayCount >= MAX_OSHI_PER_DAY) {
+        return { ok: false as const, reason: 'daily_limit' as const, todayCount };
+      }
 
-    const targets = readTargets(dailySnap.exists ? dailySnap.data()?.targets : {});
-    targets[targetUid] = (targets[targetUid] ?? 0) + 1;
-    const nextToday = todayCount + 1;
-    const prevTotal = readNonNegative(userSnap.exists ? userSnap.data()?.oshiCount : 0);
-    const nextTotal = prevTotal + 1;
+      const targets = readTargets(dailySnap.exists ? dailySnap.data()?.targets : {});
+      targets[targetUid] = (targets[targetUid] ?? 0) + 1;
+      const nextToday = todayCount + 1;
+      const prevTotal = readNonNegative(userSnap.get('oshiCount'));
+      const nextTotal = prevTotal + 1;
 
-    tx.set(
-      dailyRef,
-      {
-        date,
-        totalCount: nextToday,
-        targets,
-        updatedAt: admin.firestore.FieldValue.serverTimestamp(),
-        expiresAt,
-      },
-      { merge: true }
-    );
-    tx.set(userRef, { oshiCount: nextTotal }, { merge: true });
+      tx.set(
+        dailyRef,
+        {
+          date,
+          totalCount: nextToday,
+          targets,
+          updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+          expiresAt,
+        },
+        { merge: true }
+      );
+      tx.update(userRef, { oshiCount: nextTotal });
 
-    return { ok: true as const, todayCount: nextToday, totalCount: nextTotal };
-  }).catch((error: unknown) => {
-    if (error instanceof DailyLimitError) {
-      return { ok: false as const, reason: 'daily_limit' as const, todayCount: error.todayCount };
+      return { ok: true as const, todayCount: nextToday, totalCount: nextTotal };
+    });
+  } catch (error: unknown) {
+    const code = (error as { code?: unknown }).code;
+    if (code === 5 || code === 'not-found') {
+      return { ok: false, reason: 'unavailable' };
     }
     throw error;
-  });
+  }
 }

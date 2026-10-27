@@ -11,6 +11,23 @@ export function isDeletionUid(uid: string): boolean {
   return /^[A-Za-z0-9_-]{1,128}$/.test(uid);
 }
 
+/** 退会UIDの photos または banners 直下だけ。クライアントのパスは受け取らない。 */
+export async function deleteOwnedStoragePrefix(uid: string, folder: 'photos' | 'banners'): Promise<void> {
+  if (!isDeletionUid(uid)) {
+    throw new Error('退会対象を確認できません');
+  }
+  const prefix = `${folder}/${uid}/`;
+  const [files] = await bucket.getFiles({ prefix });
+  await Promise.all(
+    files.map(async (file) => {
+      if (!file.name.startsWith(prefix) || file.name.includes('..')) {
+        throw new Error('退会対象を確認できません');
+      }
+      await file.delete({ ignoreNotFound: true });
+    })
+  );
+}
+
 export type AuthState = 'present' | 'missing' | 'unavailable';
 
 export type AccountDeletionPorts = {
@@ -276,9 +293,8 @@ export function firebaseDeletionPorts(): AccountDeletionPorts {
       }
     },
     async deleteStorage(uid) {
-      const prefix = `photos/${uid}/`;
-      const [files] = await bucket.getFiles({ prefix });
-      await Promise.all(files.map((file) => file.delete()));
+      await deleteOwnedStoragePrefix(uid, 'photos');
+      await deleteOwnedStoragePrefix(uid, 'banners');
     },
     async deleteUserDoc(uid) {
       await db.collection('users').doc(uid).delete();

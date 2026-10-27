@@ -1,9 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { firebaseDeletionPorts, runAccountDeletion, type AccountDeletionPorts } from '@/lib/accountDeletion';
+import { deleteOwnedStoragePrefix, firebaseDeletionPorts, runAccountDeletion, type AccountDeletionPorts } from '@/lib/accountDeletion';
 import { assertServerEmulator } from '@/lib/firebaseEmulator';
 import { readSessionUid } from '@/lib/session';
 
-const STEPS = new Set(['unavailable', 'deleteAuth', 'deleteStorage', 'deleteUserDoc']);
+const STEPS = new Set(['unavailable', 'deleteAuth', 'deleteStorage', 'deleteBanners', 'deleteUserDoc']);
 
 /** Emulator の失敗注入だけ。本番設定では 404。セッションの UID 以外は消さない。 */
 export async function POST(req: NextRequest) {
@@ -39,6 +39,12 @@ export async function POST(req: NextRequest) {
   if (step === 'deleteStorage') {
     wrapped.deleteStorage = async () => {
       throw new Error('injected-storage');
+    };
+  }
+  if (step === 'deleteBanners') {
+    wrapped.deleteStorage = async (targetUid) => {
+      await deleteOwnedStoragePrefix(targetUid, 'photos');
+      throw new Error('injected-banners');
     };
   }
   if (step === 'deleteUserDoc') {

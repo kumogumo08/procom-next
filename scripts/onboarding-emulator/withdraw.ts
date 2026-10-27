@@ -243,11 +243,12 @@ async function main(): Promise<number> {
   }
 
   async function gone(uid: string): Promise<boolean> {
-    const [doc, listed, marker, files] = await Promise.all([
+    const [doc, listed, marker, files, banners] = await Promise.all([
       db.collection('users').doc(uid).get(),
       db.collection('publicProfiles').doc(uid).get(),
       db.collection('accountDeletions').doc(uid).get(),
       bucket.getFiles({ prefix: `photos/${uid}/` }),
+      bucket.getFiles({ prefix: `banners/${uid}/` }),
     ]);
     let authGone = false;
     try {
@@ -255,7 +256,14 @@ async function main(): Promise<number> {
     } catch (err: unknown) {
       authGone = (err as { code?: string }).code === 'auth/user-not-found';
     }
-    return authGone && !doc.exists && !listed.exists && !marker.exists && files[0].length === 0;
+    return authGone && !doc.exists && !listed.exists && !marker.exists && files[0].length === 0 && banners[0].length === 0;
+  }
+
+  async function saveBanner(uid: string): Promise<void> {
+    await bucket.file(`banners/${uid}/card.jpg`).save(Buffer.from('banner'), {
+      contentType: 'image/jpeg',
+      resumable: false,
+    });
   }
 
   try {
@@ -416,6 +424,113 @@ async function main(): Promise<number> {
       );
       const storeRetry = await request('/api/account/delete', storeFail.jar, { method: 'DELETE' });
       row('17. Storage失敗後の再試行', storeRetry.status === 200 && (await gone(storeFail.user.uid)), `HTTP ${storeRetry.status}`);
+
+      await saveBanner(keeper.uid);
+      const keeperBanner = `banners/${keeper.uid}/card.jpg`;
+      const both = await seed('both');
+      await saveBanner(both.uid);
+      const bothJar: CookieJar = new Map();
+      await sessionLogin(await signIn(both.email, PASSWORD), bothJar);
+      const bothRemoved = await request('/api/account/delete', bothJar, {
+        method: 'DELETE',
+        body: JSON.stringify({ uid: keeper.uid, path: `banners/${keeper.uid}/card.jpg` }),
+        headers: { 'content-type': 'application/json' },
+      });
+      const [bothPhotos] = await bucket.getFiles({ prefix: `photos/${both.uid}/` });
+      const [bothBanners] = await bucket.getFiles({ prefix: `banners/${both.uid}/` });
+      row(
+        '写真とバナーを退会で削除',
+        bothRemoved.status === 200 &&
+          bothPhotos.length === 0 &&
+          bothBanners.length === 0 &&
+          (await gone(both.uid)) &&
+          (await bucket.file(keeperBanner).exists())[0],
+        `HTTP ${bothRemoved.status}`
+      );
+
+      const bannerOnly = await seed('banneronly');
+      await bucket.file(`photos/${bannerOnly.uid}/one.jpg`).delete({ ignoreNotFound: true });
+      await saveBanner(bannerOnly.uid);
+      const bannerJar: CookieJar = new Map();
+      await sessionLogin(await signIn(bannerOnly.email, PASSWORD), bannerJar);
+      const bannerRemoved = await request('/api/account/delete', bannerJar, { method: 'DELETE' });
+      const [bannerLeft] = await bucket.getFiles({ prefix: `banners/${bannerOnly.uid}/` });
+      row(
+        'バナーだけでも退会できる',
+        bannerRemoved.status === 200 && bannerLeft.length === 0 && (await gone(bannerOnly.uid)),
+        `HTTP ${bannerRemoved.status}`
+      );
+
+      const noBanner = await seed('nobanner');
+      const noBannerJar: CookieJar = new Map();
+      await sessionLogin(await signIn(noBanner.email, PASSWORD), noBannerJar);
+      const noBannerRemoved = await request('/api/account/delete', noBannerJar, { method: 'DELETE' });
+      row('バナーがなくても退会できる', noBannerRemoved.status === 200 && (await gone(noBanner.uid)), `HTTP ${noBannerRemoved.status}`);
+
+      const neighbor = await seed('neighbor');
+      await saveBanner(neighbor.uid);
+      const neighborBanner = `banners/${neighbor.uid}/card.jpg`;
+      const victim = await seed('victim');
+      await saveBanner(victim.uid);
+      const victimJar: CookieJar = new Map();
+      await sessionLogin(await signIn(victim.email, PASSWORD), victimJar);
+      const victimRemoved = await request('/api/account/delete', victimJar, {
+        method: 'DELETE',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ uid: neighbor.uid, path: neighborBanner }),
+      });
+      row(
+        '他人のバナーは削除されない',
+        victimRemoved.status === 200 &&
+          (await gone(victim.uid)) &&
+          (await bucket.file(neighborBanner).exists())[0] &&
+          (await bucket.file(`photos/${neighbor.uid}/one.jpg`).exists())[0] &&
+          (await bucket.file(keeperBanner).exists())[0] &&
+          (await db.collection('users').doc(neighbor.uid).get()).exists,
+        `HTTP ${victimRemoved.status}`
+      );
+
+      const partial = await seed('partial');
+      await saveBanner(partial.uid);
+      const partialJar: CookieJar = new Map();
+      await sessionLogin(await signIn(partial.email, PASSWORD), partialJar);
+      const partialFail = await request('/api/account/delete-fault', partialJar, {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ step: 'deleteBanners', uid: neighbor.uid }),
+      });
+      let partialAuthGone = false;
+      try {
+        await admin.auth().getUser(partial.uid);
+      } catch (err: unknown) {
+        partialAuthGone = (err as { code?: string }).code === 'auth/user-not-found';
+      }
+      const partialDoc = await db.collection('users').doc(partial.uid).get();
+      const partialMarker = await db.collection('accountDeletions').doc(partial.uid).get();
+      const [partialPhotos] = await bucket.getFiles({ prefix: `photos/${partial.uid}/` });
+      const [partialBanners] = await bucket.getFiles({ prefix: `banners/${partial.uid}/` });
+      const neighborStill = (await bucket.file(neighborBanner).exists())[0];
+      row(
+        'バナー削除の途中失敗は未完了',
+        partialFail.status === 500 &&
+          partialAuthGone &&
+          partialDoc.exists &&
+          partialMarker.exists &&
+          partialPhotos.length === 0 &&
+          partialBanners.length === 1 &&
+          neighborStill,
+        `HTTP ${partialFail.status}`
+      );
+      const partialRetry = await request('/api/account/delete', partialJar, {
+        method: 'DELETE',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ uid: neighbor.uid, path: neighborBanner }),
+      });
+      row(
+        'バナー失敗後の再試行',
+        partialRetry.status === 200 && (await gone(partial.uid)) && (await bucket.file(neighborBanner).exists())[0],
+        `HTTP ${partialRetry.status}`
+      );
 
       const docFail = await faulted('docfail', 'deleteUserDoc');
       let docAuthGone = false;
@@ -673,6 +788,7 @@ async function main(): Promise<number> {
       });
       const keeperDoc = await db.collection('users').doc(keeper.uid).get();
       const [keeperFiles] = await bucket.getFiles({ prefix: `photos/${keeper.uid}/` });
+      const [keeperBanners] = await bucket.getFiles({ prefix: `banners/${keeper.uid}/` });
       let oldLoginFailed = false;
       try {
         await signIn(email, PASSWORD);
@@ -683,7 +799,7 @@ async function main(): Promise<number> {
       row('4. 退会', removed.status === 200 && removed.text.includes('"success":true'), `HTTP ${removed.status}`);
       row('5-8. Auth・Firestore・Storage・掲載', after, '本人のAuth、文書、画像、publicProfiles を削除');
       row('10. 古いパスワード', oldLoginFailed, '再登録前にログイン失敗');
-      row('13. 別ユーザー', keeperDoc.exists && keeperFiles.length === 1 && (await admin.auth().getUser(keeper.uid)).uid === keeper.uid, '削除対象外を維持');
+      row('13. 別ユーザー', keeperDoc.exists && keeperFiles.length === 1 && keeperBanners.length === 1 && (await admin.auth().getUser(keeper.uid)).uid === keeper.uid, '削除対象外を維持');
 
       const staleSession = await request('/api/session', stale);
       const staleEdit = await request(`/api/user/${first.uid}`, stale, {
@@ -780,7 +896,8 @@ async function main(): Promise<number> {
         await db.collection('publicProfiles').doc(uid).delete().catch(() => undefined);
         await db.collection('accountDeletions').doc(uid).delete().catch(() => undefined);
         const [files] = await bucket.getFiles({ prefix: `photos/${uid}/` }).catch(() => [[]] as const);
-        await Promise.all(files.map((file) => file.delete().catch(() => undefined)));
+        const [banners] = await bucket.getFiles({ prefix: `banners/${uid}/` }).catch(() => [[]] as const);
+        await Promise.all([...files, ...banners].map((file) => file.delete().catch(() => undefined)));
       }
       await db.collection('accountDeletionMeta').doc('lock').delete().catch(() => undefined);
     }

@@ -18,6 +18,8 @@ const nextConfig = {
   experimental: {
     // 必要があればここに書く
   },
+  // revalidate が60秒のページは s-maxage=60, stale-while-revalidate=60 になる。
+  expireTime: 120,
   /**
    * Windows 等で dev 時に .next 内チャンク参照が不整合になる事例への対策:
    * 開発中は webpack の永続ファイルキャッシュを使わずメモリキャッシュに寄せる。

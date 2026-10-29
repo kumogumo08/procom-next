@@ -7,6 +7,7 @@ import { positiveMillis } from '@/lib/profileContent';
 import { compareDirectoryOrder, createdAtToMillis } from '@/lib/publicUserDirectory';
 import { isProfilePublicWithOnboarding } from '@/lib/onboarding';
 
+import { LISTING_CACHE_TAG } from './listingCache';
 import { assertLegacyScanAllowed } from './readiness';
 import { normalizeSearchText } from './searchText';
 
@@ -39,6 +40,7 @@ export async function readLegacyDirectory(): Promise<LegacyListUser[]> {
     .collection('users')
     .select(
       'createdAt',
+      'deletionPending',
       'profile.isPublic',
       'profile.onboardingStatus',
       'profile.name',
@@ -52,6 +54,7 @@ export async function readLegacyDirectory(): Promise<LegacyListUser[]> {
     const data = doc.data();
     const profile =
       data.profile && typeof data.profile === 'object' ? (data.profile as Record<string, unknown>) : {};
+    if (data.deletionPending === true) continue;
     if (!isProfilePublicWithOnboarding(profile)) continue;
     rows.push({
       uid: doc.id,
@@ -69,6 +72,7 @@ export async function readLegacyDirectory(): Promise<LegacyListUser[]> {
 /** 移行完了前だけ使う。500人を超えたら拒否する。 */
 export const getLegacyDirectory = unstable_cache(readLegacyDirectory, ['legacy-directory-v3'], {
   revalidate: 60,
+  tags: [LISTING_CACHE_TAG],
 });
 
 /** 旧検索。1文字も部分一致の対象。全件は getLegacyDirectory の上限内だけ。 */

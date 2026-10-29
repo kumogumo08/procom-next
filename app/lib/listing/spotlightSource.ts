@@ -8,6 +8,7 @@ import { db } from '@/lib/firebase-admin';
 import { positiveMillis } from '@/lib/profileContent';
 
 import { readLegacyDirectory } from './legacyDirectory';
+import { LISTING_CACHE_TAG } from './listingCache';
 import { isListingDirectoryReady } from './readiness';
 import {
   SPOTLIGHT_SOURCE_MAX,
@@ -46,7 +47,7 @@ async function readListedSpotlightSource(): Promise<SpotlightCandidate[]> {
   return candidates;
 }
 
-async function readLegacySpotlightSource(): Promise<SpotlightCandidate[]> {
+export async function readLegacySpotlightSource(): Promise<SpotlightCandidate[]> {
   const rows = await readLegacyDirectory();
   const candidates: SpotlightCandidate[] = [];
   for (const row of rows) {
@@ -66,10 +67,12 @@ async function readLegacySpotlightSource(): Promise<SpotlightCandidate[]> {
 
 const getListedSpotlightSource = unstable_cache(readListedSpotlightSource, ['spotlight-source-listed-v1'], {
   revalidate: SPOTLIGHT_SOURCE_REVALIDATE_SECONDS,
+  tags: [LISTING_CACHE_TAG],
 });
 
 const getLegacySpotlightSource = unstable_cache(readLegacySpotlightSource, ['spotlight-source-legacy-v1'], {
   revalidate: SPOTLIGHT_SOURCE_REVALIDATE_SECONDS,
+  tags: [LISTING_CACHE_TAG],
 });
 
 /** 画像ありの公開プロフィール。ページ表示のたびに Firestore は読まない。 */

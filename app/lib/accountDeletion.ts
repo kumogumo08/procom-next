@@ -1,7 +1,8 @@
 import { randomBytes } from 'crypto';
 import { admin, bucket, db } from '@/lib/firebase';
 import { assertDeletionSealConfigured, classifyDeletionMarker, signDeletionMarker } from '@/lib/accountDeletionSeal';
-import { enqueueUserListing, runListingWorker } from '@/lib/listing/firestoreListing';
+import { enqueueUserListing, listingOutboxPending, runListingWorker } from '@/lib/listing/firestoreListing';
+import { invalidateListingAfterUnpublish, invalidateListingPages } from '@/lib/listing/listingCache';
 
 const MARKER = 'accountDeletions';
 const SWEEP_LIMIT = 20;
@@ -282,6 +283,7 @@ export function firebaseDeletionPorts(): AccountDeletionPorts {
         await ref.update({ deletionPending: true });
       }
       await enqueueUserListing(uid);
+      invalidateListingAfterUnpublish();
     },
     async deleteAuth(uid) {
       try {
@@ -306,7 +308,12 @@ export function firebaseDeletionPorts(): AccountDeletionPorts {
         throw new Error('公開プロフィールが残っています');
       }
       try {
-        await runListingWorker(`withdraw:${uid}`);
+        const result = await runListingWorker(`withdraw:${uid}`);
+        if (result.skippedLock) {
+          console.error('掲載ページの無効化を見送りました');
+        } else if (!(await listingOutboxPending(uid))) {
+          invalidateListingPages();
+        }
       } catch (err: unknown) {
         console.error('退会後の掲載ワーカーに失敗:', err instanceof Error ? err.name : 'error');
       }

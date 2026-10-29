@@ -6,6 +6,9 @@
 // =====================================================
 
 import 'server-only';
+import { createRequire } from 'node:module';
+
+const require = createRequire(import.meta.url);
 // ローカル開発だけ .env を読む（Render本番はEnvironment Variablesを使う）
 if (process.env.NODE_ENV !== 'production') {
   require('dotenv').config();

@@ -124,10 +124,11 @@ export function enqueueListing(
   const revision = highestRevision(next, uid) + 1;
   if (op === 'remove') {
     const profile = next.profiles.get(uid);
-    removeCard(next, profile?.pageNo ?? null, uid);
+    const pageNo = profile?.pageNo ?? next.outbox.get(uid)?.pageNo ?? null;
+    removeCard(next, pageNo, uid);
     next.profiles.delete(uid);
     next.tombstones.set(uid, revision);
-    next.outbox.set(uid, { uid, revision, op: 'remove', pageNo: profile?.pageNo ?? null });
+    next.outbox.set(uid, { uid, revision, op: 'remove', pageNo });
     return { state: next, revision };
   }
   if (!fields) throw new Error('upsert にはフィールドが必要です');

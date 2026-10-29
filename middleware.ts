@@ -28,8 +28,6 @@ export function middleware(request: NextRequest) {
     const hasQuery = Boolean(request.nextUrl.searchParams.get('q')?.trim());
     if (path.startsWith('/api/') || (path === '/users' && hasQuery) || path.startsWith('/user/')) {
       response.headers.set('Cache-Control', 'private, no-store');
-    } else if (path === '/users' && !hasQuery) {
-      response.headers.set('Cache-Control', 'public, s-maxage=60, stale-while-revalidate=300');
     }
     return response;
   }

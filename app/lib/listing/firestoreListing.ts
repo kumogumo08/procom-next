@@ -21,6 +21,7 @@ import {
   type PageCard,
 } from './engine';
 import { publicHealth, sanitizeHealthError } from './health';
+import { LISTING_CACHE_TAG, LISTING_PAGES_CACHE_TAG } from './listingCache';
 import { pageCountFromNextSeq } from './links';
 import { categorySlugsForTitle, searchTokensFor } from './searchText';
 
@@ -149,6 +150,12 @@ export async function enqueueUserListing(uid: string): Promise<void> {
     else if (outboxSnap.exists) tx.delete(outboxRef);
     void revision;
   });
+}
+
+/** 退会後のページ無効化に使う。残っていれば directoryPages はまだ古い。 */
+export async function listingOutboxPending(uid: string): Promise<boolean> {
+  const snap = await db.collection(OUTBOX).doc(uid).get();
+  return snap.exists;
 }
 
 /** 同じ outbox が10回失敗したら死信へ移し、バッチを塞がない。enqueue の set は attempts を消す。 */
@@ -324,7 +331,7 @@ async function fetchNewestUncached(limit: number): Promise<ListedCard[]> {
 export const getNewestListed = unstable_cache(
   async (limit: number) => fetchNewestUncached(limit),
   ['listing-newest-v1'],
-  { revalidate: 60 }
+  { revalidate: 60, tags: [LISTING_CACHE_TAG] }
 );
 
 async function fetchPhotoNewestUncached(): Promise<ListedCard[]> {
@@ -340,7 +347,7 @@ async function fetchPhotoNewestUncached(): Promise<ListedCard[]> {
 export const getPhotoNewestListed = unstable_cache(
   async () => fetchPhotoNewestUncached(),
   ['listing-photo-newest-v1'],
-  { revalidate: 60 }
+  { revalidate: 60, tags: [LISTING_CACHE_TAG] }
 );
 
 export async function getFixedPage(pageNo: number): Promise<PageCard[]> {
@@ -352,7 +359,7 @@ export async function getFixedPage(pageNo: number): Promise<PageCard[]> {
 export const getCachedFixedPage = unstable_cache(
   async (pageNo: number) => getFixedPage(pageNo),
   ['listing-fixed-page-v1'],
-  { revalidate: 60 }
+  { revalidate: 60, tags: [LISTING_PAGES_CACHE_TAG] }
 );
 
 export async function getListingPageCount(): Promise<number> {
@@ -364,7 +371,7 @@ export async function getListingPageCount(): Promise<number> {
 export const getCachedListingPageCount = unstable_cache(
   async () => getListingPageCount(),
   ['listing-page-count-v1'],
-  { revalidate: 60 }
+  { revalidate: 60, tags: [LISTING_PAGES_CACHE_TAG] }
 );
 
 export async function searchListed(

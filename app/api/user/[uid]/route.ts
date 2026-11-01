@@ -22,6 +22,7 @@ import { clampPhotoPositionY } from '@/lib/photoPosition';
 import { mergeProfileSettings } from '@/lib/blockLayout';
 import { isOnboardingBlocked } from '@/lib/onboarding';
 import { getSessionUID } from '@/lib/session';
+import { rejectContactEmail } from '@/lib/contactEmail';
 
 initializeFirebaseAdmin();
 const db = getFirestore();
@@ -225,6 +226,10 @@ export async function POST(req: NextRequest, props: { params: Promise<{ uid: str
       return NextResponse.json({ error: 'ユーザーが存在しません' }, { status: 404 });
     }
     const existingProfile = existing.profile || {};
+    const emailError = rejectContactEmail(profile);
+    if (emailError) {
+      return NextResponse.json({ error: emailError }, { status: 400 });
+    }
     const existingBannerLinks = existing.bannerLinks ?? [];
 
     // 📅 カレンダー

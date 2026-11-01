@@ -26,6 +26,7 @@ import {
 import { buttonPrimary } from '@/components/ui/cardStyles';
 import OshiButton from '@/components/OshiButton';
 import ContactButtonBlock, { WorkRequestButton } from '@/components/ContactButtonBlock';
+import { CONTACT_EMAIL_ERROR, normalizeContactEmail } from '@/lib/contactEmail';
 import XShareButton from '@/components/XShareButton';
 import UserProfileSection from '@/components/UserProfileSection';
 import UserPageClient from '@/components/UserPageClient';
@@ -648,6 +649,18 @@ export default function UserPageSectionsClient({
     try {
       const draft = draftProfileRef.current;
       const profilePayload = buildDraftSavePayload(draft, { apps, sectionOrder });
+      const rawEmail = typeof profilePayload.emailForContact === 'string' ? profilePayload.emailForContact : '';
+      const normalizedEmail = normalizeContactEmail(rawEmail);
+      if (normalizedEmail == null) {
+        const savedEmail = typeof profile.emailForContact === 'string' ? profile.emailForContact : '';
+        if (rawEmail.trim() === savedEmail.trim()) {
+          delete profilePayload.emailForContact;
+        } else {
+          throw new Error(CONTACT_EMAIL_ERROR);
+        }
+      } else {
+        profilePayload.emailForContact = normalizedEmail;
+      }
       const res = await fetch(`/api/user/${uid}`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -673,7 +686,9 @@ export default function UserPageSectionsClient({
         name: profilePayload.name as string,
         title: profilePayload.title as string,
         bio: profilePayload.bio as string,
-        emailForContact: profilePayload.emailForContact as string,
+        emailForContact: Object.prototype.hasOwnProperty.call(profilePayload, 'emailForContact')
+          ? (profilePayload.emailForContact as string)
+          : (profile.emailForContact ?? ''),
         youtubeMode: profilePayload.youtubeMode as Profile['youtubeMode'],
         youtubeChannelId: profilePayload.youtubeChannelId as string,
         manualYouTubeUrls: profilePayload.manualYouTubeUrls as string[],

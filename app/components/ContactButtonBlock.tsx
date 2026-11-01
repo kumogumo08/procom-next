@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { normalizeContactEmail } from '@/lib/contactEmail';
 
 type Props = {
   uid: string;
@@ -10,21 +11,23 @@ type Props = {
   onDraftChange?: (emailForContact: string) => void;
 };
 
-export function contactMailtoHref(email: string): string {
+export function contactMailtoHref(email: string): string | null {
+  const normalized = normalizeContactEmail(email);
+  if (!normalized) return null;
   const subject = encodeURIComponent('【お仕事依頼】Procomページからのご連絡');
   const body = encodeURIComponent(
     `■ 会社名または活動名：\n■ お名前：\n■ ご依頼内容：\n\nProcomページを拝見し、ご連絡差し上げました。`
   );
-  return `mailto:${email.trim()}?subject=${subject}&body=${body}`;
+  return `mailto:${normalized}?subject=${subject}&body=${body}`;
 }
 
 /** 保存済みメールがあるときだけ出す。未保存の入力はここでは使わない。 */
 export function WorkRequestButton({ email }: { email: string }) {
-  const trimmed = email.trim();
-  if (!trimmed) return null;
+  const href = contactMailtoHref(email);
+  if (!href) return null;
   return (
     <div className="profile-request-card">
-      <a href={contactMailtoHref(trimmed)} className="profile-request-button">
+      <a href={href} className="profile-request-button">
         <svg className="profile-request-button__icon" viewBox="0 0 24 24" aria-hidden="true">
           <rect x="3" y="5.5" width="18" height="13" rx="2" fill="none" stroke="currentColor" strokeWidth="1.8" />
           <path d="M4 7l8 6 8-6" fill="none" stroke="currentColor" strokeWidth="1.8" />
@@ -44,7 +47,8 @@ export default function ContactButtonBlock({
   onDraftChange,
 }: Props) {
   const [email, setEmail] = useState(initialEmail || '');
-  const saved = (savedEmail ?? initialEmail ?? '').trim();
+  const saved = savedEmail ?? initialEmail ?? '';
+  const savedHref = contactMailtoHref(saved);
 
   useEffect(() => {
     setEmail(initialEmail || '');
@@ -68,13 +72,14 @@ export default function ContactButtonBlock({
         inputMode="email"
         autoComplete="email"
         placeholder="contact@example.com"
+        maxLength={254}
         value={email}
         onChange={(e) => setEmail(e.target.value)}
         className="profile-request-editor__input"
       />
       <p className="profile-request-editor__hint">※未入力の場合、お仕事依頼ボタンは表示されません。</p>
-      {saved ? (
-        <a href={contactMailtoHref(saved)} className="profile-request-button profile-request-button--compact">
+      {savedHref ? (
+        <a href={savedHref} className="profile-request-button profile-request-button--compact">
           <svg className="profile-request-button__icon" viewBox="0 0 24 24" aria-hidden="true">
             <rect x="3" y="5.5" width="18" height="13" rx="2" fill="none" stroke="currentColor" strokeWidth="1.8" />
             <path d="M4 7l8 6 8-6" fill="none" stroke="currentColor" strokeWidth="1.8" />

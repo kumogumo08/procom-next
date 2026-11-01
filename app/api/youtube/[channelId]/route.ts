@@ -1,48 +1,29 @@
-// app/api/youtube/[channelId]/route.ts
-
-export const runtime = 'nodejs'; 
-
 import { NextRequest, NextResponse } from 'next/server';
+import { getYouTubeLatestVideos } from '@/lib/youtubeLatest';
+
+export const runtime = 'nodejs';
+
+const SUCCESS_CACHE = 'public, s-maxage=43200, stale-while-revalidate=86400';
+const ERROR_CACHE = 'public, max-age=60, s-maxage=300';
 
 export async function GET(
-  req: NextRequest,
+  _req: NextRequest,
   context: { params: Promise<{ channelId: string }> }
 ): Promise<NextResponse> {
-  try {
-    const { channelId } = await context.params;
-
-    if (!channelId) {
-      return NextResponse.json({ error: 'channelId が指定されていません' }, { status: 400 });
-    }
-
-    const apiKey = process.env.YOUTUBE_API_KEY;
-
-    if (!apiKey) {
-      return NextResponse.json({ error: 'YouTube APIキーが未設定です' }, { status: 500 });
-    }
-
-    const url = `https://www.googleapis.com/youtube/v3/search?key=${apiKey}&channelId=${channelId}&part=snippet,id&order=date&maxResults=5`;
-    const res = await fetch(url);
-
-    if (!res.ok) {
-      throw new Error('YouTube API エラー');
-    }
-
-    const json = await res.json();
-
-    const videos = (json.items || [])
-      .filter((item: any) => item.id.kind === 'youtube#video')
-      .map((item: any) => item.id.videoId);
-
-    return NextResponse.json({
-      message: 'YouTube チャンネルIDを正常に受け取りました',
-      channelId,
-      videos,
-    });
-
-  } catch (err) {
-    console.error('❌ YouTube APIルートでエラー:', err);
-    return NextResponse.json({ error: 'サーバーエラー' }, { status: 500 });
+  const { channelId } = await context.params;
+  const result = await getYouTubeLatestVideos(channelId ?? '');
+  if (!result.ok) {
+    return NextResponse.json(
+      { error: result.error },
+      { status: result.status, headers: { 'Cache-Control': result.status === 400 ? 'private, no-store' : ERROR_CACHE } }
+    );
   }
+  return NextResponse.json(
+    {
+      message: 'YouTube チャンネルIDを正常に受け取りました',
+      channelId: result.channelId,
+      videos: result.videos,
+    },
+    { headers: { 'Cache-Control': SUCCESS_CACHE } }
+  );
 }
-

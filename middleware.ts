@@ -26,7 +26,8 @@ export function middleware(request: NextRequest) {
     const response = NextResponse.next();
     const path = request.nextUrl.pathname;
     const hasQuery = Boolean(request.nextUrl.searchParams.get('q')?.trim());
-    if (path.startsWith('/api/') || (path === '/users' && hasQuery) || path.startsWith('/user/')) {
+    const sharedYouTube = path.startsWith('/api/youtube/');
+    if (!sharedYouTube && (path.startsWith('/api/') || (path === '/users' && hasQuery) || path.startsWith('/user/'))) {
       response.headers.set('Cache-Control', 'private, no-store');
     }
     return response;

@@ -6,6 +6,7 @@ import SnsVisibilityToggle from './SnsVisibilityToggle';
 import SnsHelpTooltip from './SnsHelpTooltip';
 import YouTubeHelpTooltip from '@/components/YouTubeHelpTooltip';
 import { fetchUserApi } from '@/lib/userProfileClient';
+import { shouldFetchYouTubeLatest } from '@/lib/youtubeLatest';
 import { buttonDanger, buttonPrimary, cardActions, cardBody, cardPreviewArea, cardTitle, emptyStateBox, inputBase, snsCardBase } from '@/components/ui/cardStyles';
 
 /** SSR / クライアント双方で同じ結果になる純関数（window / document 非依存） */
@@ -74,12 +75,14 @@ export default function YouTubeEmbedBlock({
 
   // latest のみ API 取得。manual は render 時に URL → videoId する（SSR HTML に載せるため）
   useEffect(() => {
-    if (mode !== 'latest' || !channelId) return;
+    if (!shouldFetchYouTubeLatest({ mode, channelId, isEditable, showYouTube })) return;
+    let cancelled = false;
+    const id = channelId.trim();
 
-    fetch(`/api/youtube/${channelId}`)
+    fetch(`/api/youtube/${encodeURIComponent(id)}`)
       .then(res => res.json())
       .then(data => {
-        if (Array.isArray(data.videos)) {
+        if (cancelled || !Array.isArray(data.videos)) return;
         const elements = (data.videos as string[]).slice(0, 2).map((videoId: string, index: number) => (
           <iframe
             key={index}
@@ -92,10 +95,13 @@ export default function YouTubeEmbedBlock({
             allowFullScreen
           />
         ));
-          setVideoElements(elements);
-        }
-      });
-  }, [mode, channelId]);
+        setVideoElements(elements);
+      })
+      .catch(() => undefined);
+    return () => {
+      cancelled = true;
+    };
+  }, [mode, channelId, isEditable, showYouTube]);
 
   const manualVideoIds =
     mode === 'manual'

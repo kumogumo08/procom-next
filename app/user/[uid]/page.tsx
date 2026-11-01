@@ -23,7 +23,7 @@ import AppProjectBlock from '@/components/AppProjectBlock';
 import { coerceAppsFromFirestore } from '@/lib/appProjects';
 import type { JSX } from 'react';
 import type { Metadata } from 'next';
-import { redirect } from 'next/navigation';
+import { notFound, redirect } from 'next/navigation';
 import UserPageSectionsClient from '@/components/UserPageSectionsClient';
 import { clampPhotoPositionY } from '@/lib/photoPosition';
 import { resolveSectionOrder } from '@/lib/blockLayout';
@@ -39,6 +39,7 @@ export async function generateMetadata({
 }): Promise<Metadata> {
   const { uid } = await params;
   const profile = await getProfileFromFirestore(uid);
+  if (profile == null) notFound();
   if (isWithdrawingProfile(profile) || isOnboardingBlocked(profile)) {
     return {
       title: 'Procom',
@@ -111,6 +112,7 @@ export default async function UserPage({
   const loggedInUid = await getLoggedInUid();
   const isEditable = loggedInUid === uid;
   const profile = await getProfileFromFirestore(uid);
+  if (profile == null) notFound();
 
   if (isWithdrawingProfile(profile) || isOnboardingBlocked(profile)) {
     if (!isWithdrawingProfile(profile) && readOnboardingGate(profile) === 'required' && isEditable) {

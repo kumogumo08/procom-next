@@ -17,6 +17,11 @@ export default function NewsAdminPage() {
   useEffect(() => {
     (async () => {
       const r = await fetch("/api/session", { cache: "no-store" });
+      if (r.status === 503) {
+        setMsg("認証サービスが一時的に利用できません。時間をおいて再度お試しください。");
+        setChecking(false);
+        return;
+      }
       const s = await r.json();
       if (s?.isAdmin) setIsAdmin(true);
       else {
@@ -50,7 +55,9 @@ export default function NewsAdminPage() {
   };
 
   if (checking) return <main className="mx-auto max-w-xl p-6">確認中…</main>;
-  if (!isAdmin) return null;
+  if (!isAdmin) {
+    return msg ? <main className="mx-auto max-w-xl p-6"><p className="text-sm text-neutral-700">{msg}</p></main> : null;
+  }
 
   return (
     <main className="mx-auto max-w-xl p-6">

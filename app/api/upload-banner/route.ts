@@ -2,13 +2,14 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getStorage } from 'firebase-admin/storage';
 import { v4 as uuidv4 } from 'uuid';
 import { initializeFirebaseAdmin } from '@/lib/firebase';
-import { verifySessionFromRequest } from '@/lib/session';
+import { resolveVerifiedSession } from '@/lib/session';
 
 initializeFirebaseAdmin();
 const bucket = getStorage().bucket();
 
 export async function POST(req: NextRequest) {
-  const session = await verifySessionFromRequest(req);
+  const session = await resolveVerifiedSession(req);
+  if (session instanceof NextResponse) return session;
   if (!session?.uid) {
     return NextResponse.json({ error: '未ログインです' }, { status: 401 });
   }

@@ -3,12 +3,13 @@ import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/firebase-admin';
 import { noteUserListing } from '@/lib/listing/firestoreListing';
 import { nextContentStamp } from '@/lib/profileContent';
-import { getSessionUID } from '@/lib/session';
+import { resolveSessionUid } from '@/lib/session';
 
 /** レガシー互換。呼び出し元が無い場合は削除可（PhotoSlider 等は /api/uploadPhotos + /api/user/[uid] を使用） */
 export async function POST(req: NextRequest) {
   try {
-    const sessionUid = await getSessionUID(req);
+    const sessionUid = await resolveSessionUid(req);
+    if (sessionUid instanceof NextResponse) return sessionUid;
     if (!sessionUid) {
       return NextResponse.json({ error: 'ログインが必要です' }, { status: 401 });
     }

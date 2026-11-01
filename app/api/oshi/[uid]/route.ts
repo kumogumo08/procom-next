@@ -3,6 +3,7 @@ export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
 
 import { NextRequest, NextResponse } from 'next/server';
+import { authRejectedResponse, authUnavailableResponse } from '@/lib/activeSession';
 import { initializeFirebaseAdmin } from '@/lib/firebase';
 import {
   commitOshi,
@@ -57,7 +58,11 @@ export async function POST(
       issueVisitorId
     );
   } catch (error) {
-    console.error('POST oshi error:', error);
+    const unavailable = authUnavailableResponse(error);
+    if (unavailable) return unavailable;
+    const rejected = authRejectedResponse(error);
+    if (rejected) return rejected;
+    console.error('POST oshi error:', error instanceof Error ? error.name : 'error');
     return oshiJson({ success: false, error: 'server_error' }, 500, issueVisitorId);
   }
 }
@@ -82,7 +87,11 @@ export async function GET(
       issueVisitorId
     );
   } catch (error) {
-    console.error('GET oshi error:', error);
+    const unavailable = authUnavailableResponse(error);
+    if (unavailable) return unavailable;
+    const rejected = authRejectedResponse(error);
+    if (rejected) return rejected;
+    console.error('GET oshi error:', error instanceof Error ? error.name : 'error');
     return oshiJson({ error: 'server_error' }, 500, issueVisitorId);
   }
 }

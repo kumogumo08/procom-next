@@ -21,6 +21,7 @@ export default function UserPageNavHeader() {
     (async () => {
       try {
         const res = await fetch('/api/session', { credentials: 'include' });
+        if (res.status === 503 || !res.ok) return;
         const data = (await res.json()) as SessionData;
         if (!cancelled) setSession(data);
       } catch {

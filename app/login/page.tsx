@@ -6,6 +6,7 @@ import { redirect } from 'next/navigation';
 import LoginClient from './LoginClient';
 import { db } from '@/lib/firebase';
 import { profileLoginPath } from '@/lib/onboarding';
+import { isAuthUnavailable } from '@/lib/activeSession';
 import { getLoggedInUid } from '@/lib/session';
 
 /** Cookie を読むため静的化しない（RSC でセッションと一致させる） */
@@ -13,7 +14,12 @@ export const dynamic = 'force-dynamic';
 
 export default async function Page() {
   noStore();
-  const uid = await getLoggedInUid();
+  let uid: string | null = null;
+  try {
+    uid = await getLoggedInUid();
+  } catch (err: unknown) {
+    if (!isAuthUnavailable(err)) throw err;
+  }
   if (uid) {
     const snap = await db.collection('users').doc(uid).get();
     const profile = snap.exists ? snap.get('profile') : undefined;

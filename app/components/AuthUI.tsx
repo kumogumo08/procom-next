@@ -25,7 +25,9 @@ export default function AuthUI() {
         credentials: 'include',
         cache: 'no-store', // ← これが重要！
       });
+        if (res.status === 503) return;
         const data = await res.json();
+        if (!res.ok) return;
         setSession(data);
         const currentUid = decodeURIComponent(window.location.pathname.split('/').pop() || '');
         setIsOwnPage(data.uid === currentUid);

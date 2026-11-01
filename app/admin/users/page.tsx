@@ -69,6 +69,10 @@ export default function AdminUsersPage() {
     (async () => {
       try {
         const sessionRes = await fetch('/api/session', { cache: 'no-store' });
+        if (sessionRes.status === 503) {
+          setError('認証サービスが一時的に利用できません。時間をおいて再度お試しください。');
+          return;
+        }
         const session = (await sessionRes.json()) as { isAdmin?: boolean };
         if (!session?.isAdmin) {
           alert('権限がありません。トップへ戻ります。');

@@ -2,7 +2,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getFirestore } from 'firebase-admin/firestore';
 import { initializeFirebaseAdmin } from '@/lib/firebase';
-import { verifySessionFromRequest } from '@/lib/session';
+import { resolveVerifiedSession } from '@/lib/session';
 import { isAdmin } from '@/lib/isAdmin';
 
 initializeFirebaseAdmin();
@@ -23,7 +23,8 @@ export async function GET(req: NextRequest) {
   if (exportSecret && bearer === exportSecret) {
     allowed = true;
   } else {
-    const session = await verifySessionFromRequest(req);
+    const session = await resolveVerifiedSession(req);
+    if (session instanceof NextResponse) return session;
     if (session?.uid && isAdmin(session.uid)) {
       allowed = true;
     }

@@ -2,11 +2,12 @@ import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/firebase';
 import { noteUserListing } from '@/lib/listing/firestoreListing';
 import { nextContentStamp } from '@/lib/profileContent';
-import { getSessionUID } from '@/lib/session';
+import { resolveSessionUid } from '@/lib/session';
 
 /** リポジトリ内に fetch 呼び出し元なし。/api/user/[uid] へ統合済みなら削除候補 */
 export async function POST(req: NextRequest, props: { params: Promise<{ uid: string }> }) {
-  const sessionUid = await getSessionUID(req);
+  const sessionUid = await resolveSessionUid(req);
+  if (sessionUid instanceof NextResponse) return sessionUid;
   if (!sessionUid) {
     return NextResponse.json({ error: 'ログインが必要です' }, { status: 401 });
   }

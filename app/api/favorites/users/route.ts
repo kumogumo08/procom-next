@@ -1,6 +1,6 @@
 import { db } from '@/lib/firebase';
 import { isOnboardingBlocked } from '@/lib/onboarding';
-import { getSessionUID } from '@/lib/session';
+import { resolveSessionUid } from '@/lib/session';
 import { NextRequest, NextResponse } from 'next/server';
 import admin from 'firebase-admin';
 
@@ -13,7 +13,8 @@ interface FavoriteUser {
 }
 
 export async function GET(req: NextRequest) {
-  const uid = await getSessionUID(req);
+  const uid = await resolveSessionUid(req);
+  if (uid instanceof NextResponse) return uid;
 
   if (!uid) {
     return NextResponse.json({ error: 'ログインが必要です' }, { status: 401 });
@@ -70,7 +71,8 @@ export async function GET(req: NextRequest) {
 }
 
 export async function DELETE(req: NextRequest) {
-  const uid = await getSessionUID(req);
+  const uid = await resolveSessionUid(req);
+  if (uid instanceof NextResponse) return uid;
 
   if (!uid) {
     return NextResponse.json({ error: 'ログインが必要です' }, { status: 401 });

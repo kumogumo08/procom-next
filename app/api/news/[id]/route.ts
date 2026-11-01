@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { db, FieldValue } from "@/lib/firebase-admin"; // FieldValue をエクスポートしている前提
-import { verifySessionFromRequest } from "@/lib/session"; // ← APIは req から取る方が確実
+import { resolveVerifiedSession } from "@/lib/session"; // ← APIは req から取る方が確実
 import { isAdmin } from "@/lib/isAdmin";
 
 export const runtime = "nodejs";
@@ -16,7 +16,8 @@ export async function PATCH(
     const { id } = await params;
     if (!id) return NextResponse.json({ error: "missing id" }, { status: 400 });
 
-    const session = await verifySessionFromRequest(req);
+    const session = await resolveVerifiedSession(req);
+    if (session instanceof NextResponse) return session;
     if (!isAdmin(session?.uid)) return NextResponse.json({ error: "unauthorized" }, { status: 403 });
 
     const body = await req.json();
@@ -53,7 +54,8 @@ export async function DELETE(
     const { id } = await params;
     if (!id) return NextResponse.json({ error: "missing id" }, { status: 400 });
 
-    const session = await verifySessionFromRequest(req);
+    const session = await resolveVerifiedSession(req);
+    if (session instanceof NextResponse) return session;
     if (!isAdmin(session?.uid)) return NextResponse.json({ error: "unauthorized" }, { status: 403 });
 
     const ref = db.collection("news").doc(id);

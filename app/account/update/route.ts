@@ -3,14 +3,15 @@ import bcrypt from 'bcryptjs';
 import { db } from '@/lib/firebase';
 import { noteUserListing } from '@/lib/listing/firestoreListing';
 import { nextContentStamp } from '@/lib/profileContent';
-import { getSessionUID, sessionOptions } from '@/lib/session';
+import { resolveSessionUid, sessionOptions } from '@/lib/session';
 import { getIronSession } from 'iron-session';
 import type { SessionData } from '@/lib/session-types'; 
 
 const saltRounds = 10;
 
 export async function POST(req: NextRequest) {
-  const uid = await getSessionUID(req);
+  const uid = await resolveSessionUid(req);
+  if (uid instanceof NextResponse) return uid;
 
   if (!uid) {
     return NextResponse.json({ error: 'ログインしていません' }, { status: 401 });

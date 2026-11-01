@@ -1,6 +1,6 @@
 import { SessionOptions, getIronSession } from 'iron-session';
 import type { SessionData } from '@/lib/session-types';
-import { confirmActiveUid } from '@/lib/activeSession';
+import { confirmActiveUid, isAuthUnavailable } from '@/lib/activeSession';
 
 const sessionOptions: SessionOptions = {
   cookieName: 'procom_session',
@@ -19,7 +19,8 @@ export async function getSession(req: Request): Promise<SessionData | null> {
     const live = await confirmActiveUid(session?.uid ?? null);
     return live ? session : null;
   } catch (err) {
-    console.error('❌ セッション取得失敗:', err);
+    if (isAuthUnavailable(err)) throw err;
+    console.error('❌ セッション取得失敗:', err instanceof Error ? err.name : 'error');
     return null;
   }
 }

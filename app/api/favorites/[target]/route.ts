@@ -1,11 +1,12 @@
 // src/app/api/favorites/[target]/route.ts
 import { db, admin } from '@/lib/firebase';
-import { getSessionUID } from '@/lib/session';
+import { resolveSessionUid } from '@/lib/session';
 import { NextRequest, NextResponse } from 'next/server';
 
 export async function POST(req: NextRequest, props: { params: Promise<{ target: string }> }) {
   const params = await props.params;
-  const sessionUser = await getSessionUID(req); // ← await を必ず付ける
+  const sessionUser = await resolveSessionUid(req);
+  if (sessionUser instanceof NextResponse) return sessionUser;
   const targetUser = params.target;
 
   if (!sessionUser || sessionUser === targetUser) {

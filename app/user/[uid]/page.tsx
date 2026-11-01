@@ -2,6 +2,7 @@ export const runtime = 'nodejs';
 
 import React from 'react';
 import { getProfileFromFirestore, isWithdrawingProfile } from '@/lib/getProfile';
+import { isAuthUnavailable } from '@/lib/activeSession';
 import { getLoggedInUid } from '@/lib/session';
 import Header from '@/components/Headerlogin';
 import Footer from '@/components/Footer';
@@ -109,7 +110,12 @@ export default async function UserPage({
   params: Promise<{ uid: string }>;
 }) {
   const { uid } = await params;
-  const loggedInUid = await getLoggedInUid();
+  let loggedInUid: string | null = null;
+  try {
+    loggedInUid = await getLoggedInUid();
+  } catch (err: unknown) {
+    if (!isAuthUnavailable(err)) throw err;
+  }
   const isEditable = loggedInUid === uid;
   const profile = await getProfileFromFirestore(uid);
   if (profile == null) notFound();

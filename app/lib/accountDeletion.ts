@@ -1,4 +1,5 @@
 import { randomBytes } from 'crypto';
+import { classifyGetUserError, loadAuthUser } from '@/lib/activeSession';
 import { admin, bucket, db } from '@/lib/firebase';
 import { assertDeletionSealConfigured, classifyDeletionMarker, signDeletionMarker } from '@/lib/accountDeletionSeal';
 import { enqueueUserListing, listingOutboxPending, runListingWorker } from '@/lib/listing/firestoreListing';
@@ -29,7 +30,7 @@ export async function deleteOwnedStoragePrefix(uid: string, folder: 'photos' | '
   );
 }
 
-export type AuthState = 'present' | 'missing' | 'unavailable';
+export type AuthState = 'present' | 'missing' | 'unavailable' | 'disabled';
 
 export type AccountDeletionPorts = {
   authState(uid: string): Promise<AuthState>;
@@ -44,7 +45,7 @@ export type AccountDeletionPorts = {
   syncListing(uid: string): Promise<void>;
 };
 
-export type DeletionResult = { ok: true } | { ok: false; status: 401 | 503; message: string };
+export type DeletionResult = { ok: true } | { ok: false; status: 401 | 403 | 503; message: string };
 
 /**
  * 本人 UID だけを削除する。
@@ -63,6 +64,9 @@ export async function runAccountDeletion(uid: string, ports: AccountDeletionPort
   }
 
   const auth = await ports.authState(uid);
+  if (auth === 'disabled') {
+    return { ok: false, status: 403, message: 'このアカウントでは操作できません' };
+  }
   if (auth === 'unavailable') {
     return { ok: false, status: 503, message: '退会処理に失敗しました' };
   }
@@ -177,7 +181,7 @@ export async function resumeIncompleteAccountDeletions(
       }
       const auth = await ports.authState(uid);
       if (auth !== 'missing') {
-        console.error('退会後処理を見送り:', auth === 'present' ? 'Authが残っています' : 'Authを確認できません', uid);
+        console.error('退会後処理を見送り:', auth === 'unavailable' ? 'Authを確認できません' : 'Authが残っています', uid);
         result.skipped += 1;
         continue;
       }
@@ -216,11 +220,14 @@ export function firebaseDeletionPorts(): AccountDeletionPorts {
   return {
     async authState(uid) {
       try {
-        await admin.auth().getUser(uid);
+        const user = await loadAuthUser(uid);
+        if (user.disabled === true) return 'disabled';
         return 'present';
       } catch (err: unknown) {
+        const kind = classifyGetUserError(err);
+        if (kind === 'missing') return 'missing';
+        if (kind === 'rejected') return 'disabled';
         const code = (err as { code?: string }).code;
-        if (code === 'auth/user-not-found') return 'missing';
         console.error('退会前のAuth確認に失敗:', code ?? 'unknown');
         return 'unavailable';
       }

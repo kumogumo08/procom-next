@@ -22,7 +22,9 @@ export default function Header() {
     async function fetchSession() {
       try {
         const res = await fetch('/api/session', { credentials: 'include' });
+        if (res.status === 503) return;
         const data = await res.json();
+        if (!res.ok) return;
         setSession(data);
       } catch {
         setSession({ loggedIn: false });

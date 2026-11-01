@@ -4,7 +4,7 @@ import { getIronSession, IronSession } from 'iron-session';
 import type { SessionOptions } from 'iron-session';
 import type { SessionData } from './session-types';
 import { NextResponse, NextRequest } from 'next/server';
-import { confirmActiveUid } from '@/lib/activeSession';
+import { authRejectedResponse, authUnavailableResponse, confirmActiveUid, isAuthUnavailable } from '@/lib/activeSession';
 
 export async function getSessionServer() {
   // cookies() を await で解決
@@ -21,8 +21,9 @@ export async function getLoggedInUid(): Promise<string | null> {
     const session = await getSessionServer();
     const uid = session?.uid ?? null;
     if (typeof uid !== 'string' || uid.length === 0) return null;
-    return confirmActiveUid(uid);
-  } catch {
+    return await confirmActiveUid(uid);
+  } catch (err: unknown) {
+    if (isAuthUnavailable(err)) throw err;
     return null;
   }
 }
@@ -93,6 +94,33 @@ export async function getSessionUID(
 ): Promise<string | null> {
   const session = await verifySessionFromRequest(req);
   return session?.uid ?? null;
+}
+
+function sessionFailureResponse(err: unknown): NextResponse | null {
+  return authUnavailableResponse(err) ?? authRejectedResponse(err);
+}
+
+/** 一時障害は 503、無効化は 403。未ログインは null。呼び出し側の 401 や 403 は変えない。 */
+export async function resolveSessionUid(req: NextRequest): Promise<string | null | NextResponse> {
+  try {
+    return await getSessionUID(req);
+  } catch (err: unknown) {
+    const failure = sessionFailureResponse(err);
+    if (failure) return failure;
+    throw err;
+  }
+}
+
+export async function resolveVerifiedSession(
+  req: NextRequest
+): Promise<IronSession<SessionData> | null | NextResponse> {
+  try {
+    return await verifySessionFromRequest(req);
+  } catch (err: unknown) {
+    const failure = sessionFailureResponse(err);
+    if (failure) return failure;
+    throw err;
+  }
 }
 
 // ✅ セッションをレスポンスに保存（ログイン時など）

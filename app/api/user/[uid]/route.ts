@@ -21,7 +21,7 @@ import { enrichAppsWithStoreIcons } from '@/lib/appIcons';
 import { clampPhotoPositionY } from '@/lib/photoPosition';
 import { mergeProfileSettings } from '@/lib/blockLayout';
 import { isOnboardingBlocked } from '@/lib/onboarding';
-import { getSessionUID } from '@/lib/session';
+import { resolveSessionUid } from '@/lib/session';
 import { rejectContactEmail } from '@/lib/contactEmail';
 
 initializeFirebaseAdmin();
@@ -136,7 +136,8 @@ export async function GET(
     }
     const rawProfile = data?.profile || {};
     if (isOnboardingBlocked(rawProfile)) {
-      const sessionUid = await getSessionUID(req);
+      const sessionUid = await resolveSessionUid(req);
+      if (sessionUid instanceof NextResponse) return sessionUid;
       if (sessionUid !== uid) {
         return NextResponse.json({ error: 'ユーザーが存在しません' }, { status: 404 });
       }
@@ -201,7 +202,8 @@ export async function POST(req: NextRequest, props: { params: Promise<{ uid: str
       return NextResponse.json({ error: 'uidが指定されていません' }, { status: 400 });
     }
 
-    const sessionUid = await getSessionUID(req);
+    const sessionUid = await resolveSessionUid(req);
+    if (sessionUid instanceof NextResponse) return sessionUid;
     if (!sessionUid || sessionUid !== uid) {
       return NextResponse.json({ error: '権限がありません' }, { status: 403 });
     }
@@ -441,7 +443,8 @@ export async function PATCH(req: NextRequest) {
       return NextResponse.json({ error: 'uidが指定されていません' }, { status: 400 });
     }
 
-    const sessionUid = await getSessionUID(req);
+    const sessionUid = await resolveSessionUid(req);
+    if (sessionUid instanceof NextResponse) return sessionUid;
     if (!sessionUid || sessionUid !== uid) {
       return NextResponse.json({ error: '権限がありません' }, { status: 403 });
     }

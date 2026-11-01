@@ -2,6 +2,7 @@ import { NextRequest } from 'next/server';
 import { v4 as uuidv4 } from 'uuid';
 import { bucket, db } from '@/lib/firebase';
 import { readOnboardingGate } from '@/lib/onboarding';
+import { AUTH_REJECTED_MESSAGE, AUTH_UNAVAILABLE_MESSAGE, isAuthRejected, isAuthUnavailable } from '@/lib/activeSession';
 import { getSessionUID } from '@/lib/session';
 import {
   acceptOwnedSetupPhoto,
@@ -30,7 +31,14 @@ function failPlan(plan: Extract<SetupPlan, { ok: false }>): never {
 }
 
 export async function readSetupActor(req: NextRequest, claimedUid: unknown): Promise<string> {
-  const sessionUid = await getSessionUID(req);
+  let sessionUid: string | null;
+  try {
+    sessionUid = await getSessionUID(req);
+  } catch (err: unknown) {
+    if (isAuthUnavailable(err)) throw new SetupHttpError(503, AUTH_UNAVAILABLE_MESSAGE);
+    if (isAuthRejected(err)) throw new SetupHttpError(403, AUTH_REJECTED_MESSAGE);
+    throw err;
+  }
   const resolved = resolveSetupUid(sessionUid, claimedUid);
   if (!resolved.ok) throw new SetupHttpError(resolved.status, resolved.error);
   return resolved.uid;

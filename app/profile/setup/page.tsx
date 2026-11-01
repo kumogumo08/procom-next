@@ -6,6 +6,7 @@ import Header from '@/components/Header';
 import { bucket, db } from '@/lib/firebase';
 import { readOnboardingGate } from '@/lib/onboarding';
 import { parseOwnedSetupPhoto, setupFormInitial } from '@/lib/onboardingSetup';
+import { isAuthUnavailable } from '@/lib/activeSession';
 import { getLoggedInUid } from '@/lib/session';
 import ProfileSetupForm from './ProfileSetupForm';
 import styles from './ProfileSetupForm.module.css';
@@ -18,7 +19,21 @@ export const metadata: Metadata = {
 };
 
 export default async function ProfileSetupPage() {
-  const uid = await getLoggedInUid();
+  let uid: string | null = null;
+  try {
+    uid = await getLoggedInUid();
+  } catch (err: unknown) {
+    if (!isAuthUnavailable(err)) throw err;
+    return (
+      <>
+        <Header />
+        <main className={styles.page}>
+          <p>認証サービスが一時的に利用できません。時間をおいて再度お試しください。</p>
+        </main>
+        <Footer />
+      </>
+    );
+  }
   if (!uid) redirect('/login');
 
   const snap = await db.collection('users').doc(uid).get();

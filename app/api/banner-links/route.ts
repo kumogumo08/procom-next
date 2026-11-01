@@ -3,7 +3,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getFirestore } from 'firebase-admin/firestore';
 import { getStorage } from 'firebase-admin/storage';
-import { verifySessionFromRequest } from '@/lib/session';
+import { resolveVerifiedSession } from '@/lib/session';
 import { initializeFirebaseAdmin } from '@/lib/firebase';
 import { noteUserListing } from '@/lib/listing/firestoreListing';
 import { isOnboardingBlocked } from '@/lib/onboarding';
@@ -33,7 +33,8 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ error: 'ユーザーが見つかりません' }, { status: 404 });
   }
   if (isOnboardingBlocked(data?.profile)) {
-    const session = await verifySessionFromRequest(req);
+    const session = await resolveVerifiedSession(req);
+    if (session instanceof NextResponse) return session;
     if (session?.uid !== uid) {
       return NextResponse.json({ error: 'ユーザーが見つかりません' }, { status: 404 });
     }
@@ -45,7 +46,8 @@ export async function GET(req: NextRequest) {
 }
 
 export async function POST(req: NextRequest) {
-  const session = await verifySessionFromRequest(req);
+  const session = await resolveVerifiedSession(req);
+  if (session instanceof NextResponse) return session;
   if (!session?.uid) {
     return NextResponse.json({ error: '未認証' }, { status: 401 });
   }

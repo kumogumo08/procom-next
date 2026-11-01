@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import type { UserRecord } from 'firebase-admin/auth';
 import bcrypt from 'bcryptjs';
+import { AUTH_UNAVAILABLE_MESSAGE, classifyGetUserError, noteEmulatorAuthFault } from '@/lib/activeSession';
 import { admin } from '@/lib/firebase';
 import { noteUserListing } from '@/lib/listing/firestoreListing';
 import {
@@ -79,11 +80,15 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
 
   let existingUser: UserRecord | null = null;
   try {
+    noteEmulatorAuthFault();
     existingUser = await admin.auth().getUserByEmail(normalizedEmail);
   } catch (lookupErr: unknown) {
-    const code = (lookupErr as { code?: string }).code;
-    if (code !== 'auth/user-not-found') {
-      console.error('admin.auth().getUserByEmail で予期せぬエラー:', lookupErr);
+    if (classifyGetUserError(lookupErr) !== 'missing') {
+      console.error(
+        'admin.auth().getUserByEmail で予期せぬエラー:',
+        (lookupErr as { code?: string }).code ?? 'unknown'
+      );
+      return new NextResponse(AUTH_UNAVAILABLE_MESSAGE, { status: 503 });
     }
   }
 

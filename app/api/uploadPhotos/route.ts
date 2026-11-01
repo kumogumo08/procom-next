@@ -3,11 +3,12 @@ export const runtime = 'nodejs'; // ⬅️ 必ず入れる！
 
 import { NextRequest, NextResponse } from 'next/server';
 import { bucket } from '@/lib/firebase';
-import { getSessionUID } from '@/lib/session';
+import { resolveSessionUid } from '@/lib/session';
 import { v4 as uuidv4 } from 'uuid';
 
 export async function POST(req: NextRequest) {
-  const uid = await getSessionUID(req);
+  const uid = await resolveSessionUid(req);
+  if (uid instanceof NextResponse) return uid;
 
   if (!uid) {
     return NextResponse.json({ error: '未ログインです' }, { status: 401 });

@@ -10,6 +10,7 @@ import {
   registrationResumeAction,
 } from "@/lib/registration";
 import { setSessionCookie } from "@/lib/session";
+import { AUTH_REJECTED_MESSAGE, AUTH_UNAVAILABLE_MESSAGE, classifyGetUserError, noteEmulatorAuthFault } from "@/lib/activeSession";
 
 export async function POST(req: NextRequest) {
   try {
@@ -22,7 +23,25 @@ export async function POST(req: NextRequest) {
     // 🔐 Firebase Admin で検証
     const decoded = await admin.auth().verifyIdToken(idToken);
     const uid = decoded.uid;
-    const userRecord = await admin.auth().getUser(uid);
+    let userRecord;
+    try {
+      noteEmulatorAuthFault();
+      userRecord = await admin.auth().getUser(uid);
+    } catch (lookupErr: unknown) {
+      const code = (lookupErr as { code?: string }).code;
+      console.error('SESSION LOGIN ERROR', code ?? 'unknown');
+      const kind = classifyGetUserError(lookupErr);
+      if (kind === 'missing') {
+        return NextResponse.json({ ok: false }, { status: 401 });
+      }
+      if (kind === 'rejected') {
+        return NextResponse.json({ ok: false, error: AUTH_REJECTED_MESSAGE }, { status: 403 });
+      }
+      return NextResponse.json({ ok: false, error: AUTH_UNAVAILABLE_MESSAGE }, { status: 503 });
+    }
+    if (userRecord.disabled === true) {
+      return NextResponse.json({ ok: false, error: AUTH_REJECTED_MESSAGE }, { status: 403 });
+    }
     const db = admin.firestore();
     const userRef = db.collection("users").doc(uid);
     const existing = await userRef.get();
@@ -73,8 +92,9 @@ export async function POST(req: NextRequest) {
 
     return res;
 
-  } catch (e: any) {
-    console.error("SESSION LOGIN ERROR", e);
+  } catch (e: unknown) {
+    const code = (e as { code?: string }).code;
+    console.error('SESSION LOGIN ERROR', code ?? (e instanceof Error ? e.name : 'error'));
     return NextResponse.json({ ok: false }, { status: 401 });
   }
 }

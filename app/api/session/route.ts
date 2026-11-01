@@ -3,7 +3,7 @@ import { getIronSession } from "iron-session";
 import { sessionOptions } from "@/lib/session";
 import type { SessionData } from "@/lib/session-types";
 import { isAdmin } from "@/lib/isAdmin";
-import { confirmActiveUid } from "@/lib/activeSession";
+import { authRejectedResponse, authUnavailableResponse, confirmActiveUid } from "@/lib/activeSession";
 
 export const runtime = "nodejs";
 
@@ -23,7 +23,11 @@ export async function GET(req: NextRequest) {
       name: uid ? session?.user?.name ?? null : null,
       isAdmin: isAdmin(uid ?? undefined),
     });
-  } catch {
+  } catch (err: unknown) {
+    const unavailable = authUnavailableResponse(err);
+    if (unavailable) return unavailable;
+    const rejected = authRejectedResponse(err);
+    if (rejected) return rejected;
     return NextResponse.json({ loggedIn: false, isAdmin: false }, { status: 200 });
   }
 }

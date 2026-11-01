@@ -1,6 +1,7 @@
 // app/api/news/route.ts
 import { NextRequest, NextResponse } from "next/server";
 import { db, FieldValue } from "@/lib/firebase-admin";
+import { authUnavailableResponse } from "@/lib/activeSession";
 import { getLoggedInUid } from "@/lib/session";
 import { isAdmin } from "@/lib/isAdmin";
 
@@ -47,7 +48,14 @@ export async function GET(req: NextRequest) {
 }
 
 export async function POST(req: NextRequest) {
-  const uid = await getLoggedInUid();
+  let uid: string | null;
+  try {
+    uid = await getLoggedInUid();
+  } catch (err: unknown) {
+    const unavailable = authUnavailableResponse(err);
+    if (unavailable) return unavailable;
+    throw err;
+  }
   if (!isAdmin(uid ?? undefined)) {
     return NextResponse.json({ error: "unauthorized" }, { status: 403 });
   }

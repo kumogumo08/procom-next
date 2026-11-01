@@ -92,11 +92,13 @@ function profileFromDoc(uid: string, data: DocumentData | undefined): StoredProf
 }
 
 /** 登録・更新・退会のあと。失敗しても呼び出し元の users 書き込みは戻さない。 */
-export async function noteUserListing(uid: string): Promise<void> {
+export async function noteUserListing(uid: string): Promise<boolean> {
   try {
     await enqueueUserListing(uid);
+    return true;
   } catch (err) {
     console.error('listing enqueue failed:', uid, err);
+    return false;
   }
 }
 

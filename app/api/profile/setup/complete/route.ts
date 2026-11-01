@@ -1,5 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { bucket, db } from '@/lib/firebase';
 import { noteUserListing } from '@/lib/listing/firestoreListing';
+import { invalidateListingAfterPhotoChange } from '@/lib/listing/listingCache';
+import { listingPhotoChanged } from '@/lib/ownedPhotoPath';
+import { retainReplacedPhotos } from '@/lib/photoGc';
 import { assertRequiredProfile, completeSetup, confirmOwnedPhoto, readSetupActor, SetupHttpError } from '@/lib/onboardingSetupServer';
 
 export const runtime = 'nodejs';
@@ -23,6 +27,8 @@ export async function POST(req: NextRequest) {
       throw error;
     }
     const photo = await confirmOwnedPhoto(record.photoUrl, uid);
+    const beforeSnap = await db.collection('users').doc(uid).get();
+    const beforePhotos = beforeSnap.get('profile.photos');
     let alreadyComplete = false;
     try {
       await completeSetup(uid, record, photo.url);
@@ -30,7 +36,13 @@ export async function POST(req: NextRequest) {
       if (error instanceof SetupHttpError && error.status === 409) alreadyComplete = true;
       else throw error;
     }
-    await noteUserListing(uid);
+    const listed = await noteUserListing(uid);
+    const afterSnap = await db.collection('users').doc(uid).get();
+    const afterPhotos = afterSnap.get('profile.photos');
+    if (!alreadyComplete && listed && listingPhotoChanged(beforePhotos, afterPhotos)) {
+      invalidateListingAfterPhotoChange();
+    }
+    await retainReplacedPhotos(uid, bucket.name, beforePhotos, afterPhotos);
     if (alreadyComplete) {
       return NextResponse.json({ error: '初期設定は完了しています' }, { status: 409 });
     }

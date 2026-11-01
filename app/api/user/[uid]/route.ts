@@ -8,7 +8,10 @@ import { v4 as uuidv4 } from 'uuid';
 import { initializeFirebaseAdmin } from '@/lib/firebase';
 import admin from 'firebase-admin';
 import { normalizeInstagramUrl } from '@/lib/sns';
+import { invalidateListingAfterPhotoChange } from '@/lib/listing/listingCache';
 import { noteUserListing } from '@/lib/listing/firestoreListing';
+import { listingPhotoChanged } from '@/lib/ownedPhotoPath';
+import { missingNewOwnedPhoto, retainReplacedPhotos, schedulePhotoRetention } from '@/lib/photoGc';
 import { nextContentStamp, readContentUpdatedAtMs } from '@/lib/profileContent';
 import {
   coerceAppsFromFirestore,
@@ -67,47 +70,6 @@ function pickArray<T>(incoming: Record<string, unknown>, key: string, existing: 
   const value = incoming[key];
   if (value === null) return [];
   return Array.isArray(value) ? (value as T[]) : [];
-}
-
-const PHOTO_DOWNLOAD_HOST = 'firebasestorage.googleapis.com';
-
-/**
- * 差し替えで削除してよいオブジェクト。
- * このサーバーのバケットで、本人の photos/{uid}/ 直下だけ。
- * 解釈できないURLは null。例外にはしない。
- */
-function ownedReplacementPhotoPath(rawUrl: unknown, uid: string, bucketName: string): string | null {
-  if (typeof rawUrl !== 'string' || !uid || !bucketName) return null;
-  let url: URL;
-  try {
-    url = new URL(rawUrl.trim());
-  } catch {
-    return null;
-  }
-  if (url.protocol !== 'https:' || url.username || url.password || url.port) return null;
-  if (url.hostname !== PHOTO_DOWNLOAD_HOST) return null;
-  if (url.searchParams.get('alt') !== 'media') return null;
-  const parts = url.pathname.split('/');
-  if (parts.length < 6 || parts[1] !== 'v0' || parts[2] !== 'b' || parts[4] !== 'o') return null;
-  if (parts[3] !== bucketName) return null;
-  let objectPath = '';
-  try {
-    objectPath = decodeURIComponent(parts.slice(5).join('/'));
-  } catch {
-    return null;
-  }
-  if (
-    !objectPath ||
-    objectPath.includes('\\') ||
-    objectPath.includes('..') ||
-    objectPath.includes('\0') ||
-    objectPath.includes('%')
-  ) {
-    return null;
-  }
-  const segments = objectPath.split('/');
-  if (segments.length !== 3 || segments[0] !== 'photos' || segments[1] !== uid || !segments[2]) return null;
-  return objectPath;
 }
 
 // --- GET: プロフィール情報取得 ---
@@ -228,6 +190,7 @@ export async function POST(req: NextRequest, props: { params: Promise<{ uid: str
       return NextResponse.json({ error: 'ユーザーが存在しません' }, { status: 404 });
     }
     const existingProfile = existing.profile || {};
+    const beforePhotos = existingProfile.photos;
     const emailError = rejectContactEmail(profile);
     if (emailError) {
       return NextResponse.json({ error: emailError }, { status: 400 });
@@ -270,22 +233,6 @@ export async function POST(req: NextRequest, props: { params: Promise<{ uid: str
       if (base64Photos.length > 0) {
         const uploadedPhotoUrls: string[] = [];
 
-        if (existingProfile.photos && Array.isArray(existingProfile.photos)) {
-          const deletedSet = new Set();
-          for (const old of existingProfile.photos) {
-            try {
-              const rawUrl =
-                typeof old === 'string' ? old : old && typeof old === 'object' ? (old as { url?: unknown }).url : undefined;
-              const objectPath = ownedReplacementPhotoPath(rawUrl, uid, bucket.name);
-              if (!objectPath || deletedSet.has(objectPath)) continue;
-              await bucket.file(objectPath).delete({ ignoreNotFound: true });
-              deletedSet.add(objectPath);
-            } catch (e) {
-              console.warn('⚠️ 古い画像削除失敗:', e);
-            }
-          }
-        }
-
         for (const base64 of base64Photos) {
           const match = base64.match(/^data:(image\/.+);base64,(.+)$/);
           if (!match) continue;
@@ -303,10 +250,22 @@ export async function POST(req: NextRequest, props: { params: Promise<{ uid: str
             },
           });
 
+          try {
+            await schedulePhotoRetention(uid, fileName);
+          } catch (scheduleErr: unknown) {
+            console.error('photo retention schedule failed:', scheduleErr instanceof Error ? scheduleErr.name : 'error');
+            await file.delete({ ignoreNotFound: true }).catch(() => undefined);
+            continue;
+          }
+
           const url = `https://firebasestorage.googleapis.com/v0/b/${bucket.name}/o/${encodeURIComponent(
             fileName
           )}?alt=media&token=${token}`;
           uploadedPhotoUrls.push(url);
+        }
+
+        if (uploadedPhotoUrls.length === 0) {
+          return NextResponse.json({ error: '画像の保存に失敗しました' }, { status: 400 });
         }
 
         profile.photos = uploadedPhotoUrls.map((url, i) => ({
@@ -422,8 +381,17 @@ export async function POST(req: NextRequest, props: { params: Promise<{ uid: str
       console.log('[user POST] cleanedProfile.apps.length before Firestore', appsForSave.length);
     }
 
+    const missingPhoto = await missingNewOwnedPhoto(uid, bucket.name, beforePhotos, cleanedProfile.photos);
+    if (missingPhoto) {
+      return NextResponse.json({ error: missingPhoto }, { status: 400 });
+    }
+
     await userRef.set({ profile: cleanedProfile }, { merge: true });
-    await noteUserListing(uid);
+    const listed = await noteUserListing(uid);
+    if (listed && listingPhotoChanged(beforePhotos, cleanedProfile.photos)) {
+      invalidateListingAfterPhotoChange();
+    }
+    await retainReplacedPhotos(uid, bucket.name, beforePhotos, cleanedProfile.photos);
     return NextResponse.json({ message: 'User profile updated', apps: appsForSave });
   } catch (err) {
     const message = err instanceof Error ? err.message : String(err);

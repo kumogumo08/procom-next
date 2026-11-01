@@ -280,7 +280,7 @@ async function main(): Promise<number> {
     const ownNames = ownFiles.map((file) => file.name);
     row(
       '1. 自分の画像を差し替え',
-      replaced.status === 200 && !ownNames.includes(ownPath) && ownNames.some((name) => name !== ownPath),
+      replaced.status === 200 && ownNames.includes(ownPath) && ownNames.some((name) => name !== ownPath),
       `HTTP ${replaced.status} files=${ownNames.join(',')}`
     );
 

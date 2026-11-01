@@ -126,6 +126,7 @@ function checkSources(): void {
   const nextConfig = source('next.config.mjs');
   const topPage = source('app/top/page.tsx');
   const usersPage = source('app/users/page.tsx');
+  const userRoute = source('app/api/user/[uid]/route.ts');
   const worker = listing.slice(listing.indexOf('export async function runListingWorker'));
   const listingTags = (listing.match(/tags: \[LISTING_CACHE_TAG\]/g) ?? []).length;
   const pageTags = (listing.match(/tags: \[LISTING_PAGES_CACHE_TAG\]/g) ?? []).length;
@@ -150,11 +151,13 @@ function checkSources(): void {
     deletion.includes('invalidateListingAfterUnpublish()') &&
       deletion.includes('invalidateListingPages()') &&
       deletion.includes('listingOutboxPending') &&
+      userRoute.includes('invalidateListingAfterPhotoChange()') &&
+      !userRoute.includes('LISTING_PAGES_CACHE_TAG') &&
       !worker.includes('revalidateTag') &&
       !worker.includes('invalidateListing') &&
       !syncRoute.includes('revalidate') &&
       !workflow.includes('revalidate'),
-    '退会処理だけ。掲載ワーカーと定期同期からは呼ばない'
+    '退会と先頭画像の変更。掲載ワーカーと定期同期からは呼ばない'
   );
   row(
     'コード: 読み取りを増やさない',
@@ -222,9 +225,10 @@ async function main(): Promise<number> {
 
   let threw = false;
   try {
-    const { invalidateListingAfterUnpublish, invalidateListingPages } = await import('../../app/lib/listing/listingCache');
+    const { invalidateListingAfterUnpublish, invalidateListingPages, invalidateListingAfterPhotoChange } = await import('../../app/lib/listing/listingCache');
     invalidateListingAfterUnpublish();
     invalidateListingPages();
+    invalidateListingAfterPhotoChange();
   } catch {
     threw = true;
   }

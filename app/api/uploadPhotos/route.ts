@@ -3,6 +3,7 @@ export const runtime = 'nodejs'; // ⬅️ 必ず入れる！
 
 import { NextRequest, NextResponse } from 'next/server';
 import { bucket } from '@/lib/firebase';
+import { schedulePhotoRetention } from '@/lib/photoGc';
 import { resolveSessionUid } from '@/lib/session';
 import { v4 as uuidv4 } from 'uuid';
 
@@ -25,10 +26,6 @@ export async function POST(req: NextRequest) {
       console.log('[uploadPhotos]', { uid, imageCount: base64Images.length });
     }
 
-    // 🔁 古い画像を削除
-    const [files] = await bucket.getFiles({ prefix: `photos/${uid}/` });
-    await Promise.all(files.map(file => file.delete().catch(() => null)));
-
     const urls: string[] = [];
 
     for (const base64 of base64Images) {
@@ -44,13 +41,22 @@ export async function POST(req: NextRequest) {
         const ext = contentType.split('/')[1];
         const fileName = `photos/${uid}/${uuidv4()}.${ext}`;
         const token = uuidv4();
+        const file = bucket.file(fileName);
 
-        await bucket.file(fileName).save(buffer, {
+        await file.save(buffer, {
           metadata: {
             contentType,
             metadata: { firebaseStorageDownloadTokens: token },
           },
         });
+
+        try {
+          await schedulePhotoRetention(uid, fileName);
+        } catch (scheduleErr: unknown) {
+          console.error('photo retention schedule failed:', scheduleErr instanceof Error ? scheduleErr.name : 'error');
+          await file.delete({ ignoreNotFound: true }).catch(() => undefined);
+          continue;
+        }
 
         const url = `https://firebasestorage.googleapis.com/v0/b/${bucket.name}/o/${encodeURIComponent(fileName)}?alt=media&token=${token}`;
         urls.push(url);

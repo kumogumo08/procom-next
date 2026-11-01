@@ -38,3 +38,17 @@ export function invalidateListingPages(): void {
     reportInvalidationFailure(err);
   }
 }
+
+/**
+ * users と publicProfiles へ新しい先頭画像が書けたあと。
+ * 固定ページの listing-pages は無効化しない。失敗しても保存は戻さない。
+ */
+export function invalidateListingAfterPhotoChange(): void {
+  try {
+    revalidateTag(LISTING_CACHE_TAG);
+    revalidatePath('/top');
+    console.info('listing-photo-revalidate');
+  } catch (err: unknown) {
+    reportInvalidationFailure(err);
+  }
+}

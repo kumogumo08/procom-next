@@ -1,6 +1,8 @@
 // app/api/deletePhotos/route.ts
 import { NextRequest, NextResponse } from 'next/server';
 import { bucket } from '@/lib/firebase';
+import { ownedReplacementPhotoPath } from '@/lib/ownedPhotoPath';
+import { schedulePhotoRetention } from '@/lib/photoGc';
 import { resolveSessionUid } from '@/lib/session';
 
 export async function POST(req: NextRequest) {
@@ -18,30 +20,23 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: '不正な形式です' }, { status: 400 });
   }
 
-  const deletedSet = new Set<string>();
+  const queued = new Set<string>();
 
   try {
     for (const url of urls) {
-      const match = decodeURIComponent(url).match(/\/o\/(.+)\?alt=media/);
-      if (match && match[1]) {
-        const filePath = match[1];
-
-        if (!filePath.startsWith(`photos/${uid}/`)) {
-          console.warn(`⚠️ 不正なファイルパス: ${filePath}`);
-          continue;
-        }
-
-        if (!deletedSet.has(filePath)) {
-          await bucket.file(filePath).delete();
-          deletedSet.add(filePath);
-          console.log(`🗑️ 削除完了: ${filePath}`);
-        }
+      const objectPath = ownedReplacementPhotoPath(url, uid, bucket.name);
+      if (!objectPath) {
+        console.warn('写真の削除対象を確認できません');
+        continue;
       }
+      if (queued.has(objectPath)) continue;
+      queued.add(objectPath);
+      await schedulePhotoRetention(uid, objectPath);
     }
 
     return NextResponse.json({ message: '削除完了' });
-  } catch (err: any) {
-    console.error('❌ 写真削除エラー:', err);
+  } catch (err: unknown) {
+    console.error('写真削除エラー:', err instanceof Error ? err.name : 'error');
     return NextResponse.json({ error: '写真の削除に失敗しました' }, { status: 500 });
   }
 }

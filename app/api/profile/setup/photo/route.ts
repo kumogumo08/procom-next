@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { bucket } from '@/lib/firebase';
+import { bucket, db } from '@/lib/firebase';
+import { retainReplacedPhotos } from '@/lib/photoGc';
 import { assertRequiredProfile, commitSetup, readSetupActor, SetupHttpError, storeSetupImage } from '@/lib/onboardingSetupServer';
 import { planSetupDraft } from '@/lib/onboardingSetup';
 
@@ -18,6 +19,8 @@ export async function POST(req: NextRequest) {
     await assertRequiredProfile(uid);
     const stored = await storeSetupImage(uid, record.image);
     createdPath = stored.objectPath;
+    const beforeSnap = await db.collection('users').doc(uid).get();
+    const beforePhotos = beforeSnap.get('profile.photos');
     await commitSetup(uid, (profile) =>
       planSetupDraft({
         existingProfile: profile,
@@ -33,6 +36,8 @@ export async function POST(req: NextRequest) {
         photoExists: true,
       })
     );
+    createdPath = '';
+    await retainReplacedPhotos(uid, bucket.name, beforePhotos, [{ url: stored.url }]);
     return NextResponse.json({ ok: true, url: stored.url });
   } catch (error) {
     if (createdPath) {

@@ -1,7 +1,10 @@
 // app/api/photos/route.ts
 import { NextRequest, NextResponse } from 'next/server';
-import { db } from '@/lib/firebase-admin';
+import { bucket, db } from '@/lib/firebase-admin';
 import { noteUserListing } from '@/lib/listing/firestoreListing';
+import { invalidateListingAfterPhotoChange } from '@/lib/listing/listingCache';
+import { listingPhotoChanged } from '@/lib/ownedPhotoPath';
+import { missingNewOwnedPhoto, retainReplacedPhotos } from '@/lib/photoGc';
 import { nextContentStamp } from '@/lib/profileContent';
 import { resolveSessionUid } from '@/lib/session';
 
@@ -51,6 +54,11 @@ export async function POST(req: NextRequest) {
         ? { position: Math.min(100, Math.max(0, p.position)) }
         : {}),
     }));
+    const beforePhotos = existingProfile.photos;
+    const missingPhoto = await missingNewOwnedPhoto(uid, bucket.name, beforePhotos, nextPhotos);
+    if (missingPhoto) {
+      return NextResponse.json({ error: missingPhoto }, { status: 400 });
+    }
     const stamp = nextContentStamp(existingProfile, { ...existingProfile, photos: nextPhotos });
     await userRef.set(
       {
@@ -61,7 +69,11 @@ export async function POST(req: NextRequest) {
       },
       { merge: true }
     );
-    await noteUserListing(uid);
+    const listed = await noteUserListing(uid);
+    if (listed && listingPhotoChanged(beforePhotos, nextPhotos)) {
+      invalidateListingAfterPhotoChange();
+    }
+    await retainReplacedPhotos(uid, bucket.name, beforePhotos, nextPhotos);
 
     return NextResponse.json({ message: '✅ Firestoreに保存されました' });
   } catch (err: unknown) {

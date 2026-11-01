@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 
 import { readListingHealth, runListingWorker } from '@/lib/listing/firestoreListing';
+import { sweepExpiredPhotos } from '@/lib/photoGc';
 
 export const runtime = 'nodejs';
 
@@ -33,5 +34,14 @@ export async function POST(req: NextRequest) {
   }
   const result = await runListingWorker(`cron-${Date.now()}`);
   const health = await readListingHealth();
-  return NextResponse.json({ processed: result.processed, skippedLock: result.skippedLock, health }, { headers: PRIVATE });
+  let photoGc = { examined: 0, deleted: 0, kept: 0 };
+  try {
+    photoGc = await sweepExpiredPhotos();
+  } catch (err: unknown) {
+    console.error('photo gc sweep failed:', err instanceof Error ? err.name : 'error');
+  }
+  return NextResponse.json(
+    { processed: result.processed, skippedLock: result.skippedLock, health, photoGc },
+    { headers: PRIVATE }
+  );
 }

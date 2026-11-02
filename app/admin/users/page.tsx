@@ -1,7 +1,15 @@
 'use client';
 
 import Link from 'next/link';
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
+
+import {
+  applySpotlightToggle,
+  canStartSave,
+  commitSpotlightSaves,
+  dirtySpotlightRows,
+  discardSpotlightDraft,
+} from '@/lib/adminSpotlightDraft';
 
 type AdminUserRow = {
   uid: string;
@@ -66,15 +74,16 @@ function UserThumb({ photoUrl }: { photoUrl: string | null }) {
 }
 
 function SpotlightToggle({
-  user,
+  on,
+  dirty,
   disabled,
-  onToggle,
+  onChange,
 }: {
-  user: AdminUserRow;
+  on: boolean;
+  dirty: boolean;
   disabled: boolean;
-  onToggle: (user: AdminUserRow, nextOn: boolean) => void;
+  onChange: (nextOn: boolean) => void;
 }) {
-  const on = !user.spotlightOff;
   return (
     <label className="inline-flex min-h-11 items-center gap-2 text-sm">
       <input
@@ -82,16 +91,10 @@ function SpotlightToggle({
         className="h-5 w-5"
         checked={on}
         disabled={disabled}
-        onChange={(event) => {
-          const nextOn = event.currentTarget.checked;
-          if (!nextOn && !window.confirm('この登録者のTOP掲載をOFFにしますか？プロフィールページは公開されたままです。')) {
-            event.currentTarget.checked = true;
-            return;
-          }
-          onToggle(user, nextOn);
-        }}
+        onChange={(event) => onChange(event.currentTarget.checked)}
       />
-      TOP掲載：{on ? 'ON' : 'OFF'}
+      <span>TOP掲載：{on ? 'ON' : 'OFF'}</span>
+      {dirty ? <span className="text-xs font-medium text-amber-800">未保存</span> : null}
     </label>
   );
 }
@@ -100,10 +103,11 @@ export default function AdminUsersPage() {
   const [checking, setChecking] = useState(true);
   const [isAdmin, setIsAdmin] = useState(false);
   const [users, setUsers] = useState<AdminUserRow[] | null>(null);
+  const [savedOff, setSavedOff] = useState<Record<string, boolean>>({});
   const [error, setError] = useState<string | null>(null);
   const [notice, setNotice] = useState<Notice | null>(null);
-  const [pendingUid, setPendingUid] = useState<string | null>(null);
-  const pendingRef = useRef(false);
+  const [saving, setSaving] = useState(false);
+  const savingRef = useRef(false);
 
   useEffect(() => {
     (async () => {
@@ -134,11 +138,11 @@ export default function AdminUsersPage() {
           throw new Error('一覧の取得に失敗しました');
         }
         const data = (await res.json()) as { users?: AdminUserRow[] };
-        setUsers(
-          Array.isArray(data.users)
-            ? data.users.map((user) => ({ ...user, spotlightOff: user.spotlightOff === true }))
-            : []
-        );
+        const rows = Array.isArray(data.users)
+          ? data.users.map((user) => ({ ...user, spotlightOff: user.spotlightOff === true }))
+          : [];
+        setUsers(rows);
+        setSavedOff(Object.fromEntries(rows.map((user) => [user.uid, user.spotlightOff])));
       } catch {
         setError('一覧の取得に失敗しました。時間をおいて再度お試しください。');
         setUsers([]);
@@ -148,49 +152,87 @@ export default function AdminUsersPage() {
     })();
   }, []);
 
-  async function toggleSpotlight(user: AdminUserRow, nextOn: boolean) {
-    if (pendingRef.current) return;
-    pendingRef.current = true;
-    const nextOff = !nextOn;
-    const label = user.name || 'この登録者';
-    setUsers((prev) =>
-      prev?.map((row) => (row.uid === user.uid ? { ...row, spotlightOff: nextOff } : row)) ?? prev
-    );
-    setPendingUid(user.uid);
+  const dirtyRows = useMemo(
+    () => (users ? dirtySpotlightRows(users, savedOff) : []),
+    [users, savedOff]
+  );
+  const dirtyUids = useMemo(() => new Set(dirtyRows.map((row) => row.uid)), [dirtyRows]);
+
+  useEffect(() => {
+    if (dirtyRows.length === 0) return;
+    const onLeave = (event: BeforeUnloadEvent) => {
+      event.preventDefault();
+      event.returnValue = '';
+    };
+    window.addEventListener('beforeunload', onLeave);
+    return () => window.removeEventListener('beforeunload', onLeave);
+  }, [dirtyRows.length]);
+
+  function changeDraft(uid: string, nextOn: boolean) {
+    if (savingRef.current) return;
+    setUsers((prev) => (prev ? applySpotlightToggle(prev, uid, nextOn) : prev));
+  }
+
+  function discardChanges() {
+    if (savingRef.current) return;
+    setUsers((prev) => (prev ? discardSpotlightDraft(prev, savedOff) : prev));
     setNotice(null);
+  }
+
+  function confirmLeave(event: { preventDefault: () => void }) {
+    if (dirtyRows.length === 0) return;
+    if (!window.confirm('未保存の変更があります。保存せずに移動しますか？')) {
+      event.preventDefault();
+    }
+  }
+
+  async function saveChanges() {
+    if (!users || !canStartSave(savingRef.current, dirtyRows.length)) return;
+    savingRef.current = true;
+    setSaving(true);
+    setNotice(null);
+    const targets = dirtyRows;
+    const succeeded: string[] = [];
+    let sawForbidden = false;
     try {
-      const res = await fetch(`/api/admin/users/${encodeURIComponent(user.uid)}`, {
-        method: 'PATCH',
-        cache: 'no-store',
-        credentials: 'include',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ spotlightOff: nextOff }),
-      });
-      if (!res.ok) {
-        setUsers((prev) =>
-          prev?.map((row) => (row.uid === user.uid ? { ...row, spotlightOff: user.spotlightOff } : row)) ?? prev
-        );
-        const text =
-          res.status === 403
-            ? '権限がないか、このページ以外からの更新は受け付けていません。'
-            : res.status === 404
-              ? 'ユーザーが見つかりません。'
-              : '更新に失敗しました。時間をおいて再度お試しください。';
-        setNotice({ tone: 'err', text });
-        return;
+      for (const user of targets) {
+        try {
+          const res = await fetch(`/api/admin/users/${encodeURIComponent(user.uid)}`, {
+            method: 'PATCH',
+            cache: 'no-store',
+            credentials: 'include',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ spotlightOff: user.spotlightOff }),
+          });
+          if (!res.ok) {
+            if (res.status === 403) sawForbidden = true;
+            continue;
+          }
+          succeeded.push(user.uid);
+        } catch {
+          continue;
+        }
       }
-      setNotice({
-        tone: 'ok',
-        text: nextOn ? `${label}のTOP掲載をONにしました。` : `${label}のTOP掲載をOFFにしました。`,
-      });
-    } catch {
-      setUsers((prev) =>
-        prev?.map((row) => (row.uid === user.uid ? { ...row, spotlightOff: user.spotlightOff } : row)) ?? prev
-      );
-      setNotice({ tone: 'err', text: '更新に失敗しました。時間をおいて再度お試しください。' });
+      setSavedOff((prev) => commitSpotlightSaves(prev, targets, succeeded));
+      const failed = targets.length - succeeded.length;
+      if (failed === 0) {
+        setNotice({ tone: 'ok', text: `${succeeded.length}件の変更を保存しました。` });
+      } else if (succeeded.length === 0) {
+        setNotice({
+          tone: 'err',
+          text: sawForbidden
+            ? '権限がないか、このページ以外からの更新は受け付けていません。変更は未保存のままです。'
+            : '保存に失敗しました。変更は未保存のままです。',
+        });
+      } else {
+        setNotice({
+          tone: 'err',
+          text: `${succeeded.length}件を保存しました。${failed}件は失敗したため、未保存のままです。`,
+        });
+      }
     } finally {
-      pendingRef.current = false;
-      setPendingUid(null);
+      savingRef.current = false;
+      setSaving(false);
     }
   }
 
@@ -206,7 +248,11 @@ export default function AdminUsersPage() {
           <h1 className="text-2xl font-bold">新規登録者一覧</h1>
           <p className="mt-1 text-sm text-neutral-600">登録日時の新しい順（最新50件）</p>
         </div>
-        <Link href="/admin/news" className="text-sm text-blue-600 underline hover:text-blue-800">
+        <Link
+          href="/admin/news"
+          onClick={confirmLeave}
+          className="text-sm text-blue-600 underline hover:text-blue-800"
+        >
           NEWS管理へ
         </Link>
       </div>
@@ -230,7 +276,31 @@ export default function AdminUsersPage() {
         </p>
       ) : null}
 
-      {pendingUid ? <p className="mb-3 text-sm text-neutral-600">更新中…</p> : null}
+      {dirtyRows.length > 0 ? (
+        <div className="sticky top-0 z-10 mb-4 flex flex-col gap-3 rounded border border-amber-200 bg-amber-50 p-3 sm:flex-row sm:items-center sm:justify-between">
+          <p className="text-sm text-amber-950">未保存の変更 {dirtyRows.length}件</p>
+          <div className="flex flex-wrap gap-2">
+            <button
+              type="button"
+              onClick={discardChanges}
+              disabled={saving}
+              className="inline-flex min-h-11 items-center rounded border border-neutral-300 bg-white px-4 text-sm disabled:opacity-60"
+            >
+              変更を破棄
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                void saveChanges();
+              }}
+              disabled={saving}
+              className="inline-flex min-h-11 items-center rounded bg-neutral-900 px-4 text-sm text-white disabled:opacity-60"
+            >
+              {saving ? '保存中…' : '変更を保存'}
+            </button>
+          </div>
+        </div>
+      ) : null}
 
       {users === null ? (
         <p className="text-sm text-neutral-600">読み込み中…</p>
@@ -266,11 +336,10 @@ export default function AdminUsersPage() {
                     </p>
                     <div className="mt-2">
                       <SpotlightToggle
-                        user={user}
-                        disabled={pendingUid !== null}
-                        onToggle={(row, nextOn) => {
-                          void toggleSpotlight(row, nextOn);
-                        }}
+                        on={!user.spotlightOff}
+                        dirty={dirtyUids.has(user.uid)}
+                        disabled={saving}
+                        onChange={(nextOn) => changeDraft(user.uid, nextOn)}
                       />
                     </div>
                     <Link
@@ -332,11 +401,10 @@ export default function AdminUsersPage() {
                     <td className="px-2 py-3">
                       <div className="flex flex-col items-start">
                         <SpotlightToggle
-                          user={user}
-                          disabled={pendingUid !== null}
-                          onToggle={(row, nextOn) => {
-                            void toggleSpotlight(row, nextOn);
-                          }}
+                          on={!user.spotlightOff}
+                          dirty={dirtyUids.has(user.uid)}
+                          disabled={saving}
+                          onChange={(nextOn) => changeDraft(user.uid, nextOn)}
                         />
                         <Link
                           href={`/user/${user.uid}`}

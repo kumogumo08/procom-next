@@ -57,6 +57,12 @@ const page = readFileSync(join(process.cwd(), 'app/admin/users/page.tsx'), 'utf8
 assert(!page.includes('この登録者のTOP掲載をOFFにしますか'), '1. チェック時の確認ダイアログは無い');
 assert(page.includes('変更を保存') && page.includes('変更を破棄'), '2. 保存と破棄がある');
 assert(page.includes('canStartSave'), '6. 画面は二重送信の判定を使う');
+assert(page.includes('href="/admin/news"') && page.includes('NEWS管理へ'), '管理ページ間のリンクは残る');
+const usersTop = page.match(/<Link\s+href="\/"\s+onClick=\{confirmLeave\}[\s\S]*?>\s*TOPへ戻る\s*<\/Link>/);
+assert(Boolean(usersTop) && !usersTop![0].includes('target='), '未保存時はTOPへ戻るでも離脱確認する');
+const news = readFileSync(join(process.cwd(), 'app/admin/news/page.tsx'), 'utf8');
+const newsTop = news.match(/<Link\s+href="\/"[\s\S]*?>\s*TOPへ戻る\s*<\/Link>/);
+assert(Boolean(newsTop) && !newsTop![0].includes('target=') && !news.includes('beforeunload'), 'NEWS管理から同じタブでTOPへ戻れる');
 const spotlight = readFileSync(join(process.cwd(), 'app/lib/listing/spotlight.ts'), 'utf8');
 assert(!spotlight.includes('adminSpotlightDraft'), '7. 抽選処理は下書きを知らない');
 

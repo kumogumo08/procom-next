@@ -248,13 +248,22 @@ export default function AdminUsersPage() {
           <h1 className="text-2xl font-bold">新規登録者一覧</h1>
           <p className="mt-1 text-sm text-neutral-600">登録日時の新しい順（最新50件）</p>
         </div>
-        <Link
-          href="/admin/news"
-          onClick={confirmLeave}
-          className="text-sm text-blue-600 underline hover:text-blue-800"
-        >
-          NEWS管理へ
-        </Link>
+        <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
+          <Link
+            href="/admin/news"
+            onClick={confirmLeave}
+            className="inline-flex min-h-11 items-center text-sm text-blue-600 underline hover:text-blue-800"
+          >
+            NEWS管理へ
+          </Link>
+          <Link
+            href="/"
+            onClick={confirmLeave}
+            className="inline-flex min-h-11 items-center rounded border border-neutral-300 bg-white px-4 text-sm font-medium text-neutral-900 hover:bg-neutral-50"
+          >
+            TOPへ戻る
+          </Link>
+        </div>
       </div>
 
       {error ? (

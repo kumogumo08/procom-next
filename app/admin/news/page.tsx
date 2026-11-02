@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useEffect, useState } from "react";
 
 export default function NewsAdminPage() {
@@ -61,7 +62,15 @@ export default function NewsAdminPage() {
 
   return (
     <main className="mx-auto max-w-xl p-6">
-      <h1 className="mb-5 text-2xl font-bold">NEWS管理</h1>
+      <div className="mb-5 flex flex-wrap items-center justify-between gap-3">
+        <h1 className="text-2xl font-bold">NEWS管理</h1>
+        <Link
+          href="/"
+          className="inline-flex min-h-11 items-center rounded border border-neutral-300 bg-white px-4 text-sm font-medium text-neutral-900 hover:bg-neutral-50"
+        >
+          TOPへ戻る
+        </Link>
+      </div>
       <form onSubmit={submit} className="space-y-4">
         <div>
           <label className="mb-1 block text-sm font-semibold">タイトル（任意）</label>

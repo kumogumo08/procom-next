@@ -8,6 +8,7 @@ import { db } from '@/lib/firebase-admin';
 import { positiveMillis, readContentUpdatedAtMs } from '@/lib/profileContent';
 import { createdAtToMillis } from '@/lib/publicUserDirectory';
 import { isProfilePublicWithOnboarding } from '@/lib/onboarding';
+import { assignSpotlightOff, readUserSpotlightOff } from '@/lib/spotlightModeration';
 
 import {
   commitDecision,
@@ -140,7 +141,14 @@ export async function enqueueUserListing(uid: string): Promise<void> {
 
     const live = next.profiles.get(uid);
     if (live) {
-      tx.set(profileRef, { ...live, searchTokens: live.searchTokens, categorySlugs: live.categorySlugs });
+      // true のときだけ写す。set は文書を置き換えるので、false ではフィールドが残らない。
+      tx.set(
+        profileRef,
+        assignSpotlightOff(
+          { ...live, searchTokens: live.searchTokens, categorySlugs: live.categorySlugs },
+          readUserSpotlightOff(userData)
+        )
+      );
     } else if (profileSnap.exists) {
       tx.delete(profileRef);
     }
@@ -261,8 +269,10 @@ export async function runListingWorker(owner: string): Promise<{ processed: numb
           const committed = commitDecision(before, decision);
           if (!committed) return 'stale' as const;
           const live = committed.profiles.get(uid);
-          if (live) tx.set(profileRef, live);
-          else if (profileSnap.exists) tx.delete(profileRef);
+          if (live) {
+            // ワーカーの set も文書を置き換える。同期前の true だけ残す。
+            tx.set(profileRef, assignSpotlightOff(live, profileSnap.get('spotlightOff') === true));
+          } else if (profileSnap.exists) tx.delete(profileRef);
           const tomb = committed.tombstones.get(uid);
           if (typeof tomb === 'number') tx.set(tombRef, { revision: tomb });
           else if (tombSnap.exists) tx.delete(tombRef);

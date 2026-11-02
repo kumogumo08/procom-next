@@ -1,7 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 
 type AdminUserRow = {
   uid: string;
@@ -13,6 +13,12 @@ type AdminUserRow = {
   hasBio: boolean;
   linkCount: number;
   isPublic: boolean;
+  spotlightOff: boolean;
+};
+
+type Notice = {
+  tone: 'ok' | 'err';
+  text: string;
 };
 
 function formatCreatedAtJa(iso: string | null): string {
@@ -59,11 +65,45 @@ function UserThumb({ photoUrl }: { photoUrl: string | null }) {
   );
 }
 
+function SpotlightToggle({
+  user,
+  disabled,
+  onToggle,
+}: {
+  user: AdminUserRow;
+  disabled: boolean;
+  onToggle: (user: AdminUserRow, nextOn: boolean) => void;
+}) {
+  const on = !user.spotlightOff;
+  return (
+    <label className="inline-flex min-h-11 items-center gap-2 text-sm">
+      <input
+        type="checkbox"
+        className="h-5 w-5"
+        checked={on}
+        disabled={disabled}
+        onChange={(event) => {
+          const nextOn = event.currentTarget.checked;
+          if (!nextOn && !window.confirm('この登録者のTOP掲載をOFFにしますか？プロフィールページは公開されたままです。')) {
+            event.currentTarget.checked = true;
+            return;
+          }
+          onToggle(user, nextOn);
+        }}
+      />
+      TOP掲載：{on ? 'ON' : 'OFF'}
+    </label>
+  );
+}
+
 export default function AdminUsersPage() {
   const [checking, setChecking] = useState(true);
   const [isAdmin, setIsAdmin] = useState(false);
   const [users, setUsers] = useState<AdminUserRow[] | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [notice, setNotice] = useState<Notice | null>(null);
+  const [pendingUid, setPendingUid] = useState<string | null>(null);
+  const pendingRef = useRef(false);
 
   useEffect(() => {
     (async () => {
@@ -94,7 +134,11 @@ export default function AdminUsersPage() {
           throw new Error('一覧の取得に失敗しました');
         }
         const data = (await res.json()) as { users?: AdminUserRow[] };
-        setUsers(Array.isArray(data.users) ? data.users : []);
+        setUsers(
+          Array.isArray(data.users)
+            ? data.users.map((user) => ({ ...user, spotlightOff: user.spotlightOff === true }))
+            : []
+        );
       } catch {
         setError('一覧の取得に失敗しました。時間をおいて再度お試しください。');
         setUsers([]);
@@ -103,6 +147,52 @@ export default function AdminUsersPage() {
       }
     })();
   }, []);
+
+  async function toggleSpotlight(user: AdminUserRow, nextOn: boolean) {
+    if (pendingRef.current) return;
+    pendingRef.current = true;
+    const nextOff = !nextOn;
+    const label = user.name || 'この登録者';
+    setUsers((prev) =>
+      prev?.map((row) => (row.uid === user.uid ? { ...row, spotlightOff: nextOff } : row)) ?? prev
+    );
+    setPendingUid(user.uid);
+    setNotice(null);
+    try {
+      const res = await fetch(`/api/admin/users/${encodeURIComponent(user.uid)}`, {
+        method: 'PATCH',
+        cache: 'no-store',
+        credentials: 'include',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ spotlightOff: nextOff }),
+      });
+      if (!res.ok) {
+        setUsers((prev) =>
+          prev?.map((row) => (row.uid === user.uid ? { ...row, spotlightOff: user.spotlightOff } : row)) ?? prev
+        );
+        const text =
+          res.status === 403
+            ? '権限がないか、このページ以外からの更新は受け付けていません。'
+            : res.status === 404
+              ? 'ユーザーが見つかりません。'
+              : '更新に失敗しました。時間をおいて再度お試しください。';
+        setNotice({ tone: 'err', text });
+        return;
+      }
+      setNotice({
+        tone: 'ok',
+        text: nextOn ? `${label}のTOP掲載をONにしました。` : `${label}のTOP掲載をOFFにしました。`,
+      });
+    } catch {
+      setUsers((prev) =>
+        prev?.map((row) => (row.uid === user.uid ? { ...row, spotlightOff: user.spotlightOff } : row)) ?? prev
+      );
+      setNotice({ tone: 'err', text: '更新に失敗しました。時間をおいて再度お試しください。' });
+    } finally {
+      pendingRef.current = false;
+      setPendingUid(null);
+    }
+  }
 
   if (checking) {
     return <main className="mx-auto max-w-5xl p-6">確認中…</main>;
@@ -126,6 +216,21 @@ export default function AdminUsersPage() {
           {error}
         </p>
       ) : null}
+
+      {notice ? (
+        <p
+          className={
+            notice.tone === 'ok'
+              ? 'mb-4 rounded border border-green-200 bg-green-50 px-3 py-2 text-sm text-green-800'
+              : 'mb-4 rounded border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700'
+          }
+          role="status"
+        >
+          {notice.text}
+        </p>
+      ) : null}
+
+      {pendingUid ? <p className="mb-3 text-sm text-neutral-600">更新中…</p> : null}
 
       {users === null ? (
         <p className="text-sm text-neutral-600">読み込み中…</p>
@@ -159,9 +264,20 @@ export default function AdminUsersPage() {
                       {' · '}
                       リンク{user.linkCount}件
                     </p>
+                    <div className="mt-2">
+                      <SpotlightToggle
+                        user={user}
+                        disabled={pendingUid !== null}
+                        onToggle={(row, nextOn) => {
+                          void toggleSpotlight(row, nextOn);
+                        }}
+                      />
+                    </div>
                     <Link
                       href={`/user/${user.uid}`}
-                      className="mt-2 inline-block text-sm text-blue-600 underline hover:text-blue-800"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="mt-1 inline-flex min-h-11 items-center text-sm text-blue-600 underline hover:text-blue-800"
                     >
                       プロフィールを見る
                     </Link>
@@ -214,12 +330,23 @@ export default function AdminUsersPage() {
                       {user.hasBio ? 'あり' : 'なし'} / リンク{user.linkCount}
                     </td>
                     <td className="px-2 py-3">
-                      <Link
-                        href={`/user/${user.uid}`}
-                        className="text-blue-600 underline hover:text-blue-800"
-                      >
-                        開く
-                      </Link>
+                      <div className="flex flex-col items-start">
+                        <SpotlightToggle
+                          user={user}
+                          disabled={pendingUid !== null}
+                          onToggle={(row, nextOn) => {
+                            void toggleSpotlight(row, nextOn);
+                          }}
+                        />
+                        <Link
+                          href={`/user/${user.uid}`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="inline-flex min-h-11 items-center text-blue-600 underline hover:text-blue-800"
+                        >
+                          開く
+                        </Link>
+                      </div>
                     </td>
                   </tr>
                 ))}

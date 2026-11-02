@@ -4,6 +4,7 @@ import { db } from '@/lib/firebase-admin';
 import { authUnavailableResponse } from '@/lib/activeSession';
 import { getLoggedInUid } from '@/lib/session';
 import { isAdmin } from '@/lib/isAdmin';
+import { readUserSpotlightOff } from '@/lib/spotlightModeration';
 
 export const runtime = 'nodejs';
 
@@ -101,6 +102,7 @@ export async function GET() {
         linkCount: countRegisteredLinks(profile),
         // metadata.ts と同様: 未設定は公開扱い
         isPublic: profile.isPublic !== false,
+        spotlightOff: readUserSpotlightOff(data),
       };
     });
 

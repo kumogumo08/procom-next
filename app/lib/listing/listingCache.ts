@@ -52,3 +52,13 @@ export function invalidateListingAfterPhotoChange(): void {
     reportInvalidationFailure(err);
   }
 }
+
+/** Spotlight の掲載フラグを変えたあと。一覧ページのキャッシュは無効化しない。 */
+export function invalidateListingAfterSpotlightChange(): void {
+  try {
+    revalidateTag(LISTING_CACHE_TAG);
+    revalidatePath('/top');
+  } catch (err: unknown) {
+    reportInvalidationFailure(err);
+  }
+}

@@ -7,6 +7,8 @@ import type { DocumentData } from 'firebase-admin/firestore';
 import { db } from '@/lib/firebase-admin';
 import { positiveMillis } from '@/lib/profileContent';
 
+import { isSpotlightExcluded } from '@/lib/spotlightModeration';
+
 import { readLegacyDirectory } from './legacyDirectory';
 import { LISTING_CACHE_TAG } from './listingCache';
 import { isListingDirectoryReady } from './readiness';
@@ -41,6 +43,7 @@ async function readListedSpotlightSource(): Promise<SpotlightCandidate[]> {
   }
   const candidates: SpotlightCandidate[] = [];
   for (const doc of snap.docs) {
+    if (isSpotlightExcluded(doc.get('spotlightOff'))) continue;
     const candidate = listedCandidate(doc.id, doc.data());
     if (candidate) candidates.push(candidate);
   }
@@ -51,6 +54,7 @@ export async function readLegacySpotlightSource(): Promise<SpotlightCandidate[]>
   const rows = await readLegacyDirectory();
   const candidates: SpotlightCandidate[] = [];
   for (const row of rows) {
+    if (isSpotlightExcluded(row.spotlightOff)) continue;
     const candidate = toSpotlightCandidate({
       uid: row.uid,
       name: row.name,
@@ -65,12 +69,12 @@ export async function readLegacySpotlightSource(): Promise<SpotlightCandidate[]>
   return candidates;
 }
 
-const getListedSpotlightSource = unstable_cache(readListedSpotlightSource, ['spotlight-source-listed-v1'], {
+const getListedSpotlightSource = unstable_cache(readListedSpotlightSource, ['spotlight-source-listed-v2'], {
   revalidate: SPOTLIGHT_SOURCE_REVALIDATE_SECONDS,
   tags: [LISTING_CACHE_TAG],
 });
 
-const getLegacySpotlightSource = unstable_cache(readLegacySpotlightSource, ['spotlight-source-legacy-v1'], {
+const getLegacySpotlightSource = unstable_cache(readLegacySpotlightSource, ['spotlight-source-legacy-v2'], {
   revalidate: SPOTLIGHT_SOURCE_REVALIDATE_SECONDS,
   tags: [LISTING_CACHE_TAG],
 });

@@ -29,6 +29,7 @@ import { LEGACY_SCAN_LIMIT } from '@/lib/listing/readiness';
 import { positiveMillis, readContentUpdatedAtMs } from '@/lib/profileContent';
 import { createdAtToMillis } from '@/lib/publicUserDirectory';
 import { isProfilePublicWithOnboarding } from '@/lib/onboarding';
+import { assignSpotlightOff, readUserSpotlightOff } from '@/lib/spotlightModeration';
 
 const APPLY = process.argv.includes('--apply');
 const APPROVED = process.env.LISTING_BACKFILL_APPROVED === 'yes';
@@ -262,10 +263,12 @@ async function main(): Promise<void> {
       if (!lockAllowsWrite(lock, owner, acquired, Date.now())) {
         throw new Error('移行ロックが無効です');
       }
+      const spotlightOffByUid = new Map<string, boolean>();
       const freshUsers = await Promise.all(
         loaded.users.map(async (user) => {
           const snap = await tx.get(db.collection('users').doc(user.uid));
           const data = snap.data();
+          spotlightOffByUid.set(user.uid, readUserSpotlightOff(data));
           return {
             uid: user.uid,
             isPublic: snap.exists && isProfilePublicWithOnboarding(data?.profile),
@@ -311,7 +314,10 @@ async function main(): Promise<void> {
           assertNotUsersPath('publicProfiles');
           assertNotUsersPath('listingOutbox');
           assertNotUsersPath('listingTombstones');
-          tx.set(db.collection('publicProfiles').doc(action.uid), action.profile);
+          tx.set(
+            db.collection('publicProfiles').doc(action.uid),
+            assignSpotlightOff(action.profile, spotlightOffByUid.get(action.uid) === true)
+          );
           tx.set(db.collection('listingOutbox').doc(action.uid), {
             uid: action.uid,
             revision: action.profile.revision,

@@ -7,6 +7,8 @@ import { positiveMillis } from '@/lib/profileContent';
 import { compareDirectoryOrder, createdAtToMillis } from '@/lib/publicUserDirectory';
 import { isProfilePublicWithOnboarding } from '@/lib/onboarding';
 
+import { readUserSpotlightOff } from '@/lib/spotlightModeration';
+
 import { LISTING_CACHE_TAG } from './listingCache';
 import { assertLegacyScanAllowed } from './readiness';
 import { normalizeSearchText } from './searchText';
@@ -18,6 +20,8 @@ export type LegacyListUser = {
   photoUrl: string;
   createdAtMs: number | null;
   contentUpdatedAtMs: number | null;
+  /** Spotlight だけが見る。一覧と検索はこの値で落とさない。 */
+  spotlightOff: boolean;
 };
 
 function photoUrlOf(profile: Record<string, unknown>): string {
@@ -41,6 +45,7 @@ export async function readLegacyDirectory(): Promise<LegacyListUser[]> {
     .select(
       'createdAt',
       'deletionPending',
+      'moderation.spotlightOff',
       'profile.isPublic',
       'profile.onboardingStatus',
       'profile.name',
@@ -63,6 +68,7 @@ export async function readLegacyDirectory(): Promise<LegacyListUser[]> {
       photoUrl: photoUrlOf(profile),
       createdAtMs: createdAtToMillis(data.createdAt),
       contentUpdatedAtMs: positiveMillis(profile.contentUpdatedAtMs),
+      spotlightOff: readUserSpotlightOff(data),
     });
   }
   rows.sort((a, b) => compareDirectoryOrder(a, b));
@@ -70,7 +76,7 @@ export async function readLegacyDirectory(): Promise<LegacyListUser[]> {
 }
 
 /** 移行完了前だけ使う。500人を超えたら拒否する。 */
-export const getLegacyDirectory = unstable_cache(readLegacyDirectory, ['legacy-directory-v3'], {
+export const getLegacyDirectory = unstable_cache(readLegacyDirectory, ['legacy-directory-v4'], {
   revalidate: 60,
   tags: [LISTING_CACHE_TAG],
 });

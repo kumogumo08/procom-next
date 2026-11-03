@@ -2,6 +2,7 @@
  * 停止後の掲載反映。demo-procom-local の Emulator 以外には接続しない。
  * 実行: npx tsx --import ./scripts/onboarding-emulator/register-server-only.mjs scripts/onboarding-emulator/suspension-listing.ts
  */
+import type { PageCard } from '../../app/lib/listing/engine';
 import { applyIsolatedEnv, EMULATOR } from './isolate';
 
 applyIsolatedEnv();
@@ -18,6 +19,19 @@ if (process.env.GOOGLE_APPLICATION_CREDENTIALS) {
 
 function assert(condition: boolean, message: string): void {
   if (!condition) throw new Error(message);
+}
+
+function readPageCards(value: unknown): PageCard[] {
+  if (!Array.isArray(value)) throw new Error('directoryPages の cards が配列ではありません');
+  return value.map((item) => {
+    if (!item || typeof item !== 'object') throw new Error('カードがオブジェクトではありません');
+    const record = item as Record<string, unknown>;
+    const { uid, name, title, photoUrl } = record;
+    if (typeof uid !== 'string' || typeof name !== 'string' || typeof title !== 'string' || typeof photoUrl !== 'string') {
+      throw new Error('カードに uid, name, title, photoUrl がありません');
+    }
+    return { uid, name, title, photoUrl };
+  });
 }
 
 const uid = `ban-${Date.now().toString(36)}`;
@@ -67,7 +81,7 @@ try {
   await listing.enqueueUserListing(uid);
   assert(!(await db.collection('publicProfiles').doc(uid).get()).exists, 'enqueue で publicProfiles を消す');
   assert((await db.collection('listingOutbox').doc(uid).get()).exists, 'enqueue で outbox を残す');
-  const stored = (await db.collection('directoryPages').doc('1').get()).data()?.cards as { uid: string }[];
+  const stored = readPageCards((await db.collection('directoryPages').doc('1').get()).data()?.cards);
   assert(stored.some((item) => item.uid === uid), 'ワーカー前の directoryPages には古いカードが残る');
 
   const visible = await listing.omitCardsWithoutProfile(stored);

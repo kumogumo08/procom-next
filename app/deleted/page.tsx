@@ -3,8 +3,7 @@
 
 import Head from 'next/head';
 import { useEffect } from 'react';
-import AuthHeader from '@/components/AuthHeader';
-import Footer from '@/components/Footer';
+import AuthPageShell from '@/components/AuthPageShell';
 
 export default function DeletedPage() {
   useEffect(() => {
@@ -13,24 +12,23 @@ export default function DeletedPage() {
 
   return (
     <>
-      <AuthHeader />
-
-      <main className="deleted-box">
+      <AuthPageShell>
+      <div className="deleted-box">
         <h1>退会が完了しました</h1>
         <p>ご利用ありがとうございました。またのご利用をお待ちしております。</p>
         <a href="/top" className="button">トップページに戻る</a>
-      </main>
-
-      <Footer />
+      </div>
+      </AuthPageShell>
 
       <style jsx>{`
         .deleted-box {
-          max-width: 600px;
-          margin: 60px auto;
+          width: min(600px, 100%);
+          box-sizing: border-box;
+          margin: 0 auto;
           background: white;
-          padding: 40px;
-          border-radius: 12px;
-          box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+          padding: 32px 20px;
+          border-radius: 16px;
+          box-shadow: 0 12px 32px rgba(4, 8, 28, 0.28);
           text-align: center;
         }
         h1 {

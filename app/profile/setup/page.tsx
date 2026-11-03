@@ -1,8 +1,7 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
 import { redirect } from 'next/navigation';
-import Footer from '@/components/Footer';
-import AuthHeader from '@/components/AuthHeader';
+import AuthPageShell from '@/components/AuthPageShell';
 import { ACCOUNT_SUSPENDED_PATH, readUserSuspended } from '@/lib/accountSuspension';
 import { bucket, db } from '@/lib/firebase';
 import { readOnboardingGate } from '@/lib/onboarding';
@@ -27,11 +26,13 @@ export default async function ProfileSetupPage() {
     if (!isAuthUnavailable(err)) throw err;
     return (
       <>
-        <AuthHeader />
-        <main className={styles.page}>
-          <p>認証サービスが一時的に利用できません。時間をおいて再度お試しください。</p>
-        </main>
-        <Footer />
+        <AuthPageShell>
+          <div className={styles.page}>
+            <section className={styles.card}>
+              <p className={styles.lead}>認証サービスが一時的に利用できません。時間をおいて再度お試しください。</p>
+            </section>
+          </div>
+        </AuthPageShell>
       </>
     );
   }
@@ -46,8 +47,8 @@ export default async function ProfileSetupPage() {
 
   return (
     <>
-      <AuthHeader />
-      <main className={styles.page}>
+      <AuthPageShell>
+      <div className={styles.page}>
         {gate === 'required' ? (
           <ProfileSetupForm
             uid={uid}
@@ -65,8 +66,8 @@ export default async function ProfileSetupPage() {
             </p>
           </section>
         )}
-      </main>
-      <Footer />
+      </div>
+      </AuthPageShell>
     </>
   );
 }

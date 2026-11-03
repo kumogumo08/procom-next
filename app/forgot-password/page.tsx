@@ -3,8 +3,7 @@
 import { useState } from 'react';
 import { sendPasswordResetEmail, getAuth } from 'firebase/auth';
 import { firebaseApp } from '@/lib/firebaseClient';
-import AuthHeader from '@/components/AuthHeader';
-import Footer from '@/components/Footer';
+import AuthPageShell from '@/components/AuthPageShell';
 
 export default function ForgotPasswordPage() {
   const [email, setEmail] = useState('');
@@ -24,10 +23,8 @@ export default function ForgotPasswordPage() {
 
   return (
     <>
-      <AuthHeader />
-
-      <main className="min-h-screen flex flex-col items-center justify-center bg-gray-100 px-4 py-12">
-        <div className="bg-white p-8 rounded-lg shadow-md w-full max-w-md">
+      <AuthPageShell>
+        <div className="w-full max-w-md rounded-2xl bg-white p-6 shadow-xl sm:p-8">
           <h1 className="text-2xl font-bold text-center mb-6">パスワードを忘れた方</h1>
           <form onSubmit={handleReset} className="space-y-4">
             <label className="block text-gray-700">
@@ -52,9 +49,7 @@ export default function ForgotPasswordPage() {
             <p className="mt-4 text-center text-sm text-green-600">{message}</p>
           )}
         </div>
-      </main>
-
-      <Footer />
+      </AuthPageShell>
     </>
   );
 }

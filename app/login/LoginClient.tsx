@@ -2,8 +2,7 @@
 
 import { useState, useEffect, FormEvent } from 'react';
 import Head from 'next/head';
-import AuthHeader from '@/components/AuthHeader';
-import Footer from '@/components/Footer';
+import AuthPageShell from '@/components/AuthPageShell';
 import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link'
 import { FirebaseError } from 'firebase/app';
@@ -202,10 +201,8 @@ export default function LoginPage({ initialMode }: LoginPageProps) {
         />
       </Head>
 
-      <AuthHeader />
-
-      <main className="flex flex-col items-center justify-center px-4 py-8 bg-gray-100">
-        <div className="bg-white w-full max-w-md p-6 rounded-lg shadow-md">
+      <AuthPageShell>
+        <div className="w-full max-w-md rounded-2xl border border-white/70 bg-white p-6 shadow-xl sm:p-8">
           {mode === 'login' ? (
             <div id="loginForm">
               <h2 className="text-xl font-bold text-center mb-4">ログイン</h2>
@@ -326,9 +323,7 @@ export default function LoginPage({ initialMode }: LoginPageProps) {
             </div>
           )}
         </div>
-      </main>
-
-      <Footer />
+      </AuthPageShell>
     </>
   );
 }

@@ -5,6 +5,7 @@ import { useSearchParams, useRouter } from 'next/navigation';
 import { getAuth, confirmPasswordReset } from 'firebase/auth';
 import { firebaseApp } from '@/lib/firebaseClient';
 import Image from 'next/image';
+import AuthHeader from '@/components/AuthHeader';
 
 export default function ResetPage() {
   const [password, setPassword] = useState('');
@@ -37,9 +38,11 @@ export default function ResetPage() {
   };
 
   return (
-    <div className="min-h-screen flex flex-col items-center justify-center bg-gradient-to-br from-blue-100 to-blue-300 px-4">
+    <div className="min-h-screen flex flex-col bg-gradient-to-br from-blue-100 to-blue-300">
+      <AuthHeader />
+      <div className="flex flex-1 flex-col items-center justify-center px-4 py-8">
       <div className="bg-white shadow-lg rounded-2xl p-8 w-full max-w-md">
-         <Image src="/procom-logo.png" alt="Procom Logo" className="h-12 mx-auto mb-4" />
+         <Image src="/procom-logo.png" alt="Procom Logo" width={180} height={48} className="mx-auto mb-4 h-12 w-auto" />
         <h1 className="text-2xl font-bold mb-6 text-center text-gray-800">🔐 パスワード再設定</h1>
         <input
           type="password"
@@ -55,6 +58,7 @@ export default function ResetPage() {
           パスワードを変更
         </button>
         {message && <p className="mt-4 text-center text-sm text-gray-700">{message}</p>}
+      </div>
       </div>
     </div>
   );

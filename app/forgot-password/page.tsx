@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import { sendPasswordResetEmail, getAuth } from 'firebase/auth';
 import { firebaseApp } from '@/lib/firebaseClient';
-import Header from '@/components/Header';
+import AuthHeader from '@/components/AuthHeader';
 import Footer from '@/components/Footer';
 
 export default function ForgotPasswordPage() {
@@ -24,7 +24,7 @@ export default function ForgotPasswordPage() {
 
   return (
     <>
-      <Header />
+      <AuthHeader />
 
       <main className="min-h-screen flex flex-col items-center justify-center bg-gray-100 px-4 py-12">
         <div className="bg-white p-8 rounded-lg shadow-md w-full max-w-md">

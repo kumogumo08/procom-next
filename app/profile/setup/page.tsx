@@ -2,7 +2,7 @@ import type { Metadata } from 'next';
 import Link from 'next/link';
 import { redirect } from 'next/navigation';
 import Footer from '@/components/Footer';
-import Header from '@/components/Header';
+import AuthHeader from '@/components/AuthHeader';
 import { ACCOUNT_SUSPENDED_PATH, readUserSuspended } from '@/lib/accountSuspension';
 import { bucket, db } from '@/lib/firebase';
 import { readOnboardingGate } from '@/lib/onboarding';
@@ -27,7 +27,7 @@ export default async function ProfileSetupPage() {
     if (!isAuthUnavailable(err)) throw err;
     return (
       <>
-        <Header />
+        <AuthHeader />
         <main className={styles.page}>
           <p>認証サービスが一時的に利用できません。時間をおいて再度お試しください。</p>
         </main>
@@ -46,7 +46,7 @@ export default async function ProfileSetupPage() {
 
   return (
     <>
-      <Header />
+      <AuthHeader />
       <main className={styles.page}>
         {gate === 'required' ? (
           <ProfileSetupForm

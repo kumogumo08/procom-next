@@ -3,7 +3,7 @@
 
 import Head from 'next/head';
 import { useEffect } from 'react';
-import Header from '@/components/Headerlogin';
+import AuthHeader from '@/components/AuthHeader';
 import Footer from '@/components/Footer';
 
 export default function DeletedPage() {
@@ -13,7 +13,7 @@ export default function DeletedPage() {
 
   return (
     <>
-      <Header />
+      <AuthHeader />
 
       <main className="deleted-box">
         <h1>退会が完了しました</h1>

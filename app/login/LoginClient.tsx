@@ -2,7 +2,7 @@
 
 import { useState, useEffect, FormEvent } from 'react';
 import Head from 'next/head';
-import Header from '@/components/Header';
+import AuthHeader from '@/components/AuthHeader';
 import Footer from '@/components/Footer';
 import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link'
@@ -202,7 +202,7 @@ export default function LoginPage({ initialMode }: LoginPageProps) {
         />
       </Head>
 
-      <Header />
+      <AuthHeader />
 
       <main className="flex flex-col items-center justify-center px-4 py-8 bg-gray-100">
         <div className="bg-white w-full max-w-md p-6 rounded-lg shadow-md">

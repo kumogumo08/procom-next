@@ -3,7 +3,7 @@ import Link from 'next/link';
 import { redirect } from 'next/navigation';
 
 import Footer from '@/components/Footer';
-import Header from '@/components/Header';
+import AuthHeader from '@/components/AuthHeader';
 import { readUserSuspended } from '@/lib/accountSuspension';
 import { isAuthUnavailable } from '@/lib/activeSession';
 import { db } from '@/lib/firebase-admin';
@@ -27,7 +27,7 @@ export default async function SuspendedAccountPage() {
     if (!isAuthUnavailable(err)) throw err;
     return (
       <>
-        <Header />
+        <AuthHeader />
         <main className="mx-auto max-w-xl px-4 py-10">
           <p className="text-sm text-neutral-700">認証サービスが一時的に利用できません。時間をおいて再度お試しください。</p>
         </main>
@@ -44,7 +44,7 @@ export default async function SuspendedAccountPage() {
 
   return (
     <>
-      <Header />
+      <AuthHeader />
       <main className="mx-auto max-w-xl px-4 py-10">
         <h1 className="text-2xl font-bold text-neutral-900">アカウントが停止されています</h1>
         <p className="mt-4 text-sm leading-6 text-neutral-700">

@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/firebase';
 import { noteUserListing } from '@/lib/listing/firestoreListing';
 import { nextContentStamp } from '@/lib/profileContent';
+import { rejectIfSuspended } from '@/lib/accountSuspensionGuard';
 import { resolveSessionUid } from '@/lib/session';
 
 /** リポジトリ内に fetch 呼び出し元なし。/api/user/[uid] へ統合済みなら削除候補 */
@@ -18,6 +19,8 @@ export async function POST(req: NextRequest, props: { params: Promise<{ uid: str
   if (sessionUid !== uid) {
     return NextResponse.json({ error: '権限がありません' }, { status: 403 });
   }
+  const suspended = await rejectIfSuspended(uid);
+  if (suspended) return suspended;
 
   const data = await req.json();
 

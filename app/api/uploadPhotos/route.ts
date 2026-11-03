@@ -4,6 +4,7 @@ export const runtime = 'nodejs'; // ⬅️ 必ず入れる！
 import { NextRequest, NextResponse } from 'next/server';
 import { bucket } from '@/lib/firebase';
 import { schedulePhotoRetention } from '@/lib/photoGc';
+import { rejectIfSuspended } from '@/lib/accountSuspensionGuard';
 import { resolveSessionUid } from '@/lib/session';
 import { v4 as uuidv4 } from 'uuid';
 
@@ -14,6 +15,8 @@ export async function POST(req: NextRequest) {
   if (!uid) {
     return NextResponse.json({ error: '未ログインです' }, { status: 401 });
   }
+  const suspended = await rejectIfSuspended(uid);
+  if (suspended) return suspended;
 
   try {
     const { base64Images } = await req.json();

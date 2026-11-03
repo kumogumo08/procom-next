@@ -76,9 +76,10 @@ export function profileLoginPath(uid: string, profile: unknown): string {
   return `/user/${uid}`;
 }
 
-/** クライアントが別のURLへ飛ばされないよう、サーバーが返した遷移先を限定する。 */
+/** クライアントが別のURLへ飛ばされないよう、サーバーが返した遷移先を完全一致だけ許可する。 */
 export function safeLoginRedirect(uid: string, redirectTo: unknown): string {
   if (redirectTo === '/profile/setup') return '/profile/setup';
+  if (redirectTo === '/account/suspended') return '/account/suspended';
   return `/user/${uid}`;
 }
 

@@ -4,6 +4,7 @@ import { unstable_noStore as noStore } from 'next/cache';
 import { redirect } from 'next/navigation';
 
 import LoginClient from './LoginClient';
+import { ACCOUNT_SUSPENDED_PATH, readUserSuspended } from '@/lib/accountSuspension';
 import { db } from '@/lib/firebase';
 import { profileLoginPath } from '@/lib/onboarding';
 import { isAuthUnavailable } from '@/lib/activeSession';
@@ -22,6 +23,7 @@ export default async function Page() {
   }
   if (uid) {
     const snap = await db.collection('users').doc(uid).get();
+    if (readUserSuspended(snap.data())) redirect(ACCOUNT_SUSPENDED_PATH);
     const profile = snap.exists ? snap.get('profile') : undefined;
     redirect(profileLoginPath(uid, profile));
   }

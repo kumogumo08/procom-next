@@ -19,6 +19,7 @@ import {
   registrationResumeAction,
   repeatRegistrationAction,
 } from '@/lib/registration';
+import { isPublicListingEligible } from '@/lib/accountSuspension';
 import { isProfilePublic } from '@/lib/userSeo';
 import { resolveSectionOrder, showsFixedCalendar } from '@/lib/blockLayout';
 import {
@@ -316,6 +317,39 @@ assert(isProfilePublicWithOnboarding(legacyProfile) === isProfilePublic(legacyPr
 assert(profileLoginPath('userA1234', requiredProfile) === '/profile/setup', '12. ログアウト後もrequiredなら初期設定に戻る');
 assert(safeLoginRedirect('userA1234', '/profile/setup') === '/profile/setup', '12. 初期設定への遷移を受け付ける');
 assert(safeLoginRedirect('userA1234', 'https://evil.example') === '/user/userA1234', '12. 外部への遷移先は捨てる');
+assert(safeLoginRedirect('userA1234', '/account/suspended') === '/account/suspended', '12. 停止中は停止画面へ直行する');
+assert(safeLoginRedirect('userA1234', '/account/suspended/') === '/user/userA1234', '12. 停止画面の末尾スラッシュは許可しない');
+assert(safeLoginRedirect('userA1234', '/account/suspended?next=https://evil.example') === '/user/userA1234', '12. 停止画面へのクエリは許可しない');
+assert(safeLoginRedirect('userA1234', 'https://procom.jp/account/suspended') === '/user/userA1234', '12. 外部ホストの停止画面は捨てる');
+assert(safeLoginRedirect('userA1234', '//evil.example/account/suspended') === '/user/userA1234', '12. プロトコル相対URLは捨てる');
+assert(safeLoginRedirect('userA1234', '/user/other') === '/user/userA1234', '12. 別ユーザーへの遷移は捨てる');
+assert(profileLoginPath('userA1234', finishedProfile) === '/user/userA1234', '12. 初期設定完了の通常ユーザーはプロフィールへ');
+assert(profileLoginPath('userA1234', legacyProfile) === '/user/userA1234', '12. 既存の通常ユーザーはプロフィールへ');
+assert(!isPublicListingEligible({ profile: requiredProfile }), '掲載: 初期設定が未完了なら掲載されない');
+assert(
+  isPublicListingEligible({ profile: finishedProfile }) === isProfilePublicWithOnboarding(finishedProfile),
+  '掲載: 初期設定完了済みなら既存の公開条件に従う'
+);
+assert(
+  isPublicListingEligible({ profile: privateComplete }) === isProfilePublicWithOnboarding(privateComplete),
+  '掲載: 初期設定完了かつ非公開は既存どおり掲載されない'
+);
+assert(
+  isPublicListingEligible({ profile: legacyProfile }) === isProfilePublic(legacyProfile),
+  '掲載: 初期設定フィールドが無いユーザーは既存の公開条件に従う'
+);
+assert(
+  !isPublicListingEligible({ moderation: { suspended: true }, profile: finishedProfile }),
+  '掲載: BAN中なら掲載されない'
+);
+assert(
+  !isPublicListingEligible({ deletionPending: true, profile: finishedProfile }),
+  '掲載: 退会処理中なら掲載されない'
+);
+assert(
+  !isPublicListingEligible({ moderation: { suspended: false }, profile: requiredProfile }),
+  '掲載: BAN解除後も初期設定未完了なら掲載されない'
+);
 assert(isProfilePublicWithOnboarding(stored) === false, '13. 途中保存のrequiredは公開されない');
 assert(published.ok === true && published.writes.onboardingStatus === 'complete', '14. 公開操作の成功後にcompleteになる');
 if (published.ok) {
@@ -361,7 +395,13 @@ const listing = readFileSync(join(root, 'app/lib/listing/firestoreListing.ts'), 
 const legacyList = readFileSync(join(root, 'app/lib/listing/legacyDirectory.ts'), 'utf8');
 const completeRoute = readFileSync(join(root, 'app/api/profile/setup/complete/route.ts'), 'utf8');
 const setupDraftRoute = readFileSync(join(root, 'app/api/profile/setup/route.ts'), 'utf8');
-assert(listing.includes('isProfilePublicWithOnboarding'), '掲載同期は初期設定を考慮する');
+assert(listing.includes('isPublicListingEligible'), '掲載同期は停止・退会・初期設定をまとめた条件を使う');
+assert(
+  isPublicListingEligible({ profile: finishedProfile }) &&
+    !isPublicListingEligible({ profile: requiredProfile }) &&
+    !isPublicListingEligible({ moderation: { suspended: true }, profile: finishedProfile }),
+  '掲載同期が使う条件は初期設定とBANを実際に分ける'
+);
 assert(legacyList.includes('profile.onboardingStatus'), '旧一覧は初期設定の状態を読む');
 assert(completeRoute.includes('noteUserListing'), '公開完了は掲載同期を呼ぶ');
 assert(!setupDraftRoute.includes('noteUserListing'), '途中保存は掲載同期を呼ばない');

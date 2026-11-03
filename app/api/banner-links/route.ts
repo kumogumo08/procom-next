@@ -6,6 +6,8 @@ import { getStorage } from 'firebase-admin/storage';
 import { resolveVerifiedSession } from '@/lib/session';
 import { initializeFirebaseAdmin } from '@/lib/firebase';
 import { noteUserListing } from '@/lib/listing/firestoreListing';
+import { readUserSuspended } from '@/lib/accountSuspension';
+import { suspendedWriteResponse } from '@/lib/accountSuspensionGuard';
 import { isOnboardingBlocked } from '@/lib/onboarding';
 import { nextContentStamp } from '@/lib/profileContent';
 
@@ -29,7 +31,7 @@ export async function GET(req: NextRequest) {
   }
 
   const data = doc.data();
-  if (data?.deletionPending === true) {
+  if (data?.deletionPending === true || readUserSuspended(data)) {
     return NextResponse.json({ error: 'ユーザーが見つかりません' }, { status: 404 });
   }
   if (isOnboardingBlocked(data?.profile)) {
@@ -62,6 +64,7 @@ export async function POST(req: NextRequest) {
   const profileRef = db.collection('users').doc(session.uid);
   const doc = await profileRef.get();
   const existing = doc.data() || {};
+  if (readUserSuspended(existing)) return suspendedWriteResponse();
   const existingProfile = existing.profile || {};
   const existingSettings = existingProfile.settings || {};
 

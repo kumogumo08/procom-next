@@ -5,6 +5,7 @@ import {
   getCachedFixedPage,
   getCachedListingPageCount,
   getNewestListed,
+  omitCardsWithoutProfile,
   type ListedCard,
 } from '@/lib/listing/firestoreListing';
 import { getLegacyDirectory } from '@/lib/listing/legacyDirectory';
@@ -120,7 +121,7 @@ async function resolveListing(sp: SearchParams): Promise<Listing> {
         redirectTo: pageCount >= 1 ? fixedPageHref(pageCount) : '/users',
       };
     }
-    const cards = await getCachedFixedPage(requested);
+    const cards = await omitCardsWithoutProfile(await getCachedFixedPage(requested));
     return {
       kind: 'fixed',
       page: requested,

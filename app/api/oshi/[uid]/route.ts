@@ -3,6 +3,7 @@ export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
 
 import { NextRequest, NextResponse } from 'next/server';
+import { isAccountSuspendedError } from '@/lib/accountSuspension';
 import { authRejectedResponse, authUnavailableResponse } from '@/lib/activeSession';
 import { initializeFirebaseAdmin } from '@/lib/firebase';
 import {
@@ -62,6 +63,9 @@ export async function POST(
     if (unavailable) return unavailable;
     const rejected = authRejectedResponse(error);
     if (rejected) return rejected;
+    if (isAccountSuspendedError(error)) {
+      return oshiJson({ success: false, error: 'このアカウントは停止されています' }, 403, issueVisitorId);
+    }
     console.error('POST oshi error:', error instanceof Error ? error.name : 'error');
     return oshiJson({ success: false, error: 'server_error' }, 500, issueVisitorId);
   }
@@ -80,9 +84,10 @@ export async function GET(
   try {
     const actor = await resolveOshiActor(req);
     issueVisitorId = actor.issueVisitorId;
-    const { oshiCount, todayCount } = await readOshiState(uid, actor.actorKey);
+    const state = await readOshiState(uid, actor.actorKey);
+    if (state.hidden) return oshiJson({ error: 'not_found' }, 404, issueVisitorId);
     return oshiJson(
-      { oshiCount, todayCount, totalCount: oshiCount },
+      { oshiCount: state.oshiCount, todayCount: state.todayCount, totalCount: state.oshiCount },
       200,
       issueVisitorId
     );
@@ -91,6 +96,9 @@ export async function GET(
     if (unavailable) return unavailable;
     const rejected = authRejectedResponse(error);
     if (rejected) return rejected;
+    if (isAccountSuspendedError(error)) {
+      return oshiJson({ error: 'このアカウントは停止されています' }, 403, issueVisitorId);
+    }
     console.error('GET oshi error:', error instanceof Error ? error.name : 'error');
     return oshiJson({ error: 'server_error' }, 500, issueVisitorId);
   }

@@ -1,6 +1,7 @@
 import { createHash, randomUUID } from 'crypto';
 import type { NextRequest } from 'next/server';
 import { admin, db } from '@/lib/firebase';
+import { AccountSuspendedError, readUserSuspended } from '@/lib/accountSuspension';
 import { isProfilePublicWithOnboarding } from '@/lib/onboarding';
 import { getSessionUID } from '@/lib/session';
 
@@ -27,6 +28,7 @@ export type OshiCommitResult =
 function canReceiveOshi(snap: admin.firestore.DocumentSnapshot): boolean {
   if (!snap.exists) return false;
   if (snap.get('deletionPending') === true) return false;
+  if (readUserSuspended(snap.data())) return false;
   return isProfilePublicWithOnboarding(snap.get('profile'));
 }
 
@@ -99,6 +101,8 @@ function readTargets(value: unknown): Record<string, number> {
 export async function resolveOshiActor(req: NextRequest): Promise<OshiActor> {
   const sessionUid = await getSessionUID(req);
   if (sessionUid && isSafeProfileUid(sessionUid)) {
+    const actorSnap = await db.collection('users').doc(sessionUid).get();
+    if (readUserSuspended(actorSnap.data())) throw new AccountSuspendedError();
     return { actorKey: `user:${sessionUid}`, issueVisitorId: null };
   }
 
@@ -117,9 +121,12 @@ export async function readOshiState(targetUid: string, actorKey: string, now = n
     db.collection('users').doc(targetUid).get(),
     db.collection(OSHI_DAILY_COLLECTION).doc(dailyDocId(date, actorKey)).get(),
   ]);
+  if (userSnap.exists && (userSnap.get('deletionPending') === true || readUserSuspended(userSnap.data()))) {
+    return { hidden: true as const };
+  }
   const oshiCount = readNonNegative(userSnap.exists ? userSnap.data()?.oshiCount : 0);
   const todayCount = readNonNegative(dailySnap.exists ? dailySnap.data()?.totalCount : 0);
-  return { oshiCount, todayCount };
+  return { hidden: false as const, oshiCount, todayCount };
 }
 
 export async function commitOshi(

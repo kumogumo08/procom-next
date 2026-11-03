@@ -289,6 +289,14 @@ export function lockAllowsWrite(
   return lock.untilMs > nowMs;
 }
 
+/** 公開プロフィールが残っているカードだけ残す。directoryPages 自体は変更しない。 */
+export function retainListedCards<T extends { uid: string }>(
+  cards: readonly T[],
+  listedUids: ReadonlySet<string>
+): T[] {
+  return cards.filter((card) => listedUids.has(card.uid));
+}
+
 export function profilesOnPages(state: ListingState): string[] {
   const uids: string[] = [];
   for (const cards of state.pages.values()) {

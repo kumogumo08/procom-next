@@ -3,6 +3,8 @@ import { unstable_noStore as noStore } from 'next/cache';
 import { redirect } from 'next/navigation';
 
 import LoginClient from '@/login/LoginClient';
+import { ACCOUNT_SUSPENDED_PATH, readUserSuspended } from '@/lib/accountSuspension';
+import { db } from '@/lib/firebase';
 import { isAuthUnavailable } from '@/lib/activeSession';
 import { getLoggedInUid } from '@/lib/session';
 
@@ -18,6 +20,8 @@ export default async function RegisterPage() {
     if (!isAuthUnavailable(err)) throw err;
   }
   if (uid) {
+    const snap = await db.collection('users').doc(uid).get();
+    if (readUserSuspended(snap.data())) redirect(ACCOUNT_SUSPENDED_PATH);
     redirect(`/user/${uid}`);
   }
 

@@ -1,6 +1,7 @@
 import { NextRequest } from 'next/server';
 import { v4 as uuidv4 } from 'uuid';
 import { bucket, db } from '@/lib/firebase';
+import { readUserSuspended } from '@/lib/accountSuspension';
 import { readOnboardingGate } from '@/lib/onboarding';
 import { AUTH_REJECTED_MESSAGE, AUTH_UNAVAILABLE_MESSAGE, isAuthRejected, isAuthUnavailable } from '@/lib/activeSession';
 import { getSessionUID } from '@/lib/session';
@@ -65,6 +66,7 @@ export async function confirmOwnedPhoto(rawUrl: unknown, uid: string): Promise<{
 
 export async function assertRequiredProfile(uid: string): Promise<void> {
   const snap = await db.collection('users').doc(uid).get();
+  if (readUserSuspended(snap.data())) throw new SetupHttpError(403, 'このアカウントは停止されています');
   const gate = readOnboardingGate(snap.exists ? snap.get('profile') : undefined);
   if (gate === 'complete') throw new SetupHttpError(409, '初期設定は完了しています');
   if (gate !== 'required') throw new SetupHttpError(403, '初期設定の対象ではありません');

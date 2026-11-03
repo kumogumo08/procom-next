@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getStorage } from 'firebase-admin/storage';
 import { v4 as uuidv4 } from 'uuid';
 import { initializeFirebaseAdmin } from '@/lib/firebase';
+import { rejectIfSuspended } from '@/lib/accountSuspensionGuard';
 import { resolveVerifiedSession } from '@/lib/session';
 
 initializeFirebaseAdmin();
@@ -13,6 +14,8 @@ export async function POST(req: NextRequest) {
   if (!session?.uid) {
     return NextResponse.json({ error: '未ログインです' }, { status: 401 });
   }
+  const suspended = await rejectIfSuspended(session.uid);
+  if (suspended) return suspended;
 
   try {
     const formData = await req.formData();

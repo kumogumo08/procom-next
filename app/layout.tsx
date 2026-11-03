@@ -1,5 +1,6 @@
 // app/layout.tsx
 import '../styles/globals.css';
+import SuspendedAccountRedirect from './components/SuspendedAccountRedirect';
 import Analytics from './analytics';
 import { Suspense } from 'react';
 import type { Metadata } from 'next';
@@ -45,6 +46,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <Suspense fallback={null}>
           <Analytics />
         </Suspense>
+        <SuspendedAccountRedirect />
 
         {/* JSON-LD（WebSite + SearchAction + Organization） */}
         <script

@@ -7,6 +7,7 @@ import { positiveMillis } from '@/lib/profileContent';
 import { compareDirectoryOrder, createdAtToMillis } from '@/lib/publicUserDirectory';
 import { isProfilePublicWithOnboarding } from '@/lib/onboarding';
 
+import { readUserSuspended } from '@/lib/accountSuspension';
 import { readUserSpotlightOff } from '@/lib/spotlightModeration';
 
 import { LISTING_CACHE_TAG } from './listingCache';
@@ -46,6 +47,7 @@ export async function readLegacyDirectory(): Promise<LegacyListUser[]> {
       'createdAt',
       'deletionPending',
       'moderation.spotlightOff',
+      'moderation.suspended',
       'profile.isPublic',
       'profile.onboardingStatus',
       'profile.name',
@@ -60,6 +62,7 @@ export async function readLegacyDirectory(): Promise<LegacyListUser[]> {
     const profile =
       data.profile && typeof data.profile === 'object' ? (data.profile as Record<string, unknown>) : {};
     if (data.deletionPending === true) continue;
+    if (readUserSuspended(data)) continue;
     if (!isProfilePublicWithOnboarding(profile)) continue;
     rows.push({
       uid: doc.id,
@@ -76,7 +79,7 @@ export async function readLegacyDirectory(): Promise<LegacyListUser[]> {
 }
 
 /** 移行完了前だけ使う。500人を超えたら拒否する。 */
-export const getLegacyDirectory = unstable_cache(readLegacyDirectory, ['legacy-directory-v4'], {
+export const getLegacyDirectory = unstable_cache(readLegacyDirectory, ['legacy-directory-v5'], {
   revalidate: 60,
   tags: [LISTING_CACHE_TAG],
 });

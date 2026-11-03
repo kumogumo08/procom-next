@@ -3,6 +3,7 @@ import Link from 'next/link';
 import { redirect } from 'next/navigation';
 import Footer from '@/components/Footer';
 import Header from '@/components/Header';
+import { ACCOUNT_SUSPENDED_PATH, readUserSuspended } from '@/lib/accountSuspension';
 import { bucket, db } from '@/lib/firebase';
 import { readOnboardingGate } from '@/lib/onboarding';
 import { parseOwnedSetupPhoto, setupFormInitial } from '@/lib/onboardingSetup';
@@ -37,6 +38,7 @@ export default async function ProfileSetupPage() {
   if (!uid) redirect('/login');
 
   const snap = await db.collection('users').doc(uid).get();
+  if (readUserSuspended(snap.data())) redirect(ACCOUNT_SUSPENDED_PATH);
   const profile = snap.exists ? snap.get('profile') : undefined;
   const gate = readOnboardingGate(profile);
   const initial = setupFormInitial(profile);

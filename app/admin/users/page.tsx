@@ -22,6 +22,10 @@ type AdminUserRow = {
   linkCount: number;
   isPublic: boolean;
   spotlightOff: boolean;
+  suspended: boolean;
+  suspensionReason: string;
+  canSuspend: boolean;
+  listingPending: boolean;
 };
 
 type Notice = {
@@ -108,6 +112,12 @@ export default function AdminUsersPage() {
   const [notice, setNotice] = useState<Notice | null>(null);
   const [saving, setSaving] = useState(false);
   const savingRef = useRef(false);
+  const [suspensionUid, setSuspensionUid] = useState<string | null>(null);
+  const suspensionRef = useRef(false);
+  const [reasons, setReasons] = useState<Record<string, string>>({});
+  const [lookupUid, setLookupUid] = useState('');
+  const [lookupUser, setLookupUser] = useState<AdminUserRow | null>(null);
+  const [lookupError, setLookupError] = useState<string | null>(null);
 
   useEffect(() => {
     (async () => {
@@ -139,7 +149,14 @@ export default function AdminUsersPage() {
         }
         const data = (await res.json()) as { users?: AdminUserRow[] };
         const rows = Array.isArray(data.users)
-          ? data.users.map((user) => ({ ...user, spotlightOff: user.spotlightOff === true }))
+          ? data.users.map((user) => ({
+              ...user,
+              spotlightOff: user.spotlightOff === true,
+              suspended: user.suspended === true,
+              suspensionReason: typeof user.suspensionReason === 'string' ? user.suspensionReason : '',
+              canSuspend: user.canSuspend === true,
+              listingPending: user.listingPending === true,
+            }))
           : [];
         setUsers(rows);
         setSavedOff(Object.fromEntries(rows.map((user) => [user.uid, user.spotlightOff])));
@@ -236,6 +253,188 @@ export default function AdminUsersPage() {
     }
   }
 
+  function patchSuspension(uid: string, suspended: boolean, reason: string, listingPending: boolean) {
+    const apply = (row: AdminUserRow): AdminUserRow =>
+      row.uid === uid
+        ? {
+            ...row,
+            suspended,
+            suspensionReason: suspended ? reason : row.suspensionReason,
+            listingPending,
+          }
+        : row;
+    setUsers((prev) => prev?.map(apply) ?? prev);
+    setLookupUser((prev) => (prev && prev.uid === uid ? apply(prev) : prev));
+  }
+
+  async function sendSuspension(user: AdminUserRow, suspended: boolean, reason?: string) {
+    if (suspensionRef.current) return;
+    suspensionRef.current = true;
+    setSuspensionUid(user.uid);
+    setNotice(null);
+    try {
+      const res = await fetch(`/api/admin/users/${encodeURIComponent(user.uid)}/suspension`, {
+        method: 'POST',
+        cache: 'no-store',
+        credentials: 'include',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(suspended ? { suspended: true, reason } : { suspended: false }),
+      });
+      const data = (await res.json().catch(() => null)) as {
+        suspended?: unknown;
+        listingPending?: unknown;
+        error?: unknown;
+      } | null;
+      if (!res.ok) {
+        if (res.status === 500 && data?.error === 'sync-failed' && typeof data.suspended === 'boolean') {
+          patchSuspension(user.uid, data.suspended, reason ?? '', true);
+          setNotice({
+            tone: 'err',
+            text: data.suspended
+              ? '停止済み・掲載反映待ちです。もう一度停止を実行すると掲載同期をやり直せます。'
+              : '停止は解除しましたが、掲載への反映が未完了です。もう一度解除を実行してください。',
+          });
+          return;
+        }
+        const text =
+          res.status === 403
+            ? 'このアカウントは停止できません。'
+            : res.status === 404
+              ? 'ユーザーが見つかりません。'
+              : res.status === 409
+                ? '退会処理中のため停止状態は変更できません。'
+                : '停止状態の更新に失敗しました。時間をおいて再度お試しください。';
+        setNotice({ tone: 'err', text });
+        return;
+      }
+      const listingPending = data?.listingPending === true;
+      patchSuspension(user.uid, suspended, reason ?? '', listingPending);
+      setNotice({
+        tone: listingPending ? 'err' : 'ok',
+        text:
+          listingPending && suspended
+            ? '停止済み・掲載反映待ちです。公開一覧への反映が終わるまでお待ちください。'
+            : listingPending
+              ? '停止は解除しました。掲載への反映が終わるまでお待ちください。'
+              : suspended
+                ? 'アカウントを停止しました。'
+                : 'アカウントの停止を解除しました。',
+      });
+    } catch {
+      setNotice({ tone: 'err', text: '停止状態の更新に失敗しました。時間をおいて再度お試しください。' });
+    } finally {
+      suspensionRef.current = false;
+      setSuspensionUid(null);
+    }
+  }
+
+  function requestSuspend(user: AdminUserRow) {
+    const reason = (reasons[user.uid] ?? '').trim();
+    if (!reason) {
+      setNotice({ tone: 'err', text: '停止理由を入力してください。' });
+      return;
+    }
+    if (reason.length > 200) {
+      setNotice({ tone: 'err', text: '停止理由は200文字以内にしてください。' });
+      return;
+    }
+    if (!window.confirm('このアカウントを停止しますか？プロフィールは公開されなくなります。')) return;
+    void sendSuspension(user, true, reason);
+  }
+
+  async function lookupExact() {
+    const uid = lookupUid.trim();
+    if (!uid) return;
+    setLookupError(null);
+    try {
+      const res = await fetch(`/api/admin/users?uid=${encodeURIComponent(uid)}`, {
+        cache: 'no-store',
+        credentials: 'include',
+      });
+      if (res.status === 404) {
+        setLookupUser(null);
+        setLookupError('ユーザーが見つかりません。');
+        return;
+      }
+      if (!res.ok) {
+        setLookupUser(null);
+        setLookupError('UIDの取得に失敗しました。');
+        return;
+      }
+      const data = (await res.json()) as { users?: AdminUserRow[] };
+      const row = data.users?.[0];
+      if (!row) {
+        setLookupUser(null);
+        setLookupError('ユーザーが見つかりません。');
+        return;
+      }
+      setLookupUser({
+        ...row,
+        spotlightOff: row.spotlightOff === true,
+        suspended: row.suspended === true,
+        suspensionReason: typeof row.suspensionReason === 'string' ? row.suspensionReason : '',
+        canSuspend: row.canSuspend === true,
+        listingPending: row.listingPending === true,
+      });
+    } catch {
+      setLookupUser(null);
+      setLookupError('UIDの取得に失敗しました。');
+    }
+  }
+
+  function renderSuspension(user: AdminUserRow, scope: string) {
+    if (!user.canSuspend) return null;
+    const busy = suspensionUid === user.uid;
+    if (user.suspended) {
+      return (
+        <div className="mt-2">
+          <p className="text-xs font-medium text-red-700">
+            {user.listingPending ? '停止済み・掲載反映待ち' : '停止中'}
+          </p>
+          {user.suspensionReason ? (
+            <p className="mt-1 text-xs break-all text-neutral-600">{user.suspensionReason}</p>
+          ) : null}
+          <button
+            type="button"
+            onClick={() => {
+              void sendSuspension(user, false);
+            }}
+            disabled={busy}
+            className="mt-2 inline-flex min-h-11 items-center rounded border border-neutral-300 bg-white px-3 text-sm disabled:opacity-60"
+          >
+            {busy ? '更新中…' : '停止を解除'}
+          </button>
+        </div>
+      );
+    }
+    return (
+      <div className="mt-2">
+        <label className="block text-xs text-neutral-600" htmlFor={`reason-${scope}-${user.uid}`}>
+          停止理由
+        </label>
+        <input
+          id={`reason-${scope}-${user.uid}`}
+          value={reasons[user.uid] ?? ''}
+          maxLength={200}
+          disabled={busy}
+          onChange={(event) => {
+            const value = event.currentTarget.value;
+            setReasons((prev) => ({ ...prev, [user.uid]: value }));
+          }}
+          className="mt-1 w-full rounded border border-neutral-300 px-2 py-2 text-sm"
+        />
+        <button
+          type="button"
+          onClick={() => requestSuspend(user)}
+          disabled={busy}
+          className="mt-2 inline-flex min-h-11 items-center rounded border border-red-300 bg-white px-3 text-sm text-red-800 disabled:opacity-60"
+        >
+          {busy ? '更新中…' : 'アカウントを停止'}
+        </button>
+      </div>
+    );
+  }
+
   if (checking) {
     return <main className="mx-auto max-w-5xl p-6">確認中…</main>;
   }
@@ -265,6 +464,37 @@ export default function AdminUsersPage() {
           </Link>
         </div>
       </div>
+
+      <form
+        className="mb-4 flex flex-col gap-2 sm:flex-row"
+        onSubmit={(event) => {
+          event.preventDefault();
+          void lookupExact();
+        }}
+      >
+        <input
+          value={lookupUid}
+          onChange={(event) => setLookupUid(event.currentTarget.value)}
+          placeholder="UID完全一致"
+          className="min-h-11 w-full rounded border border-neutral-300 px-3 text-sm sm:max-w-md"
+          aria-label="UID完全一致"
+        />
+        <button
+          type="submit"
+          className="inline-flex min-h-11 items-center justify-center rounded border border-neutral-300 bg-white px-4 text-sm"
+        >
+          このUIDを表示
+        </button>
+      </form>
+      {lookupError ? <p className="mb-4 text-sm text-red-700">{lookupError}</p> : null}
+      {lookupUser ? (
+        <div className="mb-4 rounded-lg border border-neutral-200 bg-white p-3">
+          <p className="text-sm font-semibold">UID検索結果</p>
+          <p className="mt-1 font-medium">{lookupUser.name || '（名前未設定）'}</p>
+          <p className="mt-1 font-mono text-xs break-all text-neutral-500">{lookupUser.uid}</p>
+          {renderSuspension(lookupUser, 'lookup')}
+        </div>
+      ) : null}
 
       {error ? (
         <p className="rounded border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">
@@ -350,6 +580,7 @@ export default function AdminUsersPage() {
                         disabled={saving}
                         onChange={(nextOn) => changeDraft(user.uid, nextOn)}
                       />
+                      {renderSuspension(user, 'card')}
                     </div>
                     <Link
                       href={`/user/${user.uid}`}
@@ -415,6 +646,7 @@ export default function AdminUsersPage() {
                           disabled={saving}
                           onChange={(nextOn) => changeDraft(user.uid, nextOn)}
                         />
+                        {renderSuspension(user, 'row')}
                         <Link
                           href={`/user/${user.uid}`}
                           target="_blank"

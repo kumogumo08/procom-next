@@ -193,9 +193,11 @@ function walk(dir: string): string[] {
 
 const allowed = new Set([
   'app/lib/spotlightModeration.ts',
+  'app/lib/accountSuspension.ts',
   'app/lib/listing/firestoreListing.ts',
   'app/lib/listing/legacyDirectory.ts',
   'app/api/admin/users/[uid]/route.ts',
+  'app/api/admin/users/[uid]/suspension/route.ts',
 ]);
 const offenders: string[] = [];
 for (const file of walk(join(root, 'app'))) {

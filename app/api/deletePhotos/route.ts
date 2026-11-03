@@ -3,6 +3,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { bucket } from '@/lib/firebase';
 import { ownedReplacementPhotoPath } from '@/lib/ownedPhotoPath';
 import { schedulePhotoRetention } from '@/lib/photoGc';
+import { rejectIfSuspended } from '@/lib/accountSuspensionGuard';
 import { resolveSessionUid } from '@/lib/session';
 
 export async function POST(req: NextRequest) {
@@ -12,6 +13,8 @@ export async function POST(req: NextRequest) {
   if (!uid) {
     return NextResponse.json({ error: 'ログインが必要です' }, { status: 403 });
   }
+  const suspended = await rejectIfSuspended(uid);
+  if (suspended) return suspended;
 
   const body = await req.json();
   const { urls } = body;

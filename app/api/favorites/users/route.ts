@@ -1,4 +1,6 @@
 import { db } from '@/lib/firebase';
+import { readUserSuspended } from '@/lib/accountSuspension';
+import { rejectIfSuspended } from '@/lib/accountSuspensionGuard';
 import { isOnboardingBlocked } from '@/lib/onboarding';
 import { resolveSessionUid } from '@/lib/session';
 import { NextRequest, NextResponse } from 'next/server';
@@ -19,6 +21,8 @@ export async function GET(req: NextRequest) {
   if (!uid) {
     return NextResponse.json({ error: 'ログインが必要です' }, { status: 401 });
   }
+  const suspended = await rejectIfSuspended(uid);
+  if (suspended) return suspended;
   try {
     // ✅ 修正: ユーザードキュメントから favorites フィールドを取得
     const userSnap = await db.collection('users').doc(uid).get();
@@ -39,6 +43,7 @@ export async function GET(req: NextRequest) {
       for (const snap of snapshots) {
         const data = snap.data();
         if (!data?.profile) continue;
+        if (data.deletionPending === true || readUserSuspended(data)) continue;
 
         const profile = data.profile;
         if (isOnboardingBlocked(profile)) continue;
@@ -77,6 +82,8 @@ export async function DELETE(req: NextRequest) {
   if (!uid) {
     return NextResponse.json({ error: 'ログインが必要です' }, { status: 401 });
   }
+  const suspended = await rejectIfSuspended(uid);
+  if (suspended) return suspended;
 
   const { targetUid } = await req.json();
 

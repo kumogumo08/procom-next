@@ -1,7 +1,8 @@
 export const runtime = 'nodejs';
 
 import React from 'react';
-import { getProfileFromFirestore, isWithdrawingProfile } from '@/lib/getProfile';
+import { ACCOUNT_SUSPENDED_PATH } from '@/lib/accountSuspension';
+import { getProfileFromFirestore, isSuspendedProfile, isWithdrawingProfile } from '@/lib/getProfile';
 import { isAuthUnavailable } from '@/lib/activeSession';
 import { getLoggedInUid } from '@/lib/session';
 import Header from '@/components/Headerlogin';
@@ -41,7 +42,7 @@ export async function generateMetadata({
   const { uid } = await params;
   const profile = await getProfileFromFirestore(uid);
   if (profile == null) notFound();
-  if (isWithdrawingProfile(profile) || isOnboardingBlocked(profile)) {
+  if (isWithdrawingProfile(profile) || isSuspendedProfile(profile) || isOnboardingBlocked(profile)) {
     return {
       title: 'Procom',
       description: 'このプロフィールは公開されていません',
@@ -119,6 +120,24 @@ export default async function UserPage({
   const isEditable = loggedInUid === uid;
   const profile = await getProfileFromFirestore(uid);
   if (profile == null) notFound();
+
+  if (isSuspendedProfile(profile)) {
+    if (isEditable) redirect(ACCOUNT_SUSPENDED_PATH);
+    return (
+      <>
+        <Header
+          topGalleryPhotos={[]}
+          showPhotoEditor={false}
+          photoEditorUid={uid}
+          photoEditorPhotos={[]}
+        />
+        <main style={{ maxWidth: 720, margin: '48px auto', padding: '0 16px', textAlign: 'center' }}>
+          <h1 style={{ fontSize: '1.25rem', color: '#0f172a' }}>このプロフィールは公開されていません</h1>
+        </main>
+        <Footer />
+      </>
+    );
+  }
 
   if (isWithdrawingProfile(profile) || isOnboardingBlocked(profile)) {
     if (!isWithdrawingProfile(profile) && readOnboardingGate(profile) === 'required' && isEditable) {

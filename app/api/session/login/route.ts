@@ -2,6 +2,7 @@ export const runtime = "nodejs";
 
 import { NextRequest, NextResponse } from "next/server";
 import { admin } from "@/lib/firebase";
+import { ACCOUNT_SUSPENDED_PATH, readUserSuspended } from "@/lib/accountSuspension";
 import { profileLoginPath } from "@/lib/onboarding";
 import {
   claimsToPersist,
@@ -76,7 +77,9 @@ export async function POST(req: NextRequest) {
     const profile = saved.exists ? saved.get("profile") : undefined;
 
     const username = profile?.name ?? "ユーザー";
-    const redirectTo = profileLoginPath(uid, profile);
+    const redirectTo = readUserSuspended(saved.data())
+      ? ACCOUNT_SUSPENDED_PATH
+      : profileLoginPath(uid, profile);
 
     const res = NextResponse.json({ ok: true, uid, redirectTo });
 

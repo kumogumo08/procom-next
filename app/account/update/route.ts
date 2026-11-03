@@ -3,6 +3,7 @@ import bcrypt from 'bcryptjs';
 import { db } from '@/lib/firebase';
 import { noteUserListing } from '@/lib/listing/firestoreListing';
 import { nextContentStamp } from '@/lib/profileContent';
+import { rejectIfSuspended } from '@/lib/accountSuspensionGuard';
 import { resolveSessionUid, sessionOptions } from '@/lib/session';
 import { getIronSession } from 'iron-session';
 import type { SessionData } from '@/lib/session-types'; 
@@ -16,6 +17,8 @@ export async function POST(req: NextRequest) {
   if (!uid) {
     return NextResponse.json({ error: 'ログインしていません' }, { status: 401 });
   }
+  const suspended = await rejectIfSuspended(uid);
+  if (suspended) return suspended;
 
   const { newUsername, newEmail, newPassword } = await req.json();
 

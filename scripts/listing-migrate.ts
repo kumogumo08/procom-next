@@ -28,7 +28,7 @@ import { categorySlugsForTitle, searchTokensFor } from '@/lib/listing/searchText
 import { LEGACY_SCAN_LIMIT } from '@/lib/listing/readiness';
 import { positiveMillis, readContentUpdatedAtMs } from '@/lib/profileContent';
 import { createdAtToMillis } from '@/lib/publicUserDirectory';
-import { isProfilePublicWithOnboarding } from '@/lib/onboarding';
+import { isPublicListingEligible } from '@/lib/accountSuspension';
 import { assignSpotlightOff, readUserSpotlightOff } from '@/lib/spotlightModeration';
 
 const APPLY = process.argv.includes('--apply');
@@ -111,7 +111,7 @@ async function readState(
     const data = doc.data();
     return {
       uid: doc.id,
-      isPublic: isProfilePublicWithOnboarding(data.profile),
+      isPublic: isPublicListingEligible(data),
       createdAtMs: createdAtToMillis(data.createdAt),
       fields: fieldsFromUser(data),
     };
@@ -190,7 +190,16 @@ async function main(): Promise<void> {
   }
   const userSnap = await db
     .collection('users')
-    .select('createdAt', 'profile.isPublic', 'profile.onboardingStatus', 'profile.name', 'profile.title', 'profile.photos')
+    .select(
+      'createdAt',
+      'deletionPending',
+      'moderation.suspended',
+      'profile.isPublic',
+      'profile.onboardingStatus',
+      'profile.name',
+      'profile.title',
+      'profile.photos'
+    )
     .get();
   const loaded = await readState(db, userSnap.docs);
   const planned = planMigration(loaded.users, loaded.state);
@@ -271,7 +280,7 @@ async function main(): Promise<void> {
           spotlightOffByUid.set(user.uid, readUserSpotlightOff(data));
           return {
             uid: user.uid,
-            isPublic: snap.exists && isProfilePublicWithOnboarding(data?.profile),
+            isPublic: snap.exists && isPublicListingEligible(data),
             createdAtMs: createdAtToMillis(data?.createdAt),
             fields: fieldsFromUser(data),
           } satisfies MigrateUser;
@@ -356,7 +365,16 @@ async function main(): Promise<void> {
 
   const verifiedUsers = await db
     .collection('users')
-    .select('createdAt', 'profile.isPublic', 'profile.onboardingStatus', 'profile.name', 'profile.title', 'profile.photos')
+    .select(
+      'createdAt',
+      'deletionPending',
+      'moderation.suspended',
+      'profile.isPublic',
+      'profile.onboardingStatus',
+      'profile.name',
+      'profile.title',
+      'profile.photos'
+    )
     .get();
   const after = await readState(db, verifiedUsers.docs);
   const publicUids = after.users.filter((user) => user.isPublic).map((user) => user.uid);

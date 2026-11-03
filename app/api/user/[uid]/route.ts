@@ -23,6 +23,8 @@ import {
 import { enrichAppsWithStoreIcons } from '@/lib/appIcons';
 import { clampPhotoPositionY } from '@/lib/photoPosition';
 import { mergeProfileSettings } from '@/lib/blockLayout';
+import { readUserSuspended } from '@/lib/accountSuspension';
+import { suspendedWriteResponse } from '@/lib/accountSuspensionGuard';
 import { isOnboardingBlocked } from '@/lib/onboarding';
 import { resolveSessionUid } from '@/lib/session';
 import { rejectContactEmail } from '@/lib/contactEmail';
@@ -93,7 +95,7 @@ export async function GET(
     }
 
     const data = userDoc.data();
-    if (data?.deletionPending === true) {
+    if (data?.deletionPending === true || readUserSuspended(data)) {
       return NextResponse.json({ error: 'ユーザーが存在しません' }, { status: 404 });
     }
     const rawProfile = data?.profile || {};
@@ -189,6 +191,7 @@ export async function POST(req: NextRequest, props: { params: Promise<{ uid: str
     if (existing.deletionPending === true) {
       return NextResponse.json({ error: 'ユーザーが存在しません' }, { status: 404 });
     }
+    if (readUserSuspended(existing)) return suspendedWriteResponse();
     const existingProfile = existing.profile || {};
     const beforePhotos = existingProfile.photos;
     const emailError = rejectContactEmail(profile);
@@ -448,6 +451,7 @@ export async function PATCH(req: NextRequest) {
     if (!existingSnap.exists || existingSnap.get('deletionPending') === true) {
       return NextResponse.json({ error: 'ユーザーが存在しません' }, { status: 404 });
     }
+    if (readUserSuspended(existingSnap.data())) return suspendedWriteResponse();
     const existingProfile =
       existingSnap.exists && existingSnap.data()?.profile && typeof existingSnap.data()?.profile === 'object'
         ? (existingSnap.data()?.profile as Record<string, unknown>)

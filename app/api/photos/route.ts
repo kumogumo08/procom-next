@@ -6,6 +6,7 @@ import { invalidateListingAfterPhotoChange } from '@/lib/listing/listingCache';
 import { listingPhotoChanged } from '@/lib/ownedPhotoPath';
 import { missingNewOwnedPhoto, retainReplacedPhotos } from '@/lib/photoGc';
 import { nextContentStamp } from '@/lib/profileContent';
+import { rejectIfSuspended } from '@/lib/accountSuspensionGuard';
 import { resolveSessionUid } from '@/lib/session';
 
 /** レガシー互換。呼び出し元が無い場合は削除可（PhotoSlider 等は /api/uploadPhotos + /api/user/[uid] を使用） */
@@ -27,6 +28,8 @@ export async function POST(req: NextRequest) {
     if (sessionUid !== uid) {
       return NextResponse.json({ error: '権限がありません' }, { status: 403 });
     }
+    const suspended = await rejectIfSuspended(uid);
+    if (suspended) return suspended;
 
     for (const p of photos) {
       if (!p || typeof p !== 'object') {

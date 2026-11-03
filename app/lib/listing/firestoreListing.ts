@@ -7,7 +7,7 @@ import type { DocumentData } from 'firebase-admin/firestore';
 import { db } from '@/lib/firebase-admin';
 import { positiveMillis, readContentUpdatedAtMs } from '@/lib/profileContent';
 import { createdAtToMillis } from '@/lib/publicUserDirectory';
-import { isProfilePublicWithOnboarding } from '@/lib/onboarding';
+import { isPublicListingEligible } from '@/lib/accountSuspension';
 import { assignSpotlightOff, readUserSpotlightOff } from '@/lib/spotlightModeration';
 
 import {
@@ -16,6 +16,7 @@ import {
   enqueueListing,
   lockAllowsWrite,
   planSync,
+  retainListedCards,
   tryAcquireLock,
   type ListingFields,
   type LiveProfile,
@@ -133,8 +134,7 @@ export async function enqueueUserListing(uid: string): Promise<void> {
     }
 
     const userData = userSnap.data() as Record<string, unknown> | undefined;
-    const deleting = userData?.deletionPending === true;
-    const listed = userSnap.exists && !deleting && isProfilePublicWithOnboarding(userData?.profile);
+    const listed = userSnap.exists && isPublicListingEligible(userData);
     const { state: next, revision } = listed
       ? enqueueListing(state, uid, 'upsert', fieldsFromUserData(userData))
       : enqueueListing(state, uid, 'remove');
@@ -361,6 +361,23 @@ export const getPhotoNewestListed = unstable_cache(
   ['listing-photo-newest-v1'],
   { revalidate: 60, tags: [LISTING_CACHE_TAG] }
 );
+
+/**
+ * directoryPages のカードのうち、publicProfiles が残っているものだけ返す。
+ * 停止直後にページ文書が古くても、公開一覧には出さない。掲載ワーカーの書き込みはしない。
+ */
+export async function omitCardsWithoutProfile(cards: readonly PageCard[]): Promise<PageCard[]> {
+  if (cards.length === 0) return [];
+  const live = new Set<string>();
+  for (let index = 0; index < cards.length; index += 10) {
+    const slice = cards.slice(index, index + 10);
+    const snaps = await db.getAll(...slice.map((card) => db.collection(PROFILES).doc(card.uid)));
+    for (const snap of snaps) {
+      if (snap.exists) live.add(snap.id);
+    }
+  }
+  return retainListedCards(cards, live);
+}
 
 export async function getFixedPage(pageNo: number): Promise<PageCard[]> {
   const snap = await db.collection(PAGES).doc(String(pageNo)).get();

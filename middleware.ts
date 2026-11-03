@@ -23,7 +23,9 @@ export function middleware(request: NextRequest) {
   const host = rawHost.split(':')[0].toLowerCase();
 
   if (host !== RENDER_HOST) {
-    const response = NextResponse.next();
+    const requestHeaders = new Headers(request.headers);
+    requestHeaders.set('x-procom-path', request.nextUrl.pathname);
+    const response = NextResponse.next({ request: { headers: requestHeaders } });
     const path = request.nextUrl.pathname;
     const hasQuery = Boolean(request.nextUrl.searchParams.get('q')?.trim());
     const sharedYouTube = path.startsWith('/api/youtube/');

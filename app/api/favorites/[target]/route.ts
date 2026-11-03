@@ -1,5 +1,6 @@
 // src/app/api/favorites/[target]/route.ts
 import { db, admin } from '@/lib/firebase';
+import { rejectIfSuspended } from '@/lib/accountSuspensionGuard';
 import { resolveSessionUid } from '@/lib/session';
 import { NextRequest, NextResponse } from 'next/server';
 
@@ -12,6 +13,8 @@ export async function POST(req: NextRequest, props: { params: Promise<{ target: 
   if (!sessionUser || sessionUser === targetUser) {
     return NextResponse.json({ error: '不正な操作' }, { status: 400 });
   }
+  const suspended = await rejectIfSuspended(sessionUser);
+  if (suspended) return suspended;
 
   await db.collection('users').doc(sessionUser).set(
     {

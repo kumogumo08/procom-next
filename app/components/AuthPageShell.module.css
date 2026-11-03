@@ -2,9 +2,7 @@
   min-height: 100vh;
   display: flex;
   flex-direction: column;
-  background:
-    radial-gradient(ellipse 80% 42% at 50% -8%, rgba(92, 74, 210, 0.2), transparent 62%),
-    linear-gradient(180deg, #0c1228 0%, #151b34 100%);
+  background-color: #ffffff;
 }
 
 .main {

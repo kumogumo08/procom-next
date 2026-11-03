@@ -1,0 +1,82 @@
+/* AuthHeader.module.css の .header と同じ背景・発光。上端にラインを置く。 */
+.auth {
+  position: relative;
+  margin-top: 4rem;
+  padding: 2rem 1.25rem;
+  text-align: center;
+  color: #ffffff;
+  background:
+    radial-gradient(ellipse 42% 140% at 8% 50%, rgba(124, 78, 255, 0.32), transparent 62%),
+    radial-gradient(ellipse 36% 120% at 92% 0%, rgba(46, 140, 255, 0.28), transparent 58%),
+    linear-gradient(105deg, #070b22 0%, #14183c 52%, #0a1636 100%);
+  border-top: 1px solid rgba(150, 170, 255, 0.28);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.08),
+    0 -10px 28px rgba(4, 8, 28, 0.12);
+}
+
+.auth::before {
+  content: '';
+  position: absolute;
+  left: 8%;
+  right: 8%;
+  top: 0;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, rgba(110, 170, 255, 0.85), rgba(176, 110, 255, 0.7), transparent);
+  pointer-events: none;
+}
+
+.copy {
+  margin: 0;
+  color: #ffffff;
+  font-size: 0.75rem;
+  line-height: 1.5;
+  opacity: 0.92;
+}
+
+.topButton {
+  display: inline-block;
+  margin: 1rem 0;
+  padding: 0.5rem 1.5rem;
+  border-radius: 9999px;
+  background: #ff4f81;
+  color: #ffffff;
+  font-size: 0.875rem;
+  line-height: 1.25rem;
+  text-decoration: none;
+}
+
+.topButton:hover {
+  background: #db2777;
+}
+
+.registerLink {
+  display: inline-block;
+  margin: 0.5rem 0;
+  color: #ffffff;
+  font-size: 0.875rem;
+  line-height: 1.25rem;
+  text-decoration: underline;
+}
+
+.registerLink:hover {
+  color: var(--procom-footer-link-hover);
+}
+
+.links {
+  margin: 0.75rem 0 0;
+  color: #ffffff;
+  font-size: 0.875rem;
+  line-height: 1.6;
+}
+
+.link {
+  color: #ffffff;
+  margin: 0 0.25rem;
+  text-decoration: none;
+}
+
+.link:hover {
+  color: var(--procom-footer-link-hover);
+  text-decoration: underline;
+}

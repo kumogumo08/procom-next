@@ -11,7 +11,7 @@ export default function AuthPageShell({ children }: { children: ReactNode }) {
     <div className={styles.shell}>
       <AuthHeader />
       <div className={styles.main}>{children}</div>
-      <Footer />
+      <Footer tone="auth" />
     </div>
   );
 }

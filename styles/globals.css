@@ -8,6 +8,12 @@
 :root {
   --background: #ffffff;
   --foreground: #171717;
+  /* Footer.tsx と同じ色。画像なしヘッダーで共有する。 */
+  --procom-footer-from: #0a0d59;
+  --procom-footer-to: #05063f;
+  --procom-footer-text: #ffffff;
+  --procom-footer-accent: #ff4f81;
+  --procom-footer-link-hover: #f472b6;
 }
 
 @media (prefers-color-scheme: dark) {

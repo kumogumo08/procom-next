@@ -1,15 +1,13 @@
 /**
- * ユーザーページ専用ナビ（濃い紫グラデは .userPagePcHeader と同一トーン）
- * 背景: linear-gradient(135deg, #1f1f2e, #38385a)
- * アクセント下線: #ff4f81
+ * ユーザーページ専用ナビ。背景はフッターと同じグラデーション。
  */
 
 .bar {
   position: sticky;
   top: 0;
   z-index: 1000;
-  background: linear-gradient(135deg, #1f1f2e, #38385a);
-  border-bottom: 4px solid #ff4f81;
+  background: linear-gradient(to bottom right, var(--procom-footer-from), var(--procom-footer-to));
+  border-bottom: 4px solid var(--procom-footer-accent);
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
 }
 
@@ -30,13 +28,13 @@
   font-weight: 800;
   font-size: clamp(17px, 3.5vw, 20px);
   letter-spacing: 0.08em;
-  color: #fff;
+  color: var(--procom-footer-text);
   text-decoration: none;
   text-shadow: 0 1px 8px rgba(0, 0, 0, 0.35);
 }
 
 .logo:hover {
-  opacity: 0.92;
+  color: var(--procom-footer-link-hover);
 }
 
 .center {

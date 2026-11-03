@@ -1,0 +1,28 @@
+.header {
+  position: sticky;
+  top: 0;
+  z-index: 20;
+  display: flex;
+  align-items: center;
+  min-height: 3rem;
+  padding: 0.25rem 1rem;
+  background: linear-gradient(to bottom right, var(--procom-footer-from), var(--procom-footer-to));
+  border-bottom: 1px solid var(--procom-footer-accent);
+}
+
+.logo {
+  display: inline-flex;
+  align-items: center;
+  min-height: 2.75rem;
+  color: var(--procom-footer-text);
+  font-family: 'Segoe UI', 'Helvetica Neue', sans-serif;
+  font-size: 1.15rem;
+  font-weight: 800;
+  letter-spacing: 0.14em;
+  text-decoration: none;
+  text-shadow: 0 2px 8px rgba(0, 0, 0, 0.45);
+}
+
+.logo:hover {
+  color: var(--procom-footer-link-hover);
+}

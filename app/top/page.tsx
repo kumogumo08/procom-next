@@ -15,6 +15,7 @@ import {
 import { getSpotlightSource } from '@/lib/listing/spotlightSource';
 import TopLandingBento from './TopLandingBento';
 import TopLandingHero from './TopLandingHero';
+import TopLandingVisual from './TopLandingVisual';
 
 import styles from './top.module.css';
 
@@ -71,7 +72,11 @@ export default async function TopPage() {
   return (
     <main className={styles.page}>
       <div className={`${styles.heroStrip} ${styles.topHeroBackground}`}>
-        <TopLandingHero />
+        {/* モバイルヒーローの sticky 親を本文だけにし、画像まで追従させない */}
+        <div>
+          <TopLandingHero />
+        </div>
+        <TopLandingVisual />
       </div>
 
       <TopSpotlightUsers

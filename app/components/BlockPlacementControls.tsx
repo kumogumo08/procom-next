@@ -5,6 +5,11 @@ import { useCallback, useEffect, useId, useRef, useState } from 'react';
 import { useDraggable, useDroppable } from '@dnd-kit/core';
 import { useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
+import {
+  availableBlocksInCategory,
+  BLOCK_ADD_CATEGORIES,
+  type BlockAddCategoryId,
+} from '@/lib/blockAddCategories';
 import { BLOCK_LABELS, isKnownBlockType, type BlockType } from '@/lib/blockLayout';
 
 export const PALETTE_DRAG_PREFIX = 'palette:';
@@ -109,10 +114,12 @@ export function BlockAddControl({
   dragActive?: boolean;
 }) {
   const [open, setOpen] = useState(false);
+  const [categoryId, setCategoryId] = useState<BlockAddCategoryId | null>(null);
   const [canDragAdd, setCanDragAdd] = useState(false);
   const panelId = useId();
   const titleId = useId();
   const panelRef = useRef<HTMLDivElement>(null);
+  const restoreCategoryRef = useRef<BlockAddCategoryId | null>(null);
   const { setNodeRef: setPanelDropRef } = useDroppable({ id: PROFILE_ADD_PANEL_ID });
   const setPanelNodeRef = useCallback((node: HTMLDivElement | null) => {
     panelRef.current = node;
@@ -121,6 +128,21 @@ export function BlockAddControl({
   const fabRef = useRef<HTMLButtonElement>(null);
   const wasOpenRef = useRef(false);
   const closeTickRef = useRef(closeTick);
+  const selectedCategory = BLOCK_ADD_CATEGORIES.find((category) => category.id === categoryId) ?? null;
+  const selectedBlocks = selectedCategory
+    ? availableBlocksInCategory(selectedCategory.blocks, available)
+    : [];
+
+  const closePanel = useCallback(() => {
+    restoreCategoryRef.current = null;
+    setCategoryId(null);
+    setOpen(false);
+  }, []);
+
+  const backToCategories = useCallback(() => {
+    restoreCategoryRef.current = categoryId;
+    setCategoryId(null);
+  }, [categoryId]);
 
   useEffect(() => {
     const media = window.matchMedia('(min-width: 641px) and (pointer: fine)');
@@ -133,27 +155,45 @@ export function BlockAddControl({
   useEffect(() => {
     if (closeTickRef.current === closeTick) return;
     closeTickRef.current = closeTick;
+    restoreCategoryRef.current = null;
+    setCategoryId(null);
     setOpen(false);
   }, [closeTick]);
 
   useEffect(() => {
     if (!open) {
+      restoreCategoryRef.current = null;
+      setCategoryId(null);
       if (wasOpenRef.current) fabRef.current?.focus();
       wasOpenRef.current = false;
       return;
     }
     wasOpenRef.current = true;
-    const option = panelRef.current?.querySelector<HTMLButtonElement>('[data-block-add-option]');
+    if (categoryId == null && restoreCategoryRef.current) {
+      const id = restoreCategoryRef.current;
+      restoreCategoryRef.current = null;
+      const returning = Array.from(
+        panelRef.current?.querySelectorAll<HTMLButtonElement>('[data-block-add-category]') ?? []
+      ).find((button) => button.dataset.blockAddCategory === id);
+      if (returning && !returning.disabled) {
+        returning.focus();
+        return;
+      }
+    }
+    const option = panelRef.current?.querySelector<HTMLButtonElement>(
+      '[data-block-add-option]:not([disabled])'
+    );
+    const back = panelRef.current?.querySelector<HTMLButtonElement>('[data-block-add-back]');
     const close = panelRef.current?.querySelector<HTMLButtonElement>('[data-block-add-close]');
-    (option ?? close)?.focus();
-  }, [open]);
+    (option ?? back ?? close)?.focus();
+  }, [open, categoryId]);
 
   useEffect(() => {
     if (!open) return;
     const onKeyDown = (event: KeyboardEvent) => {
       if (event.key === 'Escape') {
         event.preventDefault();
-        setOpen(false);
+        closePanel();
         return;
       }
       if (event.key !== 'Tab') return;
@@ -171,7 +211,7 @@ export function BlockAddControl({
     };
     window.addEventListener('keydown', onKeyDown);
     return () => window.removeEventListener('keydown', onKeyDown);
-  }, [open]);
+  }, [closePanel, open]);
 
   return (
     <>
@@ -179,7 +219,7 @@ export function BlockAddControl({
         <div className="block-add-layer">
           <div
             className={`block-add-backdrop${dragActive ? ' block-add-backdrop--passthrough' : ''}`}
-            onMouseDown={() => setOpen(false)}
+            onMouseDown={closePanel}
           />
           <div
             id={panelId}
@@ -190,35 +230,85 @@ export function BlockAddControl({
             aria-labelledby={titleId}
           >
             <div className="block-add-panel__header">
-              <h2 id={titleId} className="block-add-panel__title">
-                ブロックを追加
-              </h2>
+              {selectedCategory ? (
+                <button
+                  type="button"
+                  className="block-placement-btn block-add-back"
+                  data-block-add-back
+                  onClick={backToCategories}
+                >
+                  <span aria-hidden="true">←</span>
+                  戻る
+                </button>
+              ) : (
+                <h2 id={titleId} className="block-add-panel__title">
+                  ブロックを追加
+                </h2>
+              )}
               <button
                 type="button"
                 className="block-placement-btn"
                 data-block-add-close
-                onClick={() => setOpen(false)}
+                onClick={closePanel}
               >
                 閉じる
               </button>
             </div>
+            {selectedCategory ? (
+              <h2 id={titleId} className="block-add-panel__title">
+                {selectedCategory.label}
+              </h2>
+            ) : null}
             <div className="block-add-panel__list">
               {available.length === 0 ? (
                 <p className="block-placement-note">
                   追加できるブロックはありません。すべての種類が配置済みです。
                 </p>
+              ) : selectedCategory ? (
+                selectedBlocks.length === 0 ? (
+                  <p className="block-placement-note">このカテゴリのブロックはすべて追加済みです。</p>
+                ) : (
+                  selectedBlocks.map((block) => (
+                    <PaletteAddOption
+                      key={block}
+                      block={block}
+                      canDrag={canDragAdd}
+                      onAdd={(next) => {
+                        onAdd(next);
+                        closePanel();
+                      }}
+                    />
+                  ))
+                )
               ) : (
-                available.map((block) => (
-                  <PaletteAddOption
-                    key={block}
-                    block={block}
-                    canDrag={canDragAdd}
-                    onAdd={(next) => {
-                      onAdd(next);
-                      setOpen(false);
-                    }}
-                  />
-                ))
+                BLOCK_ADD_CATEGORIES.map((category) => {
+                  const count = availableBlocksInCategory(category.blocks, available).length;
+                  const placed = count === 0;
+                  return (
+                    <button
+                      key={category.id}
+                      type="button"
+                      className={`block-add-category${placed ? ' block-add-category--empty' : ''}`}
+                      data-category={category.id}
+                      data-block-add-category={category.id}
+                      data-block-add-option={placed ? undefined : ''}
+                      disabled={placed}
+                      onClick={() => setCategoryId(category.id)}
+                    >
+                      <span className="block-add-category__text">
+                        <span className="block-add-category__label">{category.label}</span>
+                        <span className="block-add-category__description">
+                          {placed ? 'すべて追加済み' : category.description}
+                        </span>
+                      </span>
+                      {placed ? null : (
+                        <span className="block-add-category__arrow" aria-hidden="true">
+                          →
+                        </span>
+                      )}
+                    </button>
+                  );
+                })
               )}
             </div>
           </div>
@@ -231,7 +321,13 @@ export function BlockAddControl({
         aria-label="ブロックを追加"
         aria-expanded={open}
         aria-controls={panelId}
-        onClick={() => setOpen((current) => !current)}
+        onClick={() => {
+          if (open) closePanel();
+          else {
+            setCategoryId(null);
+            setOpen(true);
+          }
+        }}
       >
         <span className="block-add-fab__icon" aria-hidden="true">
           ＋
@@ -318,15 +414,12 @@ export function BlockDragPreview({ id }: { id: string }) {
 
 export function BlockDetachControl({ label, onDetach }: { label: string; onDetach: () => void }) {
   const [open, setOpen] = useState(false);
-  const [confirming, setConfirming] = useState(false);
   const rootRef = useRef<HTMLDivElement>(null);
   const triggerRef = useRef<HTMLButtonElement>(null);
   const menuId = useId();
-  const noteId = useId();
 
   const closeMenu = useCallback((restoreFocus: boolean) => {
     setOpen(false);
-    setConfirming(false);
     if (restoreFocus) triggerRef.current?.focus();
   }, []);
 
@@ -352,7 +445,7 @@ export function BlockDetachControl({ label, onDetach }: { label: string; onDetac
   useEffect(() => {
     if (!open) return;
     rootRef.current?.querySelector<HTMLButtonElement>('[data-block-menu-action]')?.focus();
-  }, [open, confirming]);
+  }, [open]);
 
   return (
     <div className="block-edit-menu" ref={rootRef}>
@@ -373,42 +466,20 @@ export function BlockDetachControl({ label, onDetach }: { label: string; onDetac
       </button>
       {open ? (
         <div id={menuId} className="block-edit-menu__panel" role="menu" aria-label={`${label}の操作`}>
-          {confirming ? (
-            <div role="group" aria-label={`${label}を外す確認`} aria-describedby={noteId}>
-              <p id={noteId} className="block-placement-note">
-                {label}を公開ページから外します。入力内容は残り、もう一度追加すると復元できます。
-              </p>
-              <div className="block-placement-confirm__actions">
-                <button
-                  type="button"
-                  className="block-placement-btn"
-                  data-block-menu-action
-                  role="menuitem"
-                  onClick={onDetach}
-                >
-                  ブロックを外す
-                </button>
-                <button
-                  type="button"
-                  className="block-placement-btn"
-                  role="menuitem"
-                  onClick={() => setConfirming(false)}
-                >
-                  やめる
-                </button>
-              </div>
-            </div>
-          ) : (
-            <button
-              type="button"
-              className="block-placement-btn"
-              data-block-menu-action
-              role="menuitem"
-              onClick={() => setConfirming(true)}
-            >
-              ブロックを外す
-            </button>
-          )}
+          <button
+            type="button"
+            className="block-placement-btn"
+            data-block-menu-action
+            role="menuitem"
+            onPointerDown={(event) => event.stopPropagation()}
+            onClick={(event) => {
+              event.preventDefault();
+              event.stopPropagation();
+              onDetach();
+            }}
+          >
+            ブロックを外す
+          </button>
         </div>
       ) : null}
     </div>

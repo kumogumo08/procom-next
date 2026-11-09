@@ -3,6 +3,11 @@
  * 実行: npx tsx scripts/block-layout-check.ts
  */
 import {
+  availableBlocksInCategory,
+  BLOCK_ADD_CATEGORIES,
+  blockAddCategoryCoverage,
+} from '@/lib/blockAddCategories';
+import {
   activateBlockLayout,
   addBlock,
   availableBlocks,
@@ -166,6 +171,38 @@ same(
   '未配置の種類だけを返す'
 );
 same(availableBlocks(HISTORICAL_DEFAULT), ['Calendar'], '従来の8件が配置済みでもカレンダーは明示追加できる');
+
+const categoryCoverage = blockAddCategoryCoverage();
+same(categoryCoverage.missing, [], '全ブロックがいずれかの追加カテゴリに属する');
+same(categoryCoverage.duplicate, [], '同じブロックを複数カテゴリに入れない');
+assert(
+  new Set(BLOCK_ADD_CATEGORIES.map((category) => category.id)).size === BLOCK_ADD_CATEGORIES.length,
+  'カテゴリIDは重複しない'
+);
+same(
+  BLOCK_ADD_CATEGORIES.map((category) => category.label),
+  ['SNS', 'リンク・紹介', 'イベント'],
+  '追加画面のカテゴリは3件'
+);
+assert(
+  BLOCK_ADD_CATEGORIES.every((category) => category.description.length > 0),
+  'カテゴリに説明がある'
+);
+same(
+  BLOCK_ADD_CATEGORIES.flatMap((category) => [...category.blocks]),
+  [...BLOCK_TYPES],
+  'カテゴリ内のブロックキーは既存の定義順'
+);
+same(
+  availableBlocksInCategory(BLOCK_ADD_CATEGORIES[0].blocks, availableBlocks(['YouTube', 'X'])),
+  ['Instagram', 'TikTok', 'Facebook'],
+  '追加済みのSNSはカテゴリ内に出さない'
+);
+same(
+  availableBlocksInCategory(BLOCK_ADD_CATEGORIES[2].blocks, availableBlocks(['Calendar'])),
+  [],
+  '配置済みカレンダーはイベントに出さない'
+);
 
 const settings = {
   showYouTube: false,

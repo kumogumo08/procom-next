@@ -76,6 +76,35 @@ function calendarOf(value: unknown): Array<{ date: string; events: string[] }> {
     .sort((a, b) => (a.date < b.date ? -1 : a.date > b.date ? 1 : 0));
 }
 
+function productGallerySettingsOf(value: unknown): { description: string; shopUrl: string } {
+  if (!value || typeof value !== 'object' || Array.isArray(value)) return { description: '', shopUrl: '' };
+  const record = value as Record<string, unknown>;
+  const description = text(record.description).replace(/\r\n/g, '\n').replace(/\r/g, '\n').trim();
+  return {
+    description: Array.from(description).slice(0, 150).join(''),
+    shopUrl: text(record.shopUrl),
+  };
+}
+
+function productGalleryOf(value: unknown): Array<Record<string, string | number>> {
+  if (!Array.isArray(value)) return [];
+  return value.slice(0, 5).map((item, index) => {
+    const record = item && typeof item === 'object' ? (item as Record<string, unknown>) : {};
+    const price = text(record.price);
+    return {
+      id: text(record.id),
+      name: text(record.name),
+      productUrl: text(record.productUrl),
+      imageUrl: text(record.imageUrl),
+      price,
+      displayOrder:
+        typeof record.displayOrder === 'number' && Number.isFinite(record.displayOrder)
+          ? record.displayOrder
+          : index,
+    };
+  });
+}
+
 function appsOf(value: unknown): Array<Record<string, unknown>> {
   if (!Array.isArray(value)) return [];
   return value.map((item, index) => {
@@ -117,6 +146,8 @@ export function profileContentFingerprint(profile: unknown): string {
     bannerLinks: linkList(record.bannerLinks),
     calendarEvents: calendarOf(record.calendarEvents),
     apps: appsOf(record.apps),
+    productGallery: productGalleryOf(record.productGallery),
+    productGallerySettings: productGallerySettingsOf(record.productGallerySettings),
   };
   return JSON.stringify(snapshot);
 }

@@ -167,10 +167,14 @@ assert(!isBlockPlaced(['YouTube'], 'X'), '未配置を判定できる');
 assert(!isBlockPlaced(['YouTube', 'Foo'], 'Foo'), '不明なキーは配置済みにしない');
 same(
   availableBlocks(['YouTube', 'X']),
-  ['Instagram', 'TikTok', 'Facebook', 'BannerLinks', 'AppProjects', 'SNSButtons', 'Calendar'],
+  ['Instagram', 'TikTok', 'Facebook', 'BannerLinks', 'AppProjects', 'SNSButtons', 'Calendar', 'ProductGallery'],
   '未配置の種類だけを返す'
 );
-same(availableBlocks(HISTORICAL_DEFAULT), ['Calendar'], '従来の8件が配置済みでもカレンダーは明示追加できる');
+same(
+  availableBlocks(HISTORICAL_DEFAULT),
+  ['Calendar', 'ProductGallery'],
+  '従来の8件が配置済みでもカレンダーと商品ギャラリーは明示追加できる'
+);
 
 const categoryCoverage = blockAddCategoryCoverage();
 same(categoryCoverage.missing, [], '全ブロックがいずれかの追加カテゴリに属する');
@@ -181,8 +185,8 @@ assert(
 );
 same(
   BLOCK_ADD_CATEGORIES.map((category) => category.label),
-  ['SNS', 'リンク・紹介', 'イベント'],
-  '追加画面のカテゴリは3件'
+  ['SNS', 'リンク・紹介', 'イベント', 'SHOP'],
+  '追加画面のカテゴリは4件'
 );
 assert(
   BLOCK_ADD_CATEGORIES.every((category) => category.description.length > 0),

@@ -13,8 +13,11 @@ export function isDeletionUid(uid: string): boolean {
   return /^[A-Za-z0-9_-]{1,128}$/.test(uid);
 }
 
-/** 退会UIDの photos または banners 直下だけ。クライアントのパスは受け取らない。 */
-export async function deleteOwnedStoragePrefix(uid: string, folder: 'photos' | 'banners'): Promise<void> {
+/** 退会UIDの photos、banners、product-gallery 直下だけ。クライアントのパスは受け取らない。 */
+export async function deleteOwnedStoragePrefix(
+  uid: string,
+  folder: 'photos' | 'banners' | 'product-gallery'
+): Promise<void> {
   if (!isDeletionUid(uid)) {
     throw new Error('退会対象を確認できません');
   }
@@ -304,6 +307,7 @@ export function firebaseDeletionPorts(): AccountDeletionPorts {
     async deleteStorage(uid) {
       await deleteOwnedStoragePrefix(uid, 'photos');
       await deleteOwnedStoragePrefix(uid, 'banners');
+      await deleteOwnedStoragePrefix(uid, 'product-gallery');
     },
     async deleteUserDoc(uid) {
       await db.collection('users').doc(uid).delete();

@@ -39,6 +39,7 @@ import QRCodeBlock from '@/components/QRCodeBlock';
 import BannerLinksBlock from '@/components/BannerLinksBlock';
 import UserPageClientWrapper from '@/components/UserPageClientWrapper';
 import AppProjectBlock from '@/components/AppProjectBlock';
+import ProductGalleryBlock from '@/components/ProductGalleryBlock';
 import CalendarBlock from '@/components/CalendarBlock';
 import UnsavedChangesLeaveGuard from '@/components/UnsavedChangesLeaveGuard';
 import {
@@ -52,6 +53,14 @@ import {
   blockIdFromPaletteDrag,
 } from '@/components/BlockPlacementControls';
 import { appProjectsContentEqual, type AppProject } from '@/lib/appProjects';
+import {
+  browserStorageBucket,
+  coerceProductGallery,
+  coerceProductGallerySettings,
+  productGalleryContentEqual,
+  type ProductGalleryItem,
+  type ProductGallerySettings,
+} from '@/lib/productGallery';
 import {
   availableBlocks,
   BLOCK_LABELS,
@@ -88,6 +97,8 @@ type Profile = {
   facebookUsername?: string;
   facebookPageUrl?: string;
   apps?: AppProject[];
+  productGallery?: ProductGalleryItem[];
+  productGallerySettings?: ProductGallerySettings;
   bannerLinks?: BannerLink[];
   customLinks?: CustomLink[];
   settings?: {
@@ -107,6 +118,22 @@ type Profile = {
 function isUploadedBannerUrl(url: string | undefined): boolean {
   const trimmed = url?.trim() ?? '';
   return trimmed !== '' && !trimmed.startsWith('data:');
+}
+
+function withProductGallery(profile: Profile, uid: string): Profile {
+  const hasItems = Object.prototype.hasOwnProperty.call(profile, 'productGallery');
+  const hasSettings = Object.prototype.hasOwnProperty.call(profile, 'productGallerySettings');
+  if (!hasItems && !hasSettings) return profile;
+  const next: Profile = { ...profile };
+  if (hasItems) {
+    next.productGallery = coerceProductGallery(profile.productGallery, uid, browserStorageBucket());
+  }
+  if (hasSettings) {
+    const settings = coerceProductGallerySettings(profile.productGallerySettings);
+    if (settings) next.productGallerySettings = settings;
+    else delete next.productGallerySettings;
+  }
+  return next;
 }
 
 /** photos / calendarEvents は含めない。data URL のバナーは除外する */
@@ -145,6 +172,12 @@ function buildDraftSavePayload(
 
   if (Array.isArray(draft.bannerLinks)) {
     payload.bannerLinks = draft.bannerLinks.filter((b) => isUploadedBannerUrl(b.imageUrl));
+  }
+  if (Array.isArray(draft.productGallery)) {
+    payload.productGallery = draft.productGallery;
+  }
+  if (Object.prototype.hasOwnProperty.call(draft, 'productGallerySettings')) {
+    payload.productGallerySettings = draft.productGallerySettings ?? { description: '', shopUrl: '' };
   }
 
   return payload;
@@ -456,15 +489,13 @@ export default function UserPageSectionsClient({
   initialApps: AppProject[];
 }) {
   /** 最後に保存成功した状態（savedProfile） */
-  const [profile, setProfile] = useState<Profile>(() => ({
-    ...initialProfile,
-    apps: initialApps,
-  }));
+  const [profile, setProfile] = useState<Profile>(() =>
+    withProductGallery({ ...initialProfile, apps: initialApps }, uid)
+  );
   /** 編集途中状態 */
-  const [draftProfile, setDraftProfile] = useState<Profile>(() => ({
-    ...initialProfile,
-    apps: initialApps,
-  }));
+  const [draftProfile, setDraftProfile] = useState<Profile>(() =>
+    withProductGallery({ ...initialProfile, apps: initialApps }, uid)
+  );
   const draftProfileRef = useRef(draftProfile);
   draftProfileRef.current = draftProfile;
 
@@ -626,6 +657,28 @@ export default function UserPageSectionsClient({
     [updateDraftProfile]
   );
 
+  const onProductGalleryDraftChange = useCallback((productGallery: ProductGalleryItem[]) => {
+    setDraftProfile((prev) => {
+      const prevItems = Array.isArray(prev.productGallery) ? prev.productGallery : [];
+      if (productGalleryContentEqual(prevItems, productGallery)) return prev;
+      return { ...prev, productGallery };
+    });
+  }, []);
+
+  const onProductGallerySettingsChange = useCallback((productGallerySettings: ProductGallerySettings) => {
+    setDraftProfile((prev) => {
+      const current = prev.productGallerySettings;
+      if (
+        (current?.description ?? '') === productGallerySettings.description &&
+        (current?.shopUrl ?? '') === productGallerySettings.shopUrl &&
+        Object.prototype.hasOwnProperty.call(prev, 'productGallerySettings')
+      ) {
+        return prev;
+      }
+      return { ...prev, productGallerySettings };
+    });
+  }, []);
+
   const onBannerDraftChange = useCallback(
     (draft: { bannerLinks: BannerLink[]; showBanners: boolean }) => {
       updateDraftProfile({ bannerLinks: draft.bannerLinks });
@@ -670,6 +723,8 @@ export default function UserPageSectionsClient({
       const data = (await res.json().catch(() => ({}))) as {
         error?: string;
         apps?: AppProject[];
+        productGallery?: ProductGalleryItem[];
+        productGallerySettings?: ProductGallerySettings;
       };
       if (!res.ok) {
         throw new Error(typeof data.error === 'string' ? data.error : '保存に失敗しました');
@@ -703,7 +758,16 @@ export default function UserPageSectionsClient({
         ...(Array.isArray(profilePayload.bannerLinks)
           ? { bannerLinks: profilePayload.bannerLinks as BannerLink[] }
           : {}),
+        ...(Array.isArray(data.productGallery)
+          ? { productGallery: data.productGallery }
+          : Array.isArray(profilePayload.productGallery)
+            ? { productGallery: profilePayload.productGallery as ProductGalleryItem[] }
+            : {}),
       };
+      if (Object.prototype.hasOwnProperty.call(profilePayload, 'productGallerySettings')) {
+        if (data.productGallerySettings) savedProfile.productGallerySettings = data.productGallerySettings;
+        else delete savedProfile.productGallerySettings;
+      }
 
       setProfile(savedProfile);
       setDraftProfile(savedProfile);
@@ -839,6 +903,15 @@ export default function UserPageSectionsClient({
         />
       ),
       Calendar: <CalendarBlock isEditable={isEditable} uid={uid} />,
+      ProductGallery: (
+        <ProductGalleryBlock
+          isEditable={isEditable}
+          initialItems={draftProfile.productGallery}
+          initialSettings={draftProfile.productGallerySettings}
+          onDraftChange={isEditable ? onProductGalleryDraftChange : undefined}
+          onSettingsChange={isEditable ? onProductGallerySettingsChange : undefined}
+        />
+      ),
     }),
     [
       apps,
@@ -848,6 +921,8 @@ export default function UserPageSectionsClient({
       onCustomLinksDraftChange,
       onFacebookDraftChange,
       onInstagramDraftChange,
+      onProductGalleryDraftChange,
+      onProductGallerySettingsChange,
       onTikTokDraftChange,
       onXDraftChange,
       onYouTubeDraftChange,
@@ -1059,6 +1134,7 @@ export default function UserPageSectionsClient({
 
         {canEditBlocks ? (
           <DndContext
+            id="profile-block-placement"
             sensors={sensors}
             collisionDetection={sectionCollisionDetection}
             modifiers={[restrictPlacedBlockAxis]}

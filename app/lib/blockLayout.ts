@@ -18,6 +18,7 @@ export const BLOCK_TYPES = [
   'AppProjects',
   'SNSButtons',
   'Calendar',
+  'ProductGallery',
 ] as const;
 
 export type BlockType = (typeof BLOCK_TYPES)[number];
@@ -32,6 +33,7 @@ export const BLOCK_LABELS: Record<BlockType, string> = {
   AppProjects: 'アプリ紹介',
   SNSButtons: 'SNSボタン',
   Calendar: '配信・イベントカレンダー',
+  ProductGallery: '商品ギャラリー',
 };
 
 /** 新形式の現在バージョン。旧データには書き込まない。 */
@@ -39,7 +41,7 @@ export const BLOCK_LAYOUT_VERSION = 1;
 
 /**
  * 旧形式で sectionOrder が無いとき、および空配列のときの表示順。
- * Calendar は含めない。未設定のプロフィールへ自動では足さない。
+ * Calendar と ProductGallery は含めない。未設定のプロフィールへ自動では足さない。
  */
 export const DEFAULT_SECTION_ORDER: readonly BlockType[] = [
   'YouTube',

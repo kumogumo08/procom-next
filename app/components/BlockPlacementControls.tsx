@@ -396,6 +396,7 @@ const BLOCK_DRAG_MARK: Record<BlockType, string> = {
   AppProjects: 'App',
   SNSButtons: 'SNS',
   Calendar: '📅',
+  ProductGallery: '品',
 };
 
 export function BlockDragPreview({ id }: { id: string }) {

@@ -23,6 +23,18 @@ import {
 import { enrichAppsWithStoreIcons } from '@/lib/appIcons';
 import { clampPhotoPositionY } from '@/lib/photoPosition';
 import { mergeProfileSettings } from '@/lib/blockLayout';
+import {
+  coerceProductGallery,
+  coerceProductGallerySettings,
+  isSafeProductGalleryObject,
+  MISSING_PRODUCT_IMAGE_MESSAGE,
+  productImagePaths,
+  removedProductImagePaths,
+  sanitizeProductGallery,
+  sanitizeProductGallerySettings,
+  type ProductGalleryItem,
+  type ProductGallerySettings,
+} from '@/lib/productGallery';
 import { readUserSuspended } from '@/lib/accountSuspension';
 import { suspendedWriteResponse } from '@/lib/accountSuspensionGuard';
 import { isOnboardingBlocked } from '@/lib/onboarding';
@@ -143,6 +155,14 @@ export async function GET(
       bannerLinks: rawProfile.bannerLinks ?? [],
       emailForContact: rawProfile.emailForContact ?? '',
       apps: coerceAppsFromFirestore(rawProfile.apps),
+      ...(Object.prototype.hasOwnProperty.call(rawProfile, 'productGallery')
+        ? { productGallery: coerceProductGallery(rawProfile.productGallery, uid, bucket.name) }
+        : {}),
+      ...(() => {
+        if (!Object.prototype.hasOwnProperty.call(rawProfile, 'productGallerySettings')) return {};
+        const settings = coerceProductGallerySettings(rawProfile.productGallerySettings);
+        return settings ? { productGallerySettings: settings } : {};
+      })(),
     };
 
     return NextResponse.json({
@@ -346,6 +366,52 @@ export async function POST(req: NextRequest, props: { params: Promise<{ uid: str
       appsForSave = mergedApps;
     }
 
+    const incomingProfileForGallery = profile as Record<string, unknown>;
+    const galleryTouched =
+      hasOwn(incomingProfileForGallery, 'productGallery') || hasOwn(existingProfile, 'productGallery');
+    let galleryForSave: ProductGalleryItem[] | undefined;
+    if (galleryTouched) {
+      const rawGallery = hasOwn(incomingProfileForGallery, 'productGallery')
+        ? incomingProfileForGallery.productGallery
+        : existingProfile.productGallery;
+      const sanitizedGallery = sanitizeProductGallery(rawGallery, uid, bucket.name);
+      if (!sanitizedGallery.ok) {
+        return NextResponse.json({ error: sanitizedGallery.error }, { status: 400 });
+      }
+      const previousPaths = new Set(productImagePaths(existingProfile.productGallery, uid, bucket.name));
+      for (const objectPath of productImagePaths(sanitizedGallery.items, uid, bucket.name)) {
+        if (previousPaths.has(objectPath)) continue;
+        if (!isSafeProductGalleryObject(uid, objectPath)) {
+          return NextResponse.json({ error: '商品画像を確認できません' }, { status: 400 });
+        }
+        const [found] = await bucket.file(objectPath).exists();
+        if (!found) {
+          return NextResponse.json({ error: MISSING_PRODUCT_IMAGE_MESSAGE }, { status: 400 });
+        }
+      }
+      galleryForSave = sanitizedGallery.items;
+    }
+
+    const settingsTouched =
+      hasOwn(incomingProfileForGallery, 'productGallerySettings') ||
+      hasOwn(existingProfile, 'productGallerySettings');
+    let settingsForSave: ProductGallerySettings | undefined;
+    if (settingsTouched) {
+      const fromClient = hasOwn(incomingProfileForGallery, 'productGallerySettings');
+      const rawSettings = fromClient
+        ? incomingProfileForGallery.productGallerySettings
+        : existingProfile.productGallerySettings;
+      if (fromClient) {
+        const sanitizedSettings = sanitizeProductGallerySettings(rawSettings);
+        if (!sanitizedSettings.ok) {
+          return NextResponse.json({ error: sanitizedSettings.error }, { status: 400 });
+        }
+        settingsForSave = sanitizedSettings.settings;
+      } else {
+        settingsForSave = coerceProductGallerySettings(rawSettings);
+      }
+    }
+
     // 🔄 プロフィール保存
     // undefined = 未更新（既存維持）。"" / [] / null = 明示的な空。false は settings に残す。
     // photos は上の既存処理どおり（空配列は既存維持）。apps は sanitize 済みを後付け。
@@ -372,6 +438,8 @@ export async function POST(req: NextRequest, props: { params: Promise<{ uid: str
       customLinks: pickArray(incomingProfile, 'customLinks', existingProfile.customLinks),
       emailForContact: pickString(incomingProfile, 'emailForContact', existingProfile.emailForContact),
       settings: mergeProfileSettings(existingProfile.settings, profile.settings),
+      productGallery: galleryForSave,
+      productGallerySettings: settingsForSave,
     });
 
     cleanedProfile.apps = appsForSave;
@@ -390,12 +458,36 @@ export async function POST(req: NextRequest, props: { params: Promise<{ uid: str
     }
 
     await userRef.set({ profile: cleanedProfile }, { merge: true });
+    if (galleryForSave) {
+      const removedImages = removedProductImagePaths(
+        existingProfile.productGallery,
+        galleryForSave,
+        uid,
+        bucket.name
+      );
+      await Promise.all(
+        removedImages.map(async (objectPath) => {
+          if (!isSafeProductGalleryObject(uid, objectPath)) return;
+          await bucket.file(objectPath).delete({ ignoreNotFound: true }).catch((deleteErr: unknown) => {
+            console.error(
+              'product gallery image delete failed:',
+              deleteErr instanceof Error ? deleteErr.name : 'error'
+            );
+          });
+        })
+      );
+    }
     const listed = await noteUserListing(uid);
     if (listed && listingPhotoChanged(beforePhotos, cleanedProfile.photos)) {
       invalidateListingAfterPhotoChange();
     }
     await retainReplacedPhotos(uid, bucket.name, beforePhotos, cleanedProfile.photos);
-    return NextResponse.json({ message: 'User profile updated', apps: appsForSave });
+    return NextResponse.json({
+      message: 'User profile updated',
+      apps: appsForSave,
+      ...(galleryForSave ? { productGallery: galleryForSave } : {}),
+      ...(settingsForSave ? { productGallerySettings: settingsForSave } : {}),
+    });
   } catch (err) {
     const message = err instanceof Error ? err.message : String(err);
     console.error('🔥 Firestore保存エラー:', err);

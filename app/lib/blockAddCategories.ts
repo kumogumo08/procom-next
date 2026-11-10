@@ -23,6 +23,13 @@ export const BLOCK_ADD_CATEGORIES = [
     description: '配信やイベントの予定',
     blocks: ['Calendar'],
   },
+  {
+    id: 'shop',
+    label: 'SHOP',
+    description: '商品の紹介と購入',
+    // BASE / STORES / Shopify は実装したときにこの配列へ足す。未実装の間は選択画面に出さない。
+    blocks: ['ProductGallery'],
+  },
 ] as const satisfies readonly {
   id: string;
   label: string;

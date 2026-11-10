@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>X公式埋め込み 検証（Procom非組込）</title>
+  <style>
+    body { font-family: system-ui, sans-serif; margin: 16px; background: #f8fafc; color: #0f172a; }
+    .ok { padding: 12px; background: #dcfce7; border: 1px solid #16a34a; border-radius: 8px; }
+    section { background: #fff; border: 1px solid #e2e8f0; border-radius: 12px; padding: 12px; margin: 16px 0; max-width: 560px; }
+    h1 { font-size: 1.15rem; }
+    h2 { font-size: 1rem; margin: 0 0 8px; }
+    .timeline { min-height: 80px; }
+  </style>
+</head>
+<body>
+  <div id="page-ok" class="ok">検証ページ本体は表示されています。Xの成否に依存しません。</div>
+  <p>対象: https://x.com/EBI_Dev_Lab ／ このページ自体はXへログインしません。</p>
+
+  <section>
+    <h2>data-tweet-limit=1 / chrome=noheader nofooter noborders</h2>
+    <div class="timeline" id="limit-1">
+      <a class="twitter-timeline" data-tweet-limit="1" data-height="360" data-chrome="noheader nofooter noborders" data-dnt="true" href="https://x.com/EBI_Dev_Lab?ref_src=twsrc%5Etfw">Posts by EBI_Dev_Lab</a>
+    </div>
+  </section>
+
+  <section>
+    <h2>data-tweet-limit=2</h2>
+    <div class="timeline" id="limit-2">
+      <a class="twitter-timeline" data-tweet-limit="2" data-dnt="true" href="https://x.com/EBI_Dev_Lab?ref_src=twsrc%5Etfw">Posts by EBI_Dev_Lab</a>
+    </div>
+  </section>
+
+  <section>
+    <h2>data-tweet-limit=3</h2>
+    <div class="timeline" id="limit-3">
+      <a class="twitter-timeline" data-tweet-limit="3" data-dnt="true" href="https://x.com/EBI_Dev_Lab?ref_src=twsrc%5Etfw">Posts by EBI_Dev_Lab</a>
+    </div>
+  </section>
+
+  <section>
+    <h2>件数指定なし（比較）</h2>
+    <div class="timeline" id="limit-none">
+      <a class="twitter-timeline" data-height="480" data-dnt="true" href="https://twitter.com/EBI_Dev_Lab?ref_src=twsrc%5Etfw">Posts by EBI_Dev_Lab</a>
+    </div>
+  </section>
+
+  <section>
+    <h2>存在しないアカウント（失敗時の隔離）</h2>
+    <div class="timeline" id="limit-missing">
+      <a class="twitter-timeline" data-tweet-limit="1" data-dnt="true" href="https://x.com/procom_embed_verify_missing_zz">missing</a>
+    </div>
+    <p id="after-fail">失敗セクションの直後も、この本文は残っています。</p>
+  </section>
+
+  <script async src="https://platform.x.com/widgets.js" charset="utf-8"></script>
+  <script>
+    window.setTimeout(function () {
+      var note = document.createElement('p');
+      note.id = 'probe';
+      note.textContent = 'iframe数=' + document.querySelectorAll('iframe').length + ' twttr=' + (window.twttr ? 'yes' : 'no');
+      document.body.appendChild(note);
+    }, 9000);
+  </script>
+</body>
+</html>

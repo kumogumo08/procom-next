@@ -1,0 +1,377 @@
+.block {
+  box-sizing: border-box;
+  min-width: 0;
+  max-width: 100%;
+}
+
+.stage {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  width: 100%;
+  min-width: 0;
+}
+
+.lead,
+.shopButtonWrap,
+.editor,
+.shopInfo {
+  min-width: 0;
+  max-width: 100%;
+}
+
+.slider {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  min-width: 0;
+  max-width: 100%;
+}
+
+@media (min-width: 768px) {
+  .stage[data-many='true'] {
+    grid-template-columns: 40px minmax(0, 1fr) 40px;
+    column-gap: 8px;
+  }
+
+  .stage[data-many='true'] .lead,
+  .stage[data-many='true'] .shopButtonWrap {
+    grid-column: 2;
+  }
+
+  .stage[data-many='true'] .editor,
+  .stage[data-many='true'] .shopInfo {
+    grid-column: 1 / -1;
+  }
+
+  .stage[data-many='true'] .slider {
+    grid-column: 1 / -1;
+    display: grid;
+    grid-template-columns: subgrid;
+    align-items: center;
+    column-gap: 8px;
+    width: auto;
+  }
+}
+
+.scroller,
+.scrollerSingle {
+  flex: 1 1 auto;
+  min-width: 0;
+  max-width: 100%;
+  display: flex;
+  gap: 12px;
+  overflow-x: auto;
+  overscroll-behavior-x: contain;
+  scrollbar-width: thin;
+  scrollbar-color: #334155 #e2e8f0;
+  padding-bottom: 2px;
+}
+
+.scroller {
+  scroll-snap-type: x mandatory;
+  justify-content: flex-start;
+}
+
+.scrollerSingle {
+  justify-content: center;
+}
+
+.scroller::-webkit-scrollbar,
+.scrollerSingle::-webkit-scrollbar {
+  height: 10px;
+}
+
+.scroller::-webkit-scrollbar-track,
+.scrollerSingle::-webkit-scrollbar-track {
+  background: #e2e8f0;
+  border-radius: 999px;
+}
+
+.scroller::-webkit-scrollbar-thumb,
+.scrollerSingle::-webkit-scrollbar-thumb {
+  background: #334155;
+  border-radius: 999px;
+}
+
+.card {
+  flex: 0 0 220px;
+  width: 220px;
+  display: grid;
+  justify-items: center;
+  gap: 12px;
+  scroll-snap-align: start;
+}
+
+.frame {
+  display: block;
+  width: 220px;
+  height: 380px;
+  flex: 0 0 auto;
+  border: 0;
+  border-radius: 12px;
+  background: #f8fafc;
+}
+
+.arrow {
+  display: none;
+  width: 40px;
+  height: 40px;
+  flex: 0 0 40px;
+  place-items: center;
+  border: 1px solid #e5e7eb;
+  border-radius: 999px;
+  background: #fff;
+  color: #0f172a;
+  font-size: 1.5rem;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.arrow:disabled {
+  opacity: 0.35;
+  cursor: default;
+}
+
+.arrow:focus-visible {
+  outline: 2px solid #4f7cf7;
+  outline-offset: 2px;
+}
+
+@media (min-width: 768px) {
+  .arrow {
+    display: grid;
+  }
+}
+
+.productLink {
+  box-sizing: border-box;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  min-height: 44px;
+  padding: 0 16px;
+  color: #1d4ed8;
+  font-size: 14px;
+  font-weight: 700;
+  text-decoration: none;
+}
+
+.productLink:focus-visible {
+  outline: 2px solid #4f7cf7;
+  outline-offset: 2px;
+}
+
+.shopButtonWrap {
+  box-sizing: border-box;
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+  margin-top: 16px;
+}
+
+.shopButton {
+  box-sizing: border-box;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  max-width: 100%;
+  min-height: 44px;
+  padding: 0 24px;
+  border-radius: 10px;
+  background: #2563eb;
+  color: #fff;
+  font-size: 14px;
+  font-weight: 700;
+  text-decoration: none;
+}
+
+.shopButton:focus-visible {
+  outline: 2px solid #4f7cf7;
+  outline-offset: 2px;
+}
+
+.shopInfo {
+  box-sizing: border-box;
+  display: grid;
+  gap: 8px;
+  margin-top: 16px;
+  padding-top: 16px;
+  border-top: 1px solid #e2e8f0;
+  min-width: 0;
+  max-width: 100%;
+}
+
+.hint {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+  margin: 0;
+  color: #64748b;
+  font-size: 12px;
+  font-weight: 400;
+  line-height: 1.6;
+}
+
+.editor {
+  display: grid;
+  gap: 16px;
+  margin-top: 16px;
+  min-width: 0;
+}
+
+.notice {
+  margin: 0;
+  color: #64748b;
+  font-size: 12px;
+  line-height: 1.6;
+}
+
+.tabs {
+  display: flex;
+  gap: 8px;
+  min-width: 0;
+  overflow-x: auto;
+  padding: 2px;
+  scrollbar-width: thin;
+}
+
+.tab,
+.tabActive {
+  flex: 1 1 0;
+  min-width: 44px;
+  max-width: 96px;
+  display: grid;
+  justify-items: center;
+  gap: 4px;
+  min-height: 44px;
+  padding: 6px 4px;
+  border-radius: 12px;
+  border: 1px solid #e2e8f0;
+  background: #fff;
+  color: #334155;
+  cursor: pointer;
+}
+
+.tabActive {
+  border-color: #4f7cf7;
+  background: #eff6ff;
+  color: #1d4ed8;
+  box-shadow: 0 0 0 2px rgba(79, 124, 247, 0.18);
+}
+
+.tab:focus-visible,
+.tabActive:focus-visible {
+  outline: 2px solid #4f7cf7;
+  outline-offset: 2px;
+}
+
+.tab:disabled,
+.tabActive:disabled {
+  cursor: default;
+}
+
+.tabMark {
+  width: 28px;
+  height: 28px;
+  display: grid;
+  place-items: center;
+  border-radius: 8px;
+  background: #e2e8f0;
+  font-size: 13px;
+  font-weight: 700;
+  color: #334155;
+}
+
+.tabActive .tabMark {
+  background: #dbeafe;
+  color: #1d4ed8;
+}
+
+.tabName {
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 11px;
+  font-weight: 700;
+  line-height: 1.3;
+}
+
+.panel {
+  display: grid;
+  gap: 10px;
+  min-width: 0;
+}
+
+.order {
+  margin: 0;
+  color: #0f172a;
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.registered {
+  margin: 0;
+  color: #334155;
+  font-size: 13px;
+  line-height: 1.6;
+  overflow-wrap: anywhere;
+}
+
+.fieldLabel {
+  display: grid;
+  gap: 6px;
+  color: #0f172a;
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.actions button {
+  min-height: 44px;
+  padding: 0 12px;
+  border-radius: 10px;
+  border: 1px solid #e5e7eb;
+  background: #fff;
+  color: #0f172a;
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.actions button:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+
+.actions button:focus-visible,
+.addBtn:focus-visible {
+  outline: 2px solid #4f7cf7;
+  outline-offset: 2px;
+}
+
+.addBtn {
+  width: 100%;
+  min-height: 44px;
+}
+
+.addBtn:disabled {
+  opacity: 0.7;
+  cursor: default;
+}
+
+.error {
+  margin: 0;
+  color: #b91c1c;
+  font-size: 13px;
+  font-weight: 700;
+  line-height: 1.6;
+}

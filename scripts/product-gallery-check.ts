@@ -25,7 +25,10 @@ import {
   removedProductImagePaths,
   sanitizeProductGallery,
   sanitizeProductGallerySettings,
+  shopDescriptionLength,
+  shopDescriptionOverflows,
   shopIntroVisible,
+  SHOP_DESCRIPTION_HINT,
   isSafeShopUrl,
   type ProductGalleryItem,
 } from '@/lib/productGallery';
@@ -147,7 +150,11 @@ assert(!inspectProductImage('image/jpeg', new Uint8Array()).ok, '空のファイ
 const shop = BLOCK_ADD_CATEGORIES.find((category) => category.id === 'shop');
 same(shop?.label, 'SHOP', 'カテゴリ名はSHOP');
 same(shop?.description, '商品の紹介と購入', 'カテゴリ説明を保持する');
-same([...(shop?.blocks ?? [])], ['ProductGallery'], '未実装のBASE・STORES・Shopifyは選択画面に出さない');
+same(
+  [...(shop?.blocks ?? [])],
+  ['ProductGallery', 'BaseProducts'],
+  'SHOPは商品ギャラリーとBASE商品。STORESとShopifyは出さない'
+);
 assert(BLOCK_LAYOUT_VERSION === 1, 'blockLayoutVersionは1のまま');
 assert(!DEFAULT_SECTION_ORDER.includes('ProductGallery'), '既存の既定順に商品ギャラリーを足さない');
 assert(!resolveSectionOrder(undefined, undefined).includes('ProductGallery'), '旧形式の表示順は変わらない');
@@ -205,27 +212,43 @@ assert(descriptionAt > 0 && fieldsAt > descriptionAt && fieldsAt < sliderAt, '�
 assert(sliderAt < editorAt && editorAt < buttonAt, '商品管理のあとでショップボタンを出す');
 assert(component.includes('!isEditable && trimmedDescription'), '編集中は公開文と入力欄を重ねない');
 const descriptionCss = css.slice(css.indexOf('.description {'), css.indexOf('.shopButtonWrap'));
+assert(descriptionCss.includes('grid-column: 2'), '紹介文は商品列に置く');
+const shopDescriptionCss = readFileSync(join(root, 'app/components/ShopDescription.module.css'), 'utf8');
+const shopDescription = readFileSync(join(root, 'app/components/ShopDescription.tsx'), 'utf8');
 assert(
-  descriptionCss.includes('font-size: 15px') &&
-    descriptionCss.includes('font-weight: 400') &&
-    descriptionCss.includes('line-height: 1.75') &&
-    descriptionCss.includes('background: #f8fafc') &&
-    descriptionCss.includes('border-radius: 12px') &&
-    descriptionCss.includes('padding: 16px') &&
-    descriptionCss.includes('text-align: left') &&
-    descriptionCss.includes('margin: 0 0 16px') &&
-    descriptionCss.includes('border: none') &&
-    descriptionCss.includes('box-shadow: none') &&
-    descriptionCss.includes('color: #0f172a') &&
-    descriptionCss.includes('max-height: calc(1.75em * 3)') &&
-    descriptionCss.includes('overflow: hidden') &&
-    !descriptionCss.includes('-webkit-line-clamp'),
-  '紹介文は淡い背景のカードで、15px、太さ400、行間1.75、3行まで'
+  shopDescriptionCss.includes('font-size: 15px') &&
+    shopDescriptionCss.includes('font-weight: 400') &&
+    shopDescriptionCss.includes('line-height: 1.75') &&
+    shopDescriptionCss.includes('background: #f8fafc') &&
+    shopDescriptionCss.includes('border-radius: 12px') &&
+    shopDescriptionCss.includes('padding: 16px') &&
+    shopDescriptionCss.includes('text-align: left') &&
+    shopDescriptionCss.includes('margin: 0 0 16px') &&
+    shopDescriptionCss.includes('border: none') &&
+    shopDescriptionCss.includes('box-shadow: none') &&
+    shopDescriptionCss.includes('color: #0f172a') &&
+    shopDescriptionCss.includes('max-height: calc(1.75em * 3)') &&
+    shopDescriptionCss.includes('overflow: hidden') &&
+    shopDescriptionCss.includes('white-space: pre-wrap') &&
+    !shopDescriptionCss.includes('-webkit-line-clamp'),
+  '紹介文は淡い背景のカードで、15px、太さ400、行間1.75、初期は3行'
 );
-assert(component.includes('150文字以内・3行までがおすすめです'), '編集画面に3行の案内を出す');
+assert(component.includes('SHOP_DESCRIPTION_HINT'), '編集画面の説明を共通の文面にする');
+assert(SHOP_DESCRIPTION_HINT.includes('最大300文字'), '編集画面は300文字とmoreを案内する');
+assert(component.includes('<ShopDescription'), '公開紹介文は共通コンポーネント');
+assert(shopDescription.includes("expanded ? 'close' : 'more'"), '開閉の表示は more と close');
+assert(shopDescription.includes('aria-expanded={expanded}'), '開閉状態を伝える');
+assert(shopDescription.includes('type="button"'), 'more は button');
+assert(shopDescription.includes('ResizeObserver'), '幅が変わったら行数を測り直す');
+assert(shopDescription.includes('useLayoutEffect'), '初回描画の前に行数を測る');
+assert(shopDescription.includes('styles.textClamped'), '閉じている間は3行に収める');
+assert(!shopDescription.includes('dangerouslySetInnerHTML'), '紹介文をHTMLとして解釈しない');
 assert(component.includes('shopIntroVisible'), '商品0件でも紹介があれば表示を判断する');
-assert(css.includes('white-space: pre-wrap'), '紹介文の改行をテキストのまま表示する');
 assert(userRoute.includes('sanitizeProductGallerySettings'), '紹介文とショップURLをサーバーで検証する');
+assert(
+  userRoute.includes("sanitizedSettings.settings ?? { description: '', shopUrl: '' }"),
+  '空の紹介文を保存すると古い紹介文を残さない'
+);
 assert(!component.includes('dangerouslySetInnerHTML'), '商品データからHTMLを実行しない');
 assert(component.includes('aria-label="前の商品"') && component.includes('aria-label="次の商品"'), '矢印で移動できる');
 assert(css.includes('overflow-x: auto') && css.includes('scroll-snap-type: x mandatory'), '横スライドとスワイプ用のスクロールを持つ');
@@ -244,7 +267,14 @@ assert(
     css.includes('.scroller::-webkit-scrollbar'),
   '横スクロールは操作できるバーにする'
 );
-assert(css.includes('grid-column: 2') && css.includes('width: min(100%, 240px)'), '紹介文とショップボタンを商品列の幅にそろえる');
+const shopButtonCss = css.slice(css.indexOf('.shopButton {'), css.indexOf('.shopFields'));
+assert(
+  css.includes('grid-column: 2') &&
+    shopButtonCss.includes('width: 100%') &&
+    shopButtonCss.includes('box-sizing: border-box') &&
+    !shopButtonCss.includes('240px'),
+  'ショップボタンは商品一覧の表示幅にそろえる'
+);
 same(productTabAfterDelete(['a', 'b', 'c'], 'b', 'b'), 'c', '削除した位置の次の商品を選ぶ');
 same(productTabAfterDelete(['a', 'b', 'c'], 'c', 'c'), 'b', '末尾の削除では1つ前を選ぶ');
 same(productTabAfterDelete(['a', 'b', 'c'], 'b', 'a'), 'a', '見ていない商品を消しても選択を維持する');
@@ -258,10 +288,19 @@ assert(productScrollIndicator(0, 200, 200) === null, 'スクロール不要な�
 const intro = '一行目\n二行目';
 const introSaved = sanitizeProductGallerySettings({ description: intro, shopUrl: '' });
 assert(introSaved.ok && introSaved.settings?.description === intro, '紹介文の改行を残す');
-const maxIntro = 'あ'.repeat(150);
-assert(sanitizeProductGallerySettings({ description: maxIntro, shopUrl: '' }).ok, '紹介文150文字は保存できる');
+assert(sanitizeProductGallerySettings({ description: '', shopUrl: 'https://shop.example/item' }).ok, '紹介文0文字でもURLがあれば保存できる');
+assert(sanitizeProductGallerySettings({ description: 'あ'.repeat(150), shopUrl: '' }).ok, '既存の150文字紹介文は保存できる');
+const maxIntro = `${'あ'.repeat(298)}\n😀`;
+assert(shopDescriptionLength(maxIntro) === 300, '日本語、改行、絵文字を合わせて300文字');
+assert(sanitizeProductGallerySettings({ description: maxIntro, shopUrl: '' }).ok, '紹介文300文字は保存できる');
 const overIntro = sanitizeProductGallerySettings({ description: `${maxIntro}あ`, shopUrl: '' });
-assert(!overIntro.ok, '紹介文151文字は拒否する');
+assert(!overIntro.ok, '紹介文301文字は拒否する');
+const lineHeight = 26.25;
+assert(!shopDescriptionOverflows(lineHeight * 3, lineHeight), '実測が3行ちょうどなら more を出さない');
+assert(shopDescriptionOverflows(lineHeight * 4, lineHeight), '実測が4行なら more を出す');
+assert(!shopDescriptionOverflows(lineHeight * 2, lineHeight), '広い画面で2行なら more を出さない');
+assert(shopDescriptionOverflows(lineHeight * 5, lineHeight), '狭い画面で5行なら more を出す');
+assert(!shopDescriptionOverflows(lineHeight * 3, Number.NaN), '行の高さが測れないときは more を出さない');
 const missingSettings = sanitizeProductGallerySettings(null);
 assert(missingSettings.ok && missingSettings.settings === undefined, '未設定のショップ紹介はフィールドを作らない');
 const blankSettings = sanitizeProductGallerySettings({ description: '  ', shopUrl: '   ' });

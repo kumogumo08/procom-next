@@ -167,13 +167,13 @@ assert(!isBlockPlaced(['YouTube'], 'X'), '未配置を判定できる');
 assert(!isBlockPlaced(['YouTube', 'Foo'], 'Foo'), '不明なキーは配置済みにしない');
 same(
   availableBlocks(['YouTube', 'X']),
-  ['Instagram', 'TikTok', 'Facebook', 'BannerLinks', 'AppProjects', 'SNSButtons', 'Calendar', 'ProductGallery'],
+  ['Instagram', 'TikTok', 'Facebook', 'BannerLinks', 'AppProjects', 'SNSButtons', 'Calendar', 'ProductGallery', 'BaseProducts'],
   '未配置の種類だけを返す'
 );
 same(
   availableBlocks(HISTORICAL_DEFAULT),
-  ['Calendar', 'ProductGallery'],
-  '従来の8件が配置済みでもカレンダーと商品ギャラリーは明示追加できる'
+  ['Calendar', 'ProductGallery', 'BaseProducts'],
+  '従来の8件が配置済みでもカレンダーと商品ギャラリーとBASE商品は明示追加できる'
 );
 
 const categoryCoverage = blockAddCategoryCoverage();

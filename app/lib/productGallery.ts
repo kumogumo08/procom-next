@@ -12,7 +12,10 @@ export const PRODUCT_IMAGE_HOST = 'firebasestorage.googleapis.com';
 const MAX_NAME = 120;
 const MAX_PRICE = 40;
 const MAX_URL = 2000;
-export const MAX_SHOP_DESCRIPTION = 150;
+export const MAX_SHOP_DESCRIPTION = 300;
+export const SHOP_DESCRIPTION_LINES = 3;
+export const SHOP_DESCRIPTION_HINT =
+  '最大300文字。公開時は3行まで表示され、moreで全文を確認できます。';
 const SAFE_UID = /^[A-Za-z0-9_-]{1,128}$/;
 const SAFE_ID = /^[A-Za-z0-9_-]{1,80}$/;
 const FILE_ID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
@@ -120,6 +123,15 @@ export function shopDescriptionLength(value: string): number {
   return Array.from(value).length;
 }
 
+/**
+ * 公開文が3行を超えるか。文字数では判断しない。
+ * contentHeight と lineHeight は、その時点の表示幅で測った値。
+ */
+export function shopDescriptionOverflows(contentHeight: number, lineHeight: number): boolean {
+  if (!Number.isFinite(contentHeight) || !Number.isFinite(lineHeight) || lineHeight <= 0) return false;
+  return contentHeight > lineHeight * SHOP_DESCRIPTION_LINES + 1;
+}
+
 function normalizeShopDescription(raw: unknown): { ok: true; value: string } | { ok: false } {
   if (raw == null || raw === '') return { ok: true, value: '' };
   if (typeof raw !== 'string') return { ok: false };
@@ -142,7 +154,7 @@ export function sanitizeProductGallerySettings(raw: unknown): ProductGallerySett
   const record = raw as Record<string, unknown>;
   const description = normalizeShopDescription(record.description);
   if (!description.ok) {
-    return { ok: false, error: 'ショップ紹介文は150文字以内で入力してください' };
+    return { ok: false, error: 'ショップ紹介文は300文字以内で入力してください' };
   }
   const shopUrl = trimStr(record.shopUrl);
   if (shopUrl && !isSafeShopUrl(shopUrl)) {
@@ -151,7 +163,7 @@ export function sanitizeProductGallerySettings(raw: unknown): ProductGallerySett
   return { ok: true, settings: emptyShopSettings(description.value, shopUrl) };
 }
 
-/** 表示用。壊れた紹介文は150文字で切り、危険なURLは空にする。 */
+/** 表示用。壊れた紹介文は300文字で切り、危険なURLは空にする。 */
 export function coerceProductGallerySettings(raw: unknown): ProductGallerySettings | undefined {
   if (!raw || typeof raw !== 'object' || Array.isArray(raw)) return undefined;
   const record = raw as Record<string, unknown>;

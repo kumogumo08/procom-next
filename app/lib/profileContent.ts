@@ -1,3 +1,5 @@
+import { coerceBaseProducts, coerceBaseProductsSettings } from '@/lib/baseProducts';
+import { MAX_SHOP_DESCRIPTION } from '@/lib/productGallery';
 import { clampPhotoPositionY } from '@/lib/photoPosition';
 import { normalizeInstagramUrl } from '@/lib/sns';
 import { createdAtToMillis } from '@/lib/publicUserDirectory';
@@ -76,12 +78,20 @@ function calendarOf(value: unknown): Array<{ date: string; events: string[] }> {
     .sort((a, b) => (a.date < b.date ? -1 : a.date > b.date ? 1 : 0));
 }
 
+function baseProductsSettingsOf(value: unknown): { description: string; shopUrl: string } {
+  const settings = coerceBaseProductsSettings(value);
+  return {
+    description: settings?.description ?? '',
+    shopUrl: settings?.shopUrl ?? '',
+  };
+}
+
 function productGallerySettingsOf(value: unknown): { description: string; shopUrl: string } {
   if (!value || typeof value !== 'object' || Array.isArray(value)) return { description: '', shopUrl: '' };
   const record = value as Record<string, unknown>;
   const description = text(record.description).replace(/\r\n/g, '\n').replace(/\r/g, '\n').trim();
   return {
-    description: Array.from(description).slice(0, 150).join(''),
+    description: Array.from(description).slice(0, MAX_SHOP_DESCRIPTION).join(''),
     shopUrl: text(record.shopUrl),
   };
 }
@@ -148,6 +158,8 @@ export function profileContentFingerprint(profile: unknown): string {
     apps: appsOf(record.apps),
     productGallery: productGalleryOf(record.productGallery),
     productGallerySettings: productGallerySettingsOf(record.productGallerySettings),
+    baseProducts: coerceBaseProducts(record.baseProducts),
+    baseProductsSettings: baseProductsSettingsOf(record.baseProductsSettings),
   };
   return JSON.stringify(snapshot);
 }

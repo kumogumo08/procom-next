@@ -35,6 +35,14 @@ import {
   type ProductGalleryItem,
   type ProductGallerySettings,
 } from '@/lib/productGallery';
+import {
+  coerceBaseProducts,
+  coerceBaseProductsSettings,
+  sanitizeBaseProducts,
+  sanitizeBaseProductsSettings,
+  type BaseProductsSettings,
+} from '@/lib/baseProducts';
+import { confirmBaseProductsForSave, confirmBaseShopUrlForSave, emptyBaseShopSettings } from '@/lib/baseProductDns';
 import { readUserSuspended } from '@/lib/accountSuspension';
 import { suspendedWriteResponse } from '@/lib/accountSuspensionGuard';
 import { isOnboardingBlocked } from '@/lib/onboarding';
@@ -162,6 +170,16 @@ export async function GET(
         if (!Object.prototype.hasOwnProperty.call(rawProfile, 'productGallerySettings')) return {};
         const settings = coerceProductGallerySettings(rawProfile.productGallerySettings);
         return settings ? { productGallerySettings: settings } : {};
+      })(),
+      ...(Object.prototype.hasOwnProperty.call(rawProfile, 'baseProducts')
+        ? { baseProducts: coerceBaseProducts(rawProfile.baseProducts) }
+        : {}),
+      ...(() => {
+        if (!Object.prototype.hasOwnProperty.call(rawProfile, 'baseProductsSettings')) return {};
+        return {
+          baseProductsSettings:
+            coerceBaseProductsSettings(rawProfile.baseProductsSettings) ?? emptyBaseShopSettings(),
+        };
       })(),
     };
 
@@ -406,11 +424,71 @@ export async function POST(req: NextRequest, props: { params: Promise<{ uid: str
         if (!sanitizedSettings.ok) {
           return NextResponse.json({ error: sanitizedSettings.error }, { status: 400 });
         }
-        settingsForSave = sanitizedSettings.settings;
+        settingsForSave = sanitizedSettings.settings ?? { description: '', shopUrl: '' };
       } else {
         settingsForSave = coerceProductGallerySettings(rawSettings);
       }
     }
+
+    const baseProductsTouched =
+      hasOwn(incomingProfileForGallery, 'baseProducts') || hasOwn(existingProfile, 'baseProducts');
+    const baseSettingsTouched =
+      hasOwn(incomingProfileForGallery, 'baseProductsSettings') ||
+      hasOwn(existingProfile, 'baseProductsSettings');
+    const baseProductsPromise: Promise<{ ok: true; urls?: string[] } | { ok: false; error: string }> =
+      baseProductsTouched
+        ? (async () => {
+            const fromClient = hasOwn(incomingProfileForGallery, 'baseProducts');
+            const rawBase = fromClient ? incomingProfileForGallery.baseProducts : existingProfile.baseProducts;
+            if (!fromClient) return { ok: true as const, urls: coerceBaseProducts(rawBase) };
+            const sanitizedBase = sanitizeBaseProducts(rawBase);
+            if (!sanitizedBase.ok) return { ok: false as const, error: sanitizedBase.error };
+            const confirmedBase = await confirmBaseProductsForSave(
+              sanitizedBase.urls,
+              existingProfile.baseProducts,
+              { cache: false }
+            );
+            if (!confirmedBase.ok) return { ok: false as const, error: confirmedBase.error };
+            return { ok: true as const, urls: confirmedBase.urls };
+          })()
+        : Promise.resolve({ ok: true as const });
+    const baseSettingsPromise: Promise<
+      { ok: true; settings?: BaseProductsSettings } | { ok: false; error: string }
+    > = baseSettingsTouched
+      ? (async () => {
+          const fromClient = hasOwn(incomingProfileForGallery, 'baseProductsSettings');
+          const rawSettings = fromClient
+            ? incomingProfileForGallery.baseProductsSettings
+            : existingProfile.baseProductsSettings;
+          if (!fromClient) {
+            return {
+              ok: true as const,
+              settings: coerceBaseProductsSettings(rawSettings) ?? emptyBaseShopSettings(),
+            };
+          }
+          const sanitizedSettings = sanitizeBaseProductsSettings(rawSettings);
+          if (!sanitizedSettings.ok) return { ok: false as const, error: sanitizedSettings.error };
+          const confirmedShop = await confirmBaseShopUrlForSave(
+            sanitizedSettings.settings.shopUrl,
+            existingProfile.baseProductsSettings,
+            { cache: false }
+          );
+          if (!confirmedShop.ok) return { ok: false as const, error: confirmedShop.error };
+          return {
+            ok: true as const,
+            settings: { description: sanitizedSettings.settings.description, shopUrl: confirmedShop.shopUrl },
+          };
+        })()
+      : Promise.resolve({ ok: true as const });
+    const [baseProductsResult, baseSettingsResult] = await Promise.all([baseProductsPromise, baseSettingsPromise]);
+    if (!baseProductsResult.ok) {
+      return NextResponse.json({ error: baseProductsResult.error }, { status: 400 });
+    }
+    if (!baseSettingsResult.ok) {
+      return NextResponse.json({ error: baseSettingsResult.error }, { status: 400 });
+    }
+    const baseProductsForSave = baseProductsResult.urls;
+    const baseProductsSettingsForSave = baseSettingsResult.settings;
 
     // 🔄 プロフィール保存
     // undefined = 未更新（既存維持）。"" / [] / null = 明示的な空。false は settings に残す。
@@ -440,6 +518,8 @@ export async function POST(req: NextRequest, props: { params: Promise<{ uid: str
       settings: mergeProfileSettings(existingProfile.settings, profile.settings),
       productGallery: galleryForSave,
       productGallerySettings: settingsForSave,
+      baseProducts: baseProductsForSave,
+      baseProductsSettings: baseProductsSettingsForSave,
     });
 
     cleanedProfile.apps = appsForSave;
@@ -487,6 +567,8 @@ export async function POST(req: NextRequest, props: { params: Promise<{ uid: str
       apps: appsForSave,
       ...(galleryForSave ? { productGallery: galleryForSave } : {}),
       ...(settingsForSave ? { productGallerySettings: settingsForSave } : {}),
+      ...(baseProductsForSave ? { baseProducts: baseProductsForSave } : {}),
+      ...(baseProductsSettingsForSave ? { baseProductsSettings: baseProductsSettingsForSave } : {}),
     });
   } catch (err) {
     const message = err instanceof Error ? err.message : String(err);

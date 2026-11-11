@@ -27,8 +27,8 @@ export const BLOCK_ADD_CATEGORIES = [
     id: 'shop',
     label: 'SHOP',
     description: '商品の紹介と購入',
-    // BASE / STORES / Shopify は実装したときにこの配列へ足す。未実装の間は選択画面に出さない。
-    blocks: ['ProductGallery'],
+    // STORES / Shopify は実装したときにこの配列へ足す。未実装の間は選択画面に出さない。
+    blocks: ['ProductGallery', 'BaseProducts'],
   },
 ] as const satisfies readonly {
   id: string;

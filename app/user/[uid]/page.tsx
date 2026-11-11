@@ -31,6 +31,7 @@ import { clampPhotoPositionY } from '@/lib/photoPosition';
 import { resolveSectionOrder } from '@/lib/blockLayout';
 import { isOnboardingBlocked, readOnboardingGate } from '@/lib/onboarding';
 import { buildProfileDocumentTitle, isProfilePublic } from '@/lib/userSeo';
+import { resolveVerifiedBaseProducts, resolveVerifiedBaseShopUrl } from '@/lib/baseProductDns';
 
 export const dynamic = 'force-dynamic';
 
@@ -173,6 +174,10 @@ export default async function UserPage({
   );
 
   const appProjectsInitial = coerceAppsFromFirestore(profile?.apps);
+  const [verifiedBaseProducts, verifiedBaseShopUrl] = await Promise.all([
+    resolveVerifiedBaseProducts(profile?.baseProducts),
+    resolveVerifiedBaseShopUrl(profile?.baseProductsSettings),
+  ]);
 
   return (
     <>
@@ -189,6 +194,8 @@ export default async function UserPage({
         initialProfile={profile}
         initialSectionOrder={sectionOrder}
         initialApps={appProjectsInitial}
+        verifiedBaseProducts={verifiedBaseProducts}
+        verifiedBaseShopUrl={verifiedBaseShopUrl}
       />
 
       <Footer />

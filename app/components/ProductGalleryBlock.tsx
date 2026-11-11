@@ -10,11 +10,13 @@ import {
   PRODUCT_IMAGE_MAX_BYTES,
   productGalleryContentEqual,
   productTabAfterDelete,
+  SHOP_DESCRIPTION_HINT,
   shopDescriptionLength,
   shopIntroVisible,
   type ProductGalleryItem,
   type ProductGallerySettings,
 } from '@/lib/productGallery';
+import ShopDescription from '@/components/ShopDescription';
 import styles from './ProductGalleryBlock.module.css';
 
 const MAX_EDGE = 1600;
@@ -295,9 +297,9 @@ export default function ProductGalleryBlock({
       <h2 style={cardTitle}>SHOP</h2>
       <div className={styles.showcase} data-slider={shown.length > 0 ? '' : undefined}>
       {!isEditable && trimmedDescription ? (
-        <p className={styles.description}>
-          <span className={styles.descriptionText}>{trimmedDescription}</span>
-        </p>
+        <div className={styles.description}>
+          <ShopDescription text={trimmedDescription} />
+        </div>
       ) : null}
       {isEditable ? (
         <div className={styles.shopFields}>
@@ -305,7 +307,7 @@ export default function ProductGalleryBlock({
             ショップ紹介文（任意）
             <textarea
               aria-label="ショップ紹介文"
-              placeholder="ショップの紹介。150文字以内、改行できます"
+              placeholder="ショップの紹介。300文字以内、改行できます"
               value={description}
               maxLength={MAX_SHOP_DESCRIPTION}
               rows={3}
@@ -317,7 +319,7 @@ export default function ProductGalleryBlock({
               style={{ ...textareaBase, fontSize: 16, minHeight: 88 }}
             />
             <span className={styles.hint}>
-              <span>150文字以内・3行までがおすすめです</span>
+              <span>{SHOP_DESCRIPTION_HINT}</span>
               <span>
                 {shopDescriptionLength(description)}/{MAX_SHOP_DESCRIPTION}
               </span>

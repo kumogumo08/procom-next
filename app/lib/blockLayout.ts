@@ -19,6 +19,7 @@ export const BLOCK_TYPES = [
   'SNSButtons',
   'Calendar',
   'ProductGallery',
+  'BaseProducts',
 ] as const;
 
 export type BlockType = (typeof BLOCK_TYPES)[number];
@@ -34,6 +35,7 @@ export const BLOCK_LABELS: Record<BlockType, string> = {
   SNSButtons: 'SNSボタン',
   Calendar: '配信・イベントカレンダー',
   ProductGallery: '商品ギャラリー',
+  BaseProducts: 'BASE商品',
 };
 
 /** 新形式の現在バージョン。旧データには書き込まない。 */

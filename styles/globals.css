@@ -1254,6 +1254,11 @@ body {
   box-shadow: 0 8px 20px rgba(15, 23, 42, 0.28);
 }
 
+/* button:active の scale で位置がずれ、クリックが外れるのを防ぐ */
+.block-add-fab:active {
+  transform: none;
+}
+
 .block-add-fab__label {
   display: none;
 }
@@ -1318,6 +1323,11 @@ body {
     gap: 8px;
     font-size: 15px;
     white-space: nowrap;
+  }
+
+  .block-add-fab:active,
+  .profile-save-bar-open .block-add-fab:active {
+    transform: translateY(-50%);
   }
 
   .block-add-fab__icon {

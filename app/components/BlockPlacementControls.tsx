@@ -317,16 +317,20 @@ export function BlockAddControl({
       <button
         ref={fabRef}
         type="button"
-        className="block-add-fab"
+        className={`block-add-fab${dragActive ? ' block-add-fab--passthrough' : ''}`}
         aria-label="ブロックを追加"
         aria-expanded={open}
         aria-controls={panelId}
+        aria-hidden={open || undefined}
+        tabIndex={open ? -1 : 0}
+        onMouseDown={(event) => {
+          if (!open) return;
+          event.preventDefault();
+        }}
         onClick={() => {
-          if (open) closePanel();
-          else {
-            setCategoryId(null);
-            setOpen(true);
-          }
+          if (open) return;
+          setCategoryId(null);
+          setOpen(true);
         }}
       >
         <span className="block-add-fab__icon" aria-hidden="true">

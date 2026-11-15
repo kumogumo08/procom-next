@@ -1259,7 +1259,13 @@ body {
 }
 
 .block-add-layer ~ .block-add-fab {
-  visibility: hidden;
+  /* ヒットテストは残す。visibility:hidden だと背面へ抜けて mousedown で閉じる */
+  opacity: 0;
+  cursor: default;
+}
+
+.block-add-fab--passthrough {
+  pointer-events: none;
 }
 
 .profile-save-bar-open .block-add-fab {

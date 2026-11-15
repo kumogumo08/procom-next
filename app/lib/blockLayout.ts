@@ -20,6 +20,7 @@ export const BLOCK_TYPES = [
   'Calendar',
   'ProductGallery',
   'BaseProducts',
+  'StoresProducts',
 ] as const;
 
 export type BlockType = (typeof BLOCK_TYPES)[number];
@@ -36,6 +37,7 @@ export const BLOCK_LABELS: Record<BlockType, string> = {
   Calendar: '配信・イベントカレンダー',
   ProductGallery: '商品ギャラリー',
   BaseProducts: 'BASE商品',
+  StoresProducts: 'STORES商品',
 };
 
 /** 新形式の現在バージョン。旧データには書き込まない。 */

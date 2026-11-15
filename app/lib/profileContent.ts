@@ -1,4 +1,5 @@
 import { coerceBaseProducts, coerceBaseProductsSettings } from '@/lib/baseProducts';
+import { coerceStoresProducts, coerceStoresProductsSettings } from '@/lib/storesProducts';
 import { MAX_SHOP_DESCRIPTION } from '@/lib/productGallery';
 import { clampPhotoPositionY } from '@/lib/photoPosition';
 import { normalizeInstagramUrl } from '@/lib/sns';
@@ -86,6 +87,14 @@ function baseProductsSettingsOf(value: unknown): { description: string; shopUrl:
   };
 }
 
+function storesProductsSettingsOf(value: unknown): { description: string; shopUrl: string } {
+  const settings = coerceStoresProductsSettings(value);
+  return {
+    description: settings?.description ?? '',
+    shopUrl: settings?.shopUrl ?? '',
+  };
+}
+
 function productGallerySettingsOf(value: unknown): { description: string; shopUrl: string } {
   if (!value || typeof value !== 'object' || Array.isArray(value)) return { description: '', shopUrl: '' };
   const record = value as Record<string, unknown>;
@@ -160,6 +169,8 @@ export function profileContentFingerprint(profile: unknown): string {
     productGallerySettings: productGallerySettingsOf(record.productGallerySettings),
     baseProducts: coerceBaseProducts(record.baseProducts),
     baseProductsSettings: baseProductsSettingsOf(record.baseProductsSettings),
+    storesProducts: coerceStoresProducts(record.storesProducts),
+    storesProductsSettings: storesProductsSettingsOf(record.storesProductsSettings),
   };
   return JSON.stringify(snapshot);
 }

@@ -398,6 +398,7 @@ const BLOCK_DRAG_MARK: Record<BlockType, string> = {
   Calendar: '📅',
   ProductGallery: '品',
   BaseProducts: 'B',
+  StoresProducts: 'S',
 };
 
 export function BlockDragPreview({ id }: { id: string }) {

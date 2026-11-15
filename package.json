@@ -39,6 +39,7 @@
   },
   "devDependencies": {
     "@eslint/eslintrc": "^3",
+    "@playwright/test": "1.65.0",
     "@types/dotenv": "^6.1.1",
     "@types/node-fetch": "^2.6.13",
     "@types/qrcode": "^1.5.5",

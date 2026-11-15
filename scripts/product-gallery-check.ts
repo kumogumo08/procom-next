@@ -152,8 +152,8 @@ same(shop?.label, 'SHOP', 'カテゴリ名はSHOP');
 same(shop?.description, '商品の紹介と購入', 'カテゴリ説明を保持する');
 same(
   [...(shop?.blocks ?? [])],
-  ['ProductGallery', 'BaseProducts'],
-  'SHOPは商品ギャラリーとBASE商品。STORESとShopifyは出さない'
+  ['ProductGallery', 'BaseProducts', 'StoresProducts'],
+  'SHOPは商品ギャラリー、BASE商品、STORES商品。Shopifyは出さない'
 );
 assert(BLOCK_LAYOUT_VERSION === 1, 'blockLayoutVersionは1のまま');
 assert(!DEFAULT_SECTION_ORDER.includes('ProductGallery'), '既存の既定順に商品ギャラリーを足さない');

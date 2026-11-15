@@ -41,6 +41,7 @@ import UserPageClientWrapper from '@/components/UserPageClientWrapper';
 import AppProjectBlock from '@/components/AppProjectBlock';
 import ProductGalleryBlock from '@/components/ProductGalleryBlock';
 import BaseProductsBlock from '@/components/BaseProductsBlock';
+import StoresProductsBlock from '@/components/StoresProductsBlock';
 import CalendarBlock from '@/components/CalendarBlock';
 import UnsavedChangesLeaveGuard from '@/components/UnsavedChangesLeaveGuard';
 import {
@@ -68,6 +69,14 @@ import {
   type BaseProductsSettings,
   type VerifiedBaseEmbed,
 } from '@/lib/baseProducts';
+import {
+  coerceStoresProducts,
+  coerceStoresProductsSettings,
+  emptyStoresShopSettings,
+  sameStoresProducts,
+  type StoresProduct,
+  type StoresProductsSettings,
+} from '@/lib/storesProducts';
 import {
   availableBlocks,
   BLOCK_LABELS,
@@ -108,6 +117,8 @@ type Profile = {
   productGallerySettings?: ProductGallerySettings;
   baseProducts?: string[];
   baseProductsSettings?: BaseProductsSettings;
+  storesProducts?: StoresProduct[];
+  storesProductsSettings?: StoresProductsSettings;
   bannerLinks?: BannerLink[];
   customLinks?: CustomLink[];
   settings?: {
@@ -160,6 +171,19 @@ function withBaseProducts(profile: Profile): Profile {
   return next;
 }
 
+function withStoresProducts(profile: Profile): Profile {
+  const hasProducts = Object.prototype.hasOwnProperty.call(profile, 'storesProducts');
+  const hasSettings = Object.prototype.hasOwnProperty.call(profile, 'storesProductsSettings');
+  if (!hasProducts && !hasSettings) return profile;
+  const next: Profile = { ...profile };
+  if (hasProducts) next.storesProducts = coerceStoresProducts(profile.storesProducts);
+  if (hasSettings) {
+    next.storesProductsSettings =
+      coerceStoresProductsSettings(profile.storesProductsSettings) ?? emptyStoresShopSettings();
+  }
+  return next;
+}
+
 /** photos / calendarEvents は含めない。data URL のバナーは除外する */
 function buildDraftSavePayload(
   draft: Profile,
@@ -208,6 +232,12 @@ function buildDraftSavePayload(
   }
   if (Object.prototype.hasOwnProperty.call(draft, 'baseProductsSettings')) {
     payload.baseProductsSettings = draft.baseProductsSettings ?? { description: '', shopUrl: '' };
+  }
+  if (Object.prototype.hasOwnProperty.call(draft, 'storesProducts')) {
+    payload.storesProducts = Array.isArray(draft.storesProducts) ? draft.storesProducts : [];
+  }
+  if (Object.prototype.hasOwnProperty.call(draft, 'storesProductsSettings')) {
+    payload.storesProductsSettings = draft.storesProductsSettings ?? { description: '', shopUrl: '' };
   }
 
   return payload;
@@ -524,11 +554,11 @@ export default function UserPageSectionsClient({
 }) {
   /** 最後に保存成功した状態（savedProfile） */
   const [profile, setProfile] = useState<Profile>(() =>
-    withBaseProducts(withProductGallery({ ...initialProfile, apps: initialApps }, uid))
+    withStoresProducts(withBaseProducts(withProductGallery({ ...initialProfile, apps: initialApps }, uid)))
   );
   /** 編集途中状態 */
   const [draftProfile, setDraftProfile] = useState<Profile>(() =>
-    withBaseProducts(withProductGallery({ ...initialProfile, apps: initialApps }, uid))
+    withStoresProducts(withBaseProducts(withProductGallery({ ...initialProfile, apps: initialApps }, uid)))
   );
   const draftProfileRef = useRef(draftProfile);
   draftProfileRef.current = draftProfile;
@@ -727,6 +757,29 @@ export default function UserPageSectionsClient({
     });
   }, []);
 
+  const onStoresProductsSettingsChange = useCallback((storesProductsSettings: StoresProductsSettings) => {
+    setDraftProfile((prev) => {
+      const current = prev.storesProductsSettings;
+      if (
+        (current?.description ?? '') === storesProductsSettings.description &&
+        (current?.shopUrl ?? '') === storesProductsSettings.shopUrl &&
+        Object.prototype.hasOwnProperty.call(prev, 'storesProductsSettings')
+      ) {
+        return prev;
+      }
+      return { ...prev, storesProductsSettings };
+    });
+  }, []);
+
+  const onStoresProductsDraftChange = useCallback((storesProducts: StoresProduct[]) => {
+    setDraftProfile((prev) => {
+      const prevItems = Array.isArray(prev.storesProducts) ? prev.storesProducts : [];
+      const had = Object.prototype.hasOwnProperty.call(prev, 'storesProducts');
+      if (had && sameStoresProducts(prevItems, storesProducts)) return prev;
+      return { ...prev, storesProducts };
+    });
+  }, []);
+
   const onBaseProductsDraftChange = useCallback((baseProducts: string[]) => {
     setDraftProfile((prev) => {
       const prevUrls = Array.isArray(prev.baseProducts) ? prev.baseProducts : [];
@@ -790,6 +843,8 @@ export default function UserPageSectionsClient({
         productGallerySettings?: ProductGallerySettings;
         baseProducts?: string[];
         baseProductsSettings?: BaseProductsSettings;
+        storesProducts?: StoresProduct[];
+        storesProductsSettings?: StoresProductsSettings;
       };
       if (!res.ok) {
         throw new Error(typeof data.error === 'string' ? data.error : '保存に失敗しました');
@@ -841,6 +896,15 @@ export default function UserPageSectionsClient({
       if (Object.prototype.hasOwnProperty.call(profilePayload, 'baseProductsSettings')) {
         savedProfile.baseProductsSettings =
           data.baseProductsSettings ?? (profilePayload.baseProductsSettings as BaseProductsSettings);
+      }
+      if (Object.prototype.hasOwnProperty.call(profilePayload, 'storesProducts')) {
+        savedProfile.storesProducts = Array.isArray(data.storesProducts)
+          ? data.storesProducts
+          : (profilePayload.storesProducts as StoresProduct[]);
+      }
+      if (Object.prototype.hasOwnProperty.call(profilePayload, 'storesProductsSettings')) {
+        savedProfile.storesProductsSettings =
+          data.storesProductsSettings ?? (profilePayload.storesProductsSettings as StoresProductsSettings);
       }
 
       setProfile(savedProfile);
@@ -998,6 +1062,15 @@ export default function UserPageSectionsClient({
           onSettingsChange={isEditable ? onBaseProductsSettingsChange : undefined}
         />
       ),
+      StoresProducts: (
+        <StoresProductsBlock
+          isEditable={isEditable}
+          initialProducts={draftProfile.storesProducts}
+          initialSettings={draftProfile.storesProductsSettings}
+          onDraftChange={isEditable ? onStoresProductsDraftChange : undefined}
+          onSettingsChange={isEditable ? onStoresProductsSettingsChange : undefined}
+        />
+      ),
     }),
     [
       apps,
@@ -1011,6 +1084,8 @@ export default function UserPageSectionsClient({
       onProductGallerySettingsChange,
       onBaseProductsDraftChange,
       onBaseProductsSettingsChange,
+      onStoresProductsDraftChange,
+      onStoresProductsSettingsChange,
       verifiedBaseProducts,
       verifiedBaseShopUrl,
       onTikTokDraftChange,

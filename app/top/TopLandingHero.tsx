@@ -182,7 +182,9 @@ export default function TopLandingHero() {
 
         <div className={styles.mobileLandingBlock}>
           <div className={styles.headlineWrap}>
-            <h1 className={styles.heroHeadline}>活動を見つけてもらえる1ページに。</h1>
+            <h1 className={styles.heroHeadline}>
+              活動を見つけてもらえる<br />1ページに。
+            </h1>
           </div>
           <p className={styles.mobileLandingSub}>
             SNS・プロフィール・実績をまとめて、あなたらしさが伝わるページを作れます。

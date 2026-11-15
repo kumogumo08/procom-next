@@ -236,6 +236,7 @@
 @media screen and (max-width: 767px) {
   .heroHeadline {
     font-size: clamp(1.32rem, 4vw + 0.45rem, 1.72rem);
+    word-break: normal;
     line-height: 1.26;
     letter-spacing: -0.015em;
     margin-bottom: 12px;

@@ -43,6 +43,15 @@ import {
   type BaseProductsSettings,
 } from '@/lib/baseProducts';
 import { confirmBaseProductsForSave, confirmBaseShopUrlForSave, emptyBaseShopSettings } from '@/lib/baseProductDns';
+import {
+  coerceStoresProducts,
+  coerceStoresProductsSettings,
+  emptyStoresShopSettings,
+  sanitizeStoresProducts,
+  sanitizeStoresProductsSettings,
+  type StoresProduct,
+  type StoresProductsSettings,
+} from '@/lib/storesProducts';
 import { readUserSuspended } from '@/lib/accountSuspension';
 import { suspendedWriteResponse } from '@/lib/accountSuspensionGuard';
 import { isOnboardingBlocked } from '@/lib/onboarding';
@@ -179,6 +188,16 @@ export async function GET(
         return {
           baseProductsSettings:
             coerceBaseProductsSettings(rawProfile.baseProductsSettings) ?? emptyBaseShopSettings(),
+        };
+      })(),
+      ...(Object.prototype.hasOwnProperty.call(rawProfile, 'storesProducts')
+        ? { storesProducts: coerceStoresProducts(rawProfile.storesProducts) }
+        : {}),
+      ...(() => {
+        if (!Object.prototype.hasOwnProperty.call(rawProfile, 'storesProductsSettings')) return {};
+        return {
+          storesProductsSettings:
+            coerceStoresProductsSettings(rawProfile.storesProductsSettings) ?? emptyStoresShopSettings(),
         };
       })(),
     };
@@ -490,6 +509,43 @@ export async function POST(req: NextRequest, props: { params: Promise<{ uid: str
     const baseProductsForSave = baseProductsResult.urls;
     const baseProductsSettingsForSave = baseSettingsResult.settings;
 
+    const storesProductsTouched =
+      hasOwn(incomingProfileForGallery, 'storesProducts') || hasOwn(existingProfile, 'storesProducts');
+    const storesSettingsTouched =
+      hasOwn(incomingProfileForGallery, 'storesProductsSettings') ||
+      hasOwn(existingProfile, 'storesProductsSettings');
+    let storesProductsForSave: StoresProduct[] | undefined;
+    if (storesProductsTouched) {
+      const fromClient = hasOwn(incomingProfileForGallery, 'storesProducts');
+      const rawStores = fromClient ? incomingProfileForGallery.storesProducts : existingProfile.storesProducts;
+      if (!fromClient) {
+        storesProductsForSave = coerceStoresProducts(rawStores);
+      } else {
+        const sanitizedStores = sanitizeStoresProducts(rawStores);
+        if (!sanitizedStores.ok) {
+          return NextResponse.json({ error: sanitizedStores.error }, { status: 400 });
+        }
+        storesProductsForSave = sanitizedStores.products;
+      }
+    }
+    let storesProductsSettingsForSave: StoresProductsSettings | undefined;
+    if (storesSettingsTouched) {
+      const fromClient = hasOwn(incomingProfileForGallery, 'storesProductsSettings');
+      const rawSettings = fromClient
+        ? incomingProfileForGallery.storesProductsSettings
+        : existingProfile.storesProductsSettings;
+      if (!fromClient) {
+        storesProductsSettingsForSave =
+          coerceStoresProductsSettings(rawSettings) ?? emptyStoresShopSettings();
+      } else {
+        const sanitizedSettings = sanitizeStoresProductsSettings(rawSettings);
+        if (!sanitizedSettings.ok) {
+          return NextResponse.json({ error: sanitizedSettings.error }, { status: 400 });
+        }
+        storesProductsSettingsForSave = sanitizedSettings.settings;
+      }
+    }
+
     // 🔄 プロフィール保存
     // undefined = 未更新（既存維持）。"" / [] / null = 明示的な空。false は settings に残す。
     // photos は上の既存処理どおり（空配列は既存維持）。apps は sanitize 済みを後付け。
@@ -520,6 +576,8 @@ export async function POST(req: NextRequest, props: { params: Promise<{ uid: str
       productGallerySettings: settingsForSave,
       baseProducts: baseProductsForSave,
       baseProductsSettings: baseProductsSettingsForSave,
+      storesProducts: storesProductsForSave,
+      storesProductsSettings: storesProductsSettingsForSave,
     });
 
     cleanedProfile.apps = appsForSave;
@@ -569,6 +627,8 @@ export async function POST(req: NextRequest, props: { params: Promise<{ uid: str
       ...(settingsForSave ? { productGallerySettings: settingsForSave } : {}),
       ...(baseProductsForSave ? { baseProducts: baseProductsForSave } : {}),
       ...(baseProductsSettingsForSave ? { baseProductsSettings: baseProductsSettingsForSave } : {}),
+      ...(storesProductsForSave ? { storesProducts: storesProductsForSave } : {}),
+      ...(storesProductsSettingsForSave ? { storesProductsSettings: storesProductsSettingsForSave } : {}),
     });
   } catch (err) {
     const message = err instanceof Error ? err.message : String(err);

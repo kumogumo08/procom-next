@@ -7,6 +7,7 @@ import { fetchUserApi } from '@/lib/userProfileClient';
 import { buttonPrimary, cardActions, cardBody, cardPreviewArea, cardTitle, emptyStateBox, inputBase, snsCardBase } from '@/components/ui/cardStyles';
 
 const TIKTOK_PLAYER_QUERY = 'autoplay=0&controls=1&music_info=1&description=1';
+const TIKTOK_PREVIEW_DEBOUNCE_MS = 600;
 
 function tiktokPlayerSrc(videoId: string): string {
   return `https://www.tiktok.com/player/v1/${videoId}?${TIKTOK_PLAYER_QUERY}`;
@@ -91,11 +92,14 @@ export default function TikTokEmbed({
 
   useEffect(() => {
     if (!isEditable) return;
-    const cleaned = urls
-      .map((url) => url.trim())
-      .filter((url) => url !== '')
-      .slice(0, 3);
-    setLoadedUrls((prev) => (sameStringList(prev, cleaned) ? prev : cleaned));
+    const timer = window.setTimeout(() => {
+      const cleaned = urls
+        .map((url) => url.trim())
+        .filter((url) => url !== '')
+        .slice(0, 3);
+      setLoadedUrls((prev) => (sameStringList(prev, cleaned) ? prev : cleaned));
+    }, TIKTOK_PREVIEW_DEBOUNCE_MS);
+    return () => window.clearTimeout(timer);
   }, [urls, isEditable]);
 
   const extractVideoId = (url: string): string => {

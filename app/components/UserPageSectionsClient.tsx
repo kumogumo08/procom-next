@@ -17,6 +17,7 @@ import {
   type UniqueIdentifier,
 } from '@dnd-kit/core';
 import { restrictToVerticalAxis } from '@dnd-kit/modifiers';
+import { getEventCoordinates } from '@dnd-kit/utilities';
 import {
   SortableContext,
   arrayMove,
@@ -255,6 +256,7 @@ const BLOCK_DRAG_PREVIEW_STYLE = {
 const INSERT_NUDGE_PX = 36;
 const INSERT_ADOPT_PX = 28;
 const INSERT_HYSTERESIS_PX = 10;
+const ADDED_BLOCK_HIGHLIGHT_MS = 1500;
 
 type LayoutRow = { id: string; top: number; bottom: number };
 type InsertGap = { y: number; upper: number | null; lower: number | null };
@@ -384,6 +386,37 @@ const restrictPlacedBlockAxis: Modifier = (args) => {
   if (id.startsWith(PALETTE_DRAG_PREFIX)) return args.transform;
   return restrictToVerticalAxis(args);
 };
+
+/**
+ * オーバーレイはドラッグ元矩形の左上に出る。
+ * 小さいプレビューの中心を、掴んだ座標へ一度だけ寄せる。
+ */
+const anchorDragPreviewToPointer: Modifier = (() => {
+  let source: Event | null = null;
+  let shiftX = 0;
+  let shiftY = 0;
+  return (args) => {
+    const { activatorEvent, activeNodeRect, transform } = args;
+    if (!activatorEvent || !activeNodeRect) return transform;
+    if (source !== activatorEvent) {
+      const point = getEventCoordinates(activatorEvent);
+      source = activatorEvent;
+      if (!point) {
+        shiftX = 0;
+        shiftY = 0;
+      } else {
+        const previewWidth = Math.min(BLOCK_DRAG_PREVIEW_WIDTH, window.innerWidth - 32);
+        shiftX = point.x - activeNodeRect.left - previewWidth / 2;
+        shiftY = point.y - activeNodeRect.top - BLOCK_DRAG_PREVIEW_HEIGHT / 2;
+      }
+    }
+    return {
+      ...transform,
+      x: transform.x + shiftX,
+      y: transform.y + shiftY,
+    };
+  };
+})();
 
 function placedLayoutRows(
   containers: { id: UniqueIdentifier }[],
@@ -576,6 +609,7 @@ export default function UserPageSectionsClient({
   const [paletteDrag, setPaletteDrag] = useState(false);
   const [addPanelCloseTick, setAddPanelCloseTick] = useState(0);
   const [insertGuide, setInsertGuide] = useState<InsertGuide | null>(null);
+  const [justAddedBlockId, setJustAddedBlockId] = useState<string | null>(null);
   const layoutSnapshotRef = useRef<{ anchorId: string; anchorTop: number; rows: LayoutRow[] } | null>(
     null
   );
@@ -612,10 +646,33 @@ export default function UserPageSectionsClient({
         blockLayoutVersion: next.blockLayoutVersion,
         ...(edit.block === 'Calendar' ? { calendarLayout: 'section' as const } : {}),
       });
+      if (edit.op === 'add') setJustAddedBlockId(edit.block);
       return true;
     },
     [updateDraftSettings]
   );
+
+  useEffect(() => {
+    if (!justAddedBlockId) return;
+    const blockId = justAddedBlockId;
+    let secondFrame = 0;
+    const firstFrame = window.requestAnimationFrame(() => {
+      secondFrame = window.requestAnimationFrame(() => {
+        const target = document.querySelector<HTMLElement>(
+          `[data-block-id="${CSS.escape(blockId)}"]`
+        );
+        target?.scrollIntoView({ block: 'nearest', inline: 'nearest' });
+      });
+    });
+    const timer = window.setTimeout(() => {
+      setJustAddedBlockId((current) => (current === blockId ? null : current));
+    }, ADDED_BLOCK_HIGHLIGHT_MS);
+    return () => {
+      window.cancelAnimationFrame(firstFrame);
+      window.cancelAnimationFrame(secondFrame);
+      window.clearTimeout(timer);
+    };
+  }, [justAddedBlockId]);
 
   const discardDraft = useCallback(() => {
     setDraftProfile(profile);
@@ -1102,7 +1159,7 @@ export default function UserPageSectionsClient({
 
   const sensors = useSensors(
     useSensor(MouseSensor, { activationConstraint: { distance: 8 } }),
-    useSensor(TouchSensor, { activationConstraint: { delay: 250, tolerance: 8 } }),
+    useSensor(TouchSensor, { activationConstraint: { delay: 250, tolerance: 12 } }),
     useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates })
   );
 
@@ -1136,13 +1193,15 @@ export default function UserPageSectionsClient({
       args.collisionRect.width > BLOCK_DRAG_PREVIEW_WIDTH + 8
         ? BLOCK_DRAG_PREVIEW_WIDTH
         : args.collisionRect.width;
-    const y = args.collisionRect.top + previewHeight / 2;
-    const x = args.collisionRect.left + previewWidth / 2;
+    const y = args.pointerCoordinates?.y ?? args.collisionRect.top + previewHeight / 2;
+    const x = args.pointerCoordinates?.x ?? args.collisionRect.left + previewWidth / 2;
 
     if (activeId.startsWith(PALETTE_DRAG_PREFIX)) {
       const rows = placedLayoutRows(args.droppableContainers, args.droppableRects);
       const column = args.droppableRects.get(PROFILE_INSERT_COLUMN_ID) ?? null;
-      const panel = args.droppableRects.get(PROFILE_ADD_PANEL_ID) ?? null;
+      const measuredPanel = args.droppableRects.get(PROFILE_ADD_PANEL_ID) ?? null;
+      // この幅ではパネルを transform で画面外へ出す。計測矩形は残るので挿入判定から外す
+      const panel = window.matchMedia('(max-width: 640px)').matches ? null : measuredPanel;
       const picked = pickPaletteInsertion(rows, x, y, column, panel, paletteGapRef.current);
       paletteGapRef.current = picked?.gapIndex ?? null;
       paletteInsertRef.current = picked?.index ?? null;
@@ -1228,6 +1287,7 @@ export default function UserPageSectionsClient({
             <SortableProfileBlock
               id={key}
               label={label}
+              justAdded={justAddedBlockId === key}
               insertEdge={insertGuide?.lineId === key ? insertGuide.edge : null}
               onDetach={() => applyBlockEdit({ op: 'remove', block: key })}
             >
@@ -1239,7 +1299,7 @@ export default function UserPageSectionsClient({
         </div>
       );
     });
-  }, [applyBlockEdit, canEditBlocks, formEpoch, insertGuide, sectionMap, sectionOrder]);
+  }, [applyBlockEdit, canEditBlocks, formEpoch, insertGuide, justAddedBlockId, sectionMap, sectionOrder]);
 
   return (
     <div
@@ -1319,7 +1379,7 @@ export default function UserPageSectionsClient({
             <DragOverlay
               adjustScale={false}
               dropAnimation={null}
-              modifiers={[restrictPlacedBlockAxis]}
+              modifiers={[restrictPlacedBlockAxis, anchorDragPreviewToPointer]}
               zIndex={paletteDrag ? 1080 : 900}
               style={BLOCK_DRAG_PREVIEW_STYLE}
             >

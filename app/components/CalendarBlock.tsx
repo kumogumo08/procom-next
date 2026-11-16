@@ -58,7 +58,7 @@ export default function CalendarBlock({
 
       {isEditable && (
         <div id="event-form" className="auth-only">
-          <h3>予定を編集</h3>
+          <h3 data-block-drag-surface>予定を編集</h3>
           <label>
             日付: <input type="date" id="event-date" />
           </label>

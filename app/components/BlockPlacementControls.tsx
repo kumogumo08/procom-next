@@ -1,6 +1,6 @@
 'use client';
 
-import type { ReactNode } from 'react';
+import type { MouseEvent, ReactNode, TouchEvent } from 'react';
 import { useCallback, useEffect, useId, useRef, useState } from 'react';
 import { useDraggable, useDroppable } from '@dnd-kit/core';
 import { useSortable } from '@dnd-kit/sortable';
@@ -60,40 +60,80 @@ export function ProfileInsertColumn({
   );
 }
 
+const DRAG_BLOCKED =
+  'a, button, input, textarea, select, label, iframe, [contenteditable="true"], .block-edit-menu';
+
+function eventElement(target: EventTarget | null): Element | null {
+  if (target instanceof Element) return target;
+  if (target instanceof Node) return target.parentElement;
+  return null;
+}
+
+function cardRoot(frame: HTMLElement): Element | null {
+  for (const child of frame.children) {
+    if (child.classList.contains('block-edit-menu')) continue;
+    if (child.classList.contains('block-drag-keyboard')) continue;
+    return child;
+  }
+  return null;
+}
+
+/** 見出し、明示した開始面、カード余白だけ。入力・リンク・メニューは通さない */
+function isPlacedBlockDragStart(
+  event: { target: EventTarget | null },
+  frame: HTMLElement | null
+): boolean {
+  const target = eventElement(event.target);
+  if (!target || !frame || !frame.contains(target)) return false;
+  if (target.closest(DRAG_BLOCKED)) return false;
+  const surface = target.closest('h2, [data-block-drag-surface]');
+  if (surface && frame.contains(surface) && !surface.closest('[role="dialog"], .calendar-modal')) {
+    return true;
+  }
+  return target === cardRoot(frame);
+}
+
 function PaletteAddOption({
   block,
-  canDrag,
   onAdd,
 }: {
   block: BlockType;
-  canDrag: boolean;
   onAdd: (block: BlockType) => void;
 }) {
-  const { attributes, listeners, setNodeRef, setActivatorNodeRef } = useDraggable({
+  const { attributes, listeners, setNodeRef, setActivatorNodeRef, isDragging } = useDraggable({
     id: paletteDragId(block),
-    disabled: !canDrag,
   });
+  const suppressClickRef = useRef(false);
   const label = BLOCK_LABELS[block];
+
+  useEffect(() => {
+    if (isDragging) {
+      suppressClickRef.current = true;
+      return;
+    }
+    if (!suppressClickRef.current) return;
+    const timer = window.setTimeout(() => {
+      suppressClickRef.current = false;
+    }, 400);
+    return () => window.clearTimeout(timer);
+  }, [isDragging]);
 
   return (
     <div ref={setNodeRef} className="block-add-option-row">
-      {canDrag ? (
-        <button
-          type="button"
-          className="block-add-handle"
-          aria-label={`${label}をドラッグして追加`}
-          ref={setActivatorNodeRef}
-          {...attributes}
-          {...listeners}
-        >
-          <span aria-hidden="true">≡</span>
-        </button>
-      ) : null}
       <button
         type="button"
-        className="block-placement-btn block-add-option"
+        className={`block-placement-btn block-add-option${isDragging ? ' block-add-option--dragging' : ''}`}
         data-block-add-option
-        onClick={() => onAdd(block)}
+        ref={setActivatorNodeRef}
+        {...attributes}
+        {...listeners}
+        onClick={() => {
+          if (suppressClickRef.current) {
+            suppressClickRef.current = false;
+            return;
+          }
+          onAdd(block);
+        }}
       >
         {block === 'Calendar' ? '📅 ' : ''}
         {label}
@@ -115,7 +155,6 @@ export function BlockAddControl({
 }) {
   const [open, setOpen] = useState(false);
   const [categoryId, setCategoryId] = useState<BlockAddCategoryId | null>(null);
-  const [canDragAdd, setCanDragAdd] = useState(false);
   const panelId = useId();
   const titleId = useId();
   const panelRef = useRef<HTMLDivElement>(null);
@@ -143,14 +182,6 @@ export function BlockAddControl({
     restoreCategoryRef.current = categoryId;
     setCategoryId(null);
   }, [categoryId]);
-
-  useEffect(() => {
-    const media = window.matchMedia('(min-width: 641px) and (pointer: fine)');
-    const update = () => setCanDragAdd(media.matches);
-    update();
-    media.addEventListener('change', update);
-    return () => media.removeEventListener('change', update);
-  }, []);
 
   useEffect(() => {
     if (closeTickRef.current === closeTick) return;
@@ -224,7 +255,7 @@ export function BlockAddControl({
           <div
             id={panelId}
             ref={setPanelNodeRef}
-            className="block-add-panel"
+            className={`block-add-panel${dragActive ? ' block-add-panel--parked' : ''}`}
             role="dialog"
             aria-modal="true"
             aria-labelledby={titleId}
@@ -272,7 +303,6 @@ export function BlockAddControl({
                     <PaletteAddOption
                       key={block}
                       block={block}
-                      canDrag={canDragAdd}
                       onAdd={(next) => {
                         onAdd(next);
                         closePanel();
@@ -347,16 +377,19 @@ export function SortableProfileBlock({
   label,
   onDetach,
   insertEdge = null,
+  justAdded = false,
   children,
 }: {
   id: string;
   label: string;
   onDetach: () => void;
   insertEdge?: 'before' | 'after' | null;
+  justAdded?: boolean;
   children: ReactNode;
 }) {
   const { attributes, listeners, setNodeRef, setActivatorNodeRef, transform, transition, isDragging } =
     useSortable({ id });
+  const frameRef = useRef<HTMLDivElement | null>(null);
   const insertClass =
     insertEdge === 'before'
       ? ' block-edit-frame--insert-before'
@@ -364,10 +397,24 @@ export function SortableProfileBlock({
         ? ' block-edit-frame--insert-after'
         : '';
 
+  const setFrameRef = (node: HTMLDivElement | null) => {
+    frameRef.current = node;
+    setNodeRef(node);
+  };
+
+  const startDrag = (event: MouseEvent<HTMLDivElement> | TouchEvent<HTMLDivElement>) => {
+    const listener = event.type === 'touchstart' ? listeners?.onTouchStart : listeners?.onMouseDown;
+    if (!isPlacedBlockDragStart(event, frameRef.current)) return;
+    listener?.(event);
+  };
+
   return (
     <div
-      ref={setNodeRef}
-      className={`block-edit-frame${isDragging ? ' block-edit-frame--dragging' : ''}${insertClass}`}
+      ref={setFrameRef}
+      data-block-id={id}
+      className={`block-edit-frame${isDragging ? ' block-edit-frame--dragging' : ''}${justAdded ? ' block-edit-frame--just-added' : ''}${insertClass}`}
+      onMouseDown={startDrag}
+      onTouchStart={startDrag}
       style={{
         // Overlay がある間、掴んでいる本体には移動 transform を載せない
         transform: isDragging ? undefined : CSS.Transform.toString(transform),
@@ -376,13 +423,13 @@ export function SortableProfileBlock({
     >
       <button
         type="button"
-        className="block-drag-handle"
-        aria-label={`${label}を移動`}
+        className="block-drag-keyboard"
         ref={setActivatorNodeRef}
         {...attributes}
-        {...listeners}
+        aria-label={`${label}を移動`}
+        onKeyDown={(event) => listeners?.onKeyDown?.(event)}
       >
-        <span aria-hidden="true">≡</span>
+        {label}を移動
       </button>
       <BlockDetachControl label={label} onDetach={onDetach} />
       {children}

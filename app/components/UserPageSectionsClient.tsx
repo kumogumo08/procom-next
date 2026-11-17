@@ -30,6 +30,8 @@ import ContactButtonBlock, { WorkRequestButton } from '@/components/ContactButto
 import { CONTACT_EMAIL_ERROR, normalizeContactEmail } from '@/lib/contactEmail';
 import XShareButton from '@/components/XShareButton';
 import UserProfileSection from '@/components/UserProfileSection';
+import BioBlock from '@/components/BioBlock';
+import ProfileHeader from '@/components/ProfileHeader';
 import UserPageClient from '@/components/UserPageClient';
 import YouTubeEmbedBlock from '@/components/YouTubeEmbedBlock';
 import XEmbed from '@/components/XEmbed';
@@ -87,6 +89,7 @@ import {
   isKnownBlockType,
   layoutFieldsForSave,
   resolveSectionOrder,
+  resolveVisibleSectionOrder,
   sectionOrderDraftFromReorder,
   showsFixedCalendar,
   type BlockPlacementEdit,
@@ -133,6 +136,7 @@ type Profile = {
     sectionOrder?: string[];
     blockLayoutVersion?: number;
     calendarLayout?: 'section';
+    bioDismissed?: boolean;
   };
 };
 
@@ -216,6 +220,9 @@ function buildDraftSavePayload(
       showBanners: settings.showBanners,
       ...layoutFieldsForSave(settings, fallbacks.sectionOrder),
       ...(settings.calendarLayout === 'section' ? { calendarLayout: 'section' as const } : {}),
+      ...(settings.bioDismissed === true || settings.bioDismissed === false
+        ? { bioDismissed: settings.bioDismissed }
+        : {}),
     },
   };
 
@@ -595,6 +602,7 @@ export default function UserPageSectionsClient({
   );
   const draftProfileRef = useRef(draftProfile);
   draftProfileRef.current = draftProfile;
+  const saveErrorRef = useRef('');
 
   const [sectionOrder, setSectionOrder] = useState<string[]>(() =>
     resolveSectionOrder(initialSectionOrder, initialProfile?.settings?.blockLayoutVersion)
@@ -619,7 +627,11 @@ export default function UserPageSectionsClient({
   const insertGuideRef = useRef<InsertGuide | null>(null);
 
   const updateDraftProfile = useCallback((patch: Partial<Profile>) => {
-    setDraftProfile((prev) => ({ ...prev, ...patch }));
+    setDraftProfile((prev) => {
+      const next = { ...prev, ...patch };
+      draftProfileRef.current = next;
+      return next;
+    });
   }, []);
 
   const updateDraftSettings = useCallback((patch: NonNullable<Profile['settings']>) => {
@@ -634,17 +646,25 @@ export default function UserPageSectionsClient({
 
   const applyBlockEdit = useCallback(
     (edit: BlockPlacementEdit) => {
-      const next = editBlockPlacement(draftProfileRef.current.settings, edit);
-      if (!next) return false;
       const current = draftProfileRef.current.settings;
+      const version = current?.blockLayoutVersion;
+      const savedOrder = resolveSectionOrder(current?.sectionOrder, version);
+      const visible = resolveVisibleSectionOrder(savedOrder, version, current?.bioDismissed === true);
+      const base =
+        visible.length === savedOrder.length ? current : { ...(current ?? {}), sectionOrder: visible };
+      const next = editBlockPlacement(base, edit);
+      if (!next) return false;
       const sameOrder = JSON.stringify(next.sectionOrder) === JSON.stringify(current?.sectionOrder ?? []);
       const sameVersion = next.blockLayoutVersion === current?.blockLayoutVersion;
-      if (sameOrder && sameVersion) return false;
+      const sameBio =
+        next.bioDismissed === undefined || next.bioDismissed === (current?.bioDismissed === true);
+      if (sameOrder && sameVersion && sameBio) return false;
       setSectionOrder(next.sectionOrder);
       updateDraftSettings({
         sectionOrder: next.sectionOrder,
         blockLayoutVersion: next.blockLayoutVersion,
         ...(edit.block === 'Calendar' ? { calendarLayout: 'section' as const } : {}),
+        ...(next.bioDismissed !== undefined ? { bioDismissed: next.bioDismissed } : {}),
       });
       if (edit.op === 'add') setJustAddedBlockId(edit.block);
       return true;
@@ -764,9 +784,16 @@ export default function UserPageSectionsClient({
     [updateDraftProfile, updateDraftSettings]
   );
 
-  const onBasicDraftChange = useCallback(
-    (draft: { name?: string; title?: string; bio?: string }) => {
+  const onHeaderDraftChange = useCallback(
+    (draft: { name: string; title: string }) => {
       updateDraftProfile(draft);
+    },
+    [updateDraftProfile]
+  );
+
+  const onBioDraftChange = useCallback(
+    (bio: string) => {
+      updateDraftProfile({ bio });
     },
     [updateDraftProfile]
   );
@@ -870,6 +897,7 @@ export default function UserPageSectionsClient({
   const saveDraftProfile = useCallback(async (): Promise<boolean> => {
     if (savingLockRef.current) return false;
     savingLockRef.current = true;
+    saveErrorRef.current = '';
     setIsSaving(true);
     setSaveMessage(null);
     try {
@@ -972,12 +1000,15 @@ export default function UserPageSectionsClient({
           resolveSectionOrder(savedSettings.sectionOrder, savedSettings.blockLayoutVersion)
         );
       }
+      saveErrorRef.current = '';
       setSaveMessageTone('ok');
       setSaveMessage('保存しました');
       return true;
     } catch (err) {
+      const message = err instanceof Error ? err.message : '保存に失敗しました';
+      saveErrorRef.current = message;
       setSaveMessageTone('error');
-      setSaveMessage(err instanceof Error ? err.message : '保存に失敗しました');
+      setSaveMessage(message);
       return false;
     } finally {
       savingLockRef.current = false;
@@ -1067,6 +1098,16 @@ export default function UserPageSectionsClient({
           onDraftChange={isEditable ? onFacebookDraftChange : undefined}
         />
       ),
+      Bio: (
+        <BioBlock
+          bio={profile.bio ?? ''}
+          isEditable={isEditable}
+          isSaving={isSaving}
+          onDraftChange={isEditable ? onBioDraftChange : undefined}
+          onSave={isEditable ? saveDraftProfile : undefined}
+          readSaveError={() => saveErrorRef.current}
+        />
+      ),
       BannerLinks: (
         <BannerLinksBlock
           uid={uid}
@@ -1135,6 +1176,7 @@ export default function UserPageSectionsClient({
       onAppsDraftChange,
       onBannerDraftChange,
       onCustomLinksDraftChange,
+      onBioDraftChange,
       onFacebookDraftChange,
       onInstagramDraftChange,
       onProductGalleryDraftChange,
@@ -1149,6 +1191,9 @@ export default function UserPageSectionsClient({
       onXDraftChange,
       onYouTubeDraftChange,
       draftProfile,
+      isSaving,
+      profile.bio,
+      saveDraftProfile,
       uid,
     ]
   );
@@ -1156,6 +1201,15 @@ export default function UserPageSectionsClient({
   /** Phase1: 常にワンカラム縦積み（PC で隣接セクションを横並びにしない） */
   const layoutMode = blockLayoutMode(draftProfile.settings?.blockLayoutVersion);
   const canEditBlocks = isEditable && layoutMode !== 'unsupported';
+  const visibleOrder = useMemo(
+    () =>
+      resolveVisibleSectionOrder(
+        sectionOrder,
+        draftProfile.settings?.blockLayoutVersion,
+        draftProfile.settings?.bioDismissed === true
+      ),
+    [draftProfile.settings?.bioDismissed, draftProfile.settings?.blockLayoutVersion, sectionOrder]
+  );
 
   const sensors = useSensors(
     useSensor(MouseSensor, { activationConstraint: { distance: 8 } }),
@@ -1266,20 +1320,21 @@ export default function UserPageSectionsClient({
       clearDragVisual();
       const { active, over } = event;
       if (!over || active.id === over.id) return;
-      const oldIndex = sectionOrder.indexOf(String(active.id));
-      const newIndex = sectionOrder.indexOf(String(over.id));
+      const oldIndex = visibleOrder.indexOf(String(active.id));
+      const newIndex = visibleOrder.indexOf(String(over.id));
       if (oldIndex < 0 || newIndex < 0) return;
-      onSectionOrderDraftChange(arrayMove(sectionOrder, oldIndex, newIndex));
+      onSectionOrderDraftChange(arrayMove(visibleOrder, oldIndex, newIndex));
     },
-    [applyBlockEdit, clearDragVisual, onSectionOrderDraftChange, sectionOrder]
+    [applyBlockEdit, clearDragVisual, onSectionOrderDraftChange, visibleOrder]
   );
 
-  const visibleSectionIds = sectionOrder.filter((key) => Boolean(sectionMap[key]));
+  const visibleSectionIds = visibleOrder.filter((key) => Boolean(sectionMap[key]));
 
   const renderedSections = useMemo(() => {
-    return sectionOrder.map((key) => {
+    return visibleOrder.map((key) => {
       const node = sectionMap[key];
       if (!node) return null;
+      if (key === 'Bio' && !isEditable && !(draftProfile.bio ?? '').trim()) return null;
       const label = isKnownBlockType(key) ? BLOCK_LABELS[key] : key;
       return (
         <div className="user-page-section" key={`${key}-${formEpoch}`}>
@@ -1299,7 +1354,7 @@ export default function UserPageSectionsClient({
         </div>
       );
     });
-  }, [applyBlockEdit, canEditBlocks, formEpoch, insertGuide, justAddedBlockId, sectionMap, sectionOrder]);
+  }, [applyBlockEdit, canEditBlocks, draftProfile.bio, formEpoch, insertGuide, isEditable, justAddedBlockId, sectionMap, visibleOrder]);
 
   return (
     <div
@@ -1309,19 +1364,16 @@ export default function UserPageSectionsClient({
           : undefined
       }
     >
-      {profile?.name && (
-        <h2 className="profile-page-heading">
-          <span className="profile-page-heading__kicker" lang="en" aria-hidden="true">
-            CREATOR PROFILE
-          </span>
-          <span className="profile-page-heading__name">{profile.name}</span>
-          <span className="profile-page-heading__rule" aria-hidden="true" />
-          <span className="profile-page-heading__page">
-            <span className="sr-only">さんの</span>
-            プロフィールページ
-          </span>
-        </h2>
-      )}
+      <ProfileHeader
+        key={formEpoch}
+        name={profile.name ?? ''}
+        title={profile.title ?? ''}
+        isEditable={isEditable}
+        isSaving={isSaving}
+        onChange={onHeaderDraftChange}
+        onSave={saveDraftProfile}
+        readSaveError={() => saveErrorRef.current}
+      />
 
       <main>
         <div className="profile-action-row">
@@ -1345,9 +1397,7 @@ export default function UserPageSectionsClient({
           key={`profile-${formEpoch}`}
           uid={uid}
           isEditable={isEditable}
-          initialProfile={profile}
-          showFixedCalendar={showsFixedCalendar(draftProfile.settings?.calendarLayout, sectionOrder)}
-          onBasicDraftChange={isEditable ? onBasicDraftChange : undefined}
+          showFixedCalendar={showsFixedCalendar(draftProfile.settings?.calendarLayout, visibleOrder)}
         />
 
         <UserPageClient
@@ -1386,7 +1436,7 @@ export default function UserPageSectionsClient({
               {draggingBlockId ? <BlockDragPreview id={draggingBlockId} /> : null}
             </DragOverlay>
             <BlockAddControl
-              available={availableBlocks(sectionOrder)}
+              available={availableBlocks(visibleOrder)}
               closeTick={addPanelCloseTick}
               dragActive={paletteDrag}
               onAdd={(block) => applyBlockEdit({ op: 'add', block })}

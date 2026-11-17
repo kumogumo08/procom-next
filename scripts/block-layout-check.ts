@@ -7,11 +7,22 @@ import {
   BLOCK_ADD_CATEGORIES,
   blockAddCategoryCoverage,
 } from '@/lib/blockAddCategories';
+import { readFileSync } from 'node:fs';
+import { dirname, join } from 'node:path';
+import { fileURLToPath } from 'node:url';
+import {
+  bioDraftFromEdit,
+  parseTenQuestions,
+  serializeTenQuestions,
+  TEN_QUESTIONS,
+} from '@/lib/bioQuestions';
 import {
   activateBlockLayout,
   addBlock,
   availableBlocks,
   blockLayoutMode,
+  BLOCK_LABELS,
+  BLOCK_LAYOUT_VERSION,
   BLOCK_TYPES,
   comparableLayoutFields,
   DEFAULT_SECTION_ORDER,
@@ -22,11 +33,12 @@ import {
   moveBlock,
   removeBlock,
   resolveSectionOrder,
+  resolveVisibleSectionOrder,
   sectionOrderDraftFromReorder,
   showsFixedCalendar,
 } from '@/lib/blockLayout';
 import { meaningfulProfileChanged, nextContentStamp } from '@/lib/profileContent';
-import { buildProfileDocumentTitle, isProfilePublic } from '@/lib/userSeo';
+import { buildProfileDocumentTitle, buildProfileMetaDescription, isProfilePublic } from '@/lib/userSeo';
 
 function assert(condition: boolean, message: string): void {
   if (!condition) throw new Error(message);
@@ -167,13 +179,13 @@ assert(!isBlockPlaced(['YouTube'], 'X'), '未配置を判定できる');
 assert(!isBlockPlaced(['YouTube', 'Foo'], 'Foo'), '不明なキーは配置済みにしない');
 same(
   availableBlocks(['YouTube', 'X']),
-  ['Instagram', 'TikTok', 'Facebook', 'BannerLinks', 'AppProjects', 'SNSButtons', 'Calendar', 'ProductGallery', 'BaseProducts', 'StoresProducts'],
+  ['Instagram', 'TikTok', 'Facebook', 'Bio', 'BannerLinks', 'AppProjects', 'SNSButtons', 'Calendar', 'ProductGallery', 'BaseProducts', 'StoresProducts'],
   '未配置の種類だけを返す'
 );
 same(
   availableBlocks(HISTORICAL_DEFAULT),
-  ['Calendar', 'ProductGallery', 'BaseProducts', 'StoresProducts'],
-  '従来の8件が配置済みでもカレンダーと商品ギャラリーとBASE商品とSTORES商品は明示追加できる'
+  ['Bio', 'Calendar', 'ProductGallery', 'BaseProducts', 'StoresProducts'],
+  '従来の8件が配置済みでも自己紹介とカレンダーと商品系は明示追加できる'
 );
 
 const categoryCoverage = blockAddCategoryCoverage();
@@ -442,5 +454,162 @@ same(
   ['YouTube'],
   '再読込でも既定ブロックを補完しない'
 );
+
+const legacyOrder = ['YouTube', 'X'];
+same(
+  resolveSectionOrder(legacyOrder, undefined),
+  ['YouTube', 'X', 'AppProjects'],
+  '保存用の並びには自己紹介を足さない'
+);
+same(
+  resolveVisibleSectionOrder(legacyOrder, undefined, undefined),
+  ['Bio', 'YouTube', 'X', 'AppProjects'],
+  '解除記録が無い既存並びは表示時だけ自己紹介を先頭に補う'
+);
+same(
+  resolveVisibleSectionOrder(legacyOrder, undefined, true),
+  ['YouTube', 'X', 'AppProjects'],
+  '解除済みの自己紹介は表示補完しない'
+);
+same(
+  resolveVisibleSectionOrder(['TikTok', 'Bio', 'X'], 1, false),
+  ['TikTok', 'Bio', 'X'],
+  '配置済みの自己紹介は先頭へ重ねない'
+);
+same(resolveVisibleSectionOrder([], 1, undefined), ['Bio'], '空の新形式でも解除前は自己紹介を表示する');
+same(resolveVisibleSectionOrder(['YouTube'], 1, true), ['YouTube'], '解除後の再読込では自己紹介を戻さない');
+assert(!DEFAULT_SECTION_ORDER.includes('Bio'), '既定の保存順には自己紹介を入れない');
+assert(BLOCK_LAYOUT_VERSION === 1, 'blockLayoutVersion は 1 のまま');
+
+const removedBio = editBlockPlacement(
+  { blockLayoutVersion: 1, sectionOrder: ['Bio', 'YouTube'] },
+  { op: 'remove', block: 'Bio' }
+);
+same(removedBio?.sectionOrder, ['YouTube'], '自己紹介を外しても他の並びは残る');
+assert(removedBio?.bioDismissed === true, '自己紹介の解除を記録する');
+assert(removedBio?.blockLayoutVersion === 1, '自己紹介を外しても version 1');
+const restoredBio = editBlockPlacement(removedBio ?? undefined, { op: 'add', block: 'Bio', index: 0 });
+same(restoredBio?.sectionOrder, ['Bio', 'YouTube'], '自己紹介を再追加できる');
+assert(restoredBio?.bioDismissed === false, '再追加で解除記録を消す');
+assert(
+  !meaningfulProfileChanged({ name: '花', title: '歌手', bio: '残す自己紹介' }, { name: '花', title: '歌手', bio: '残す自己紹介' }),
+  '解除の前後で同じ自己紹介文は内容変更にならない'
+);
+assert(
+  meaningfulProfileChanged({ bio: '残す自己紹介' }, { bio: '' }),
+  '自己紹介文そのものを消した場合だけ内容変更になる'
+);
+same(moveBlock(['Bio', 'YouTube', 'X'], 'Bio', 2), ['YouTube', 'X', 'Bio'], '自己紹介を並び替えできる');
+same(moveBlock(['YouTube', 'X'], 'YouTube', 1), ['X', 'YouTube'], '他のブロックの移動結果は変わらない');
+same(
+  sectionOrderDraftFromReorder(['Bio', 'X', 'YouTube'], 1),
+  ['Bio', 'X', 'YouTube'],
+  '自己紹介を含む並び替え結果を維持する'
+);
+const untouchedBio = layoutFieldsForSave(
+  { sectionOrder: ['YouTube'], blockLayoutVersion: 1 },
+  ['Bio', 'YouTube']
+);
+same(untouchedBio.sectionOrder, ['YouTube'], '補完した自己紹介を通常保存で書き戻さない');
+assert(untouchedBio.blockLayoutVersion === 1, '通常保存でも version 1');
+const dismissedSave = mergeProfileSettings(
+  { blockLayoutVersion: 1, sectionOrder: ['YouTube'], showYouTube: false },
+  { bioDismissed: true, sectionOrder: ['YouTube'] }
+);
+assert(dismissedSave.bioDismissed === true, '解除記録を保存できる');
+same(dismissedSave.sectionOrder, ['YouTube'], '解除記録の保存で他の並びを変えない');
+assert(dismissedSave.showYouTube === false, '解除記録の保存で表示フラグは残る');
+const restoredSave = mergeProfileSettings(dismissedSave, { bioDismissed: false, sectionOrder: ['Bio', 'YouTube'] });
+assert(restoredSave.bioDismissed === false, '再追加で保存済みの解除記録を消す');
+same(restoredSave.sectionOrder, ['Bio', 'YouTube'], '再追加した自己紹介を並びへ戻す');
+const rejectedDismiss = mergeProfileSettings(
+  { blockLayoutVersion: 1, sectionOrder: ['YouTube'], bioDismissed: true },
+  { bioDismissed: 'yes' }
+);
+assert(rejectedDismiss.bioDismissed === true, '不正な解除記録では既存の記録を残す');
+
+assert(buildProfileDocumentTitle('花', '') === '花｜Procom', '肩書が空の title は従来どおり');
+assert(buildProfileDocumentTitle('花', '歌手') === '花｜歌手｜Procom', '肩書ありの title は従来どおり');
+assert(buildProfileDocumentTitle('花', '   ') === '花｜Procom', '空白だけの肩書は title に出さない');
+assert(
+  buildProfileMetaDescription('花', '', '紹介') === '紹介',
+  '肩書が空なら自己紹介文をそのまま説明にする'
+);
+assert(
+  buildProfileMetaDescription('花', '   ', '') === 'SNSプロフィールとリンク集をまとめたページ',
+  '肩書も自己紹介も空なら従来の説明'
+);
+assert(
+  buildProfileMetaDescription('花', '歌手', '紹介') === '花（歌手）。紹介',
+  '肩書がある説明は名前と肩書と自己紹介'
+);
+assert(
+  buildProfileMetaDescription('花', '歌手', '') === '花（歌手）のプロフィール',
+  '自己紹介が空でも名前と肩書を説明に残す'
+);
+assert(
+  buildProfileMetaDescription('花', '歌手', '花（歌手）。紹介') === '花（歌手）。紹介',
+  '既に名前と肩書で始まる自己紹介は重ねない'
+);
+assert(
+  buildProfileMetaDescription('花', '歌手', '歌手の花です') === '歌手の花です',
+  '本文へ名前と肩書が含まれるときは自己紹介文を維持する'
+);
+
+const savedQuestions = `前置き
+
+＼＼ 10の質問 ／／
+
+1. 活動ジャンルは？
+絵を描く
+
+2. 一番好きな作品・活動は？
+3. 得意なことは？
+4. 苦手なことは？
+5. 黒歴史は…ある？
+6. 好きな時間の過ごし方は？
+7. 無人島に1つだけ持ってくなら？
+8. 最近ハマって？いることは？
+9. これからの目標は？
+10. 最後に一言！
+ありがとう`;
+const parsedQuestions = parseTenQuestions(savedQuestions);
+assert(parsedQuestions.prose === '前置き', '10の質問の前の文章を残す');
+assert(parsedQuestions.answers?.[0] === '絵を描く', '1問目の回答を読む');
+assert(parsedQuestions.answers?.[9] === 'ありがとう', '10問目の回答を読む');
+assert(parsedQuestions.answers?.[1] === '', '未回答は空のまま');
+assert(parsedQuestions.answers?.length === TEN_QUESTIONS.length, '10問の順を維持する');
+assert(
+  bioDraftFromEdit(savedQuestions, parsedQuestions.prose, parsedQuestions.answers) === savedQuestions,
+  '編集前の10の質問は本文を書き換えない'
+);
+const editedAnswers = [...(parsedQuestions.answers ?? [])];
+editedAnswers[1] = '新しい回答\n続き';
+assert(
+  parseTenQuestions(serializeTenQuestions(parsedQuestions.prose, editedAnswers)).answers?.[1] === '新しい回答\n続き',
+  '回答の改行を保存して戻せる'
+);
+assert(parseTenQuestions('自己紹介だけ').answers === null, '10の質問が無い本文は質問に分けない');
+assert(BLOCK_LABELS.Bio === '自己紹介（テキスト）', '追加画面の自己紹介名');
+
+const checkRoot = join(dirname(fileURLToPath(import.meta.url)), '..');
+const headerSource = readFileSync(join(checkRoot, 'app/components/ProfileHeader.tsx'), 'utf8');
+const bioSource = readFileSync(join(checkRoot, 'app/components/BioBlock.tsx'), 'utf8');
+const sectionSource = readFileSync(join(checkRoot, 'app/components/UserProfileSection.tsx'), 'utf8');
+const pageSource = readFileSync(join(checkRoot, 'app/user/[uid]/page.tsx'), 'utf8');
+assert((headerSource.match(/<h1\b/g) ?? []).length === 1, 'プロフィールヘッダーのH1は名前の1つ');
+assert(headerSource.includes('profile-page-heading__title'), '肩書は名前の直下に出す');
+assert(headerSource.includes('名前と肩書を編集'), '所有者はヘッダーから名前と肩書を編集する');
+assert(!headerSource.includes('プロフィールページ'), 'プロフィールページの見出しは出さない');
+assert(!bioSource.includes('<h1') && !bioSource.includes('editFormOverlay'), '自己紹介はブロック内で編集する');
+assert(bioSource.includes('PROFILE'), '自己紹介ブロックの見出しはPROFILE');
+assert(!sectionSource.includes('プロフィールを編集'), '名前編集だけのカードボタンは残さない');
+assert(sectionSource.includes('CalendarBlock'), '固定カレンダーは残す');
+assert(
+  pageSource.includes('buildProfileMetaDescription(profile?.name, profile?.title, profile?.bio)'),
+  'SEOの説明は名前・肩書・自己紹介から作り、ブロック配置を見ない'
+);
+assert(pageSource.includes('canonical: `/user/${uid}`'), 'canonical は変えない');
+assert(pageSource.includes('index: isPublic'), 'インデックス判定は変えない');
 
 console.log('block-layout-check ok');

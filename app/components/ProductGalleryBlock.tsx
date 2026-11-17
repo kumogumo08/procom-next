@@ -294,7 +294,7 @@ export default function ProductGalleryBlock({
 
   return (
     <section style={{ ...cardBase, width: '100%' }} aria-label="SHOP">
-      <h2 style={cardTitle}>SHOP</h2>
+      <h2 style={cardTitle} data-block-title="">SHOP</h2>
       <div className={styles.showcase} data-slider={shown.length > 0 ? '' : undefined}>
       {!isEditable && trimmedDescription ? (
         <div className={styles.description}>

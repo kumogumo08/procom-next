@@ -69,19 +69,6 @@ const UserPageClient = ({
 
     const own = isEditable;
 
-    // タイトル・名前・職業・自己紹介
-    const titleEl = document.getElementById('page-title');
-    if (titleEl) titleEl.textContent = `${profile.name || 'ユーザー'}さんのページ`;
-
-    const nameEl = document.getElementById('name');
-    if (nameEl) nameEl.textContent = profile.name || '';
-
-    const titleText = document.getElementById('title');
-    if (titleText) titleText.textContent = profile.title ? `（${profile.title}）` : '';
-
-    const bioEl = document.getElementById('bio');
-    if (bioEl) bioEl.innerHTML = (profile.bio || '').replace(/\n/g, '<br>');
-
     // 写真スライダー
     if (Array.isArray(profile.photos)) {
       window.updatePhotoSlider?.(profile.photos, own);

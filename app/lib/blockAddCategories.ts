@@ -14,8 +14,8 @@ export const BLOCK_ADD_CATEGORIES = [
   {
     id: 'links',
     label: 'リンク・紹介',
-    description: 'バナー、アプリ、SNSボタン',
-    blocks: ['BannerLinks', 'AppProjects', 'SNSButtons'],
+    description: '自己紹介、バナー、アプリ、SNSボタン',
+    blocks: ['Bio', 'BannerLinks', 'AppProjects', 'SNSButtons'],
   },
   {
     id: 'events',

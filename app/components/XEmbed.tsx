@@ -120,7 +120,7 @@ export default function XEmbed({
 
   return (
     <div className="sns-item" style={snsCardBase}>
-      <h2 style={cardTitle}>X（旧Twitter）</h2>
+      <h2 style={cardTitle} data-block-title="">X（旧Twitter）</h2>
 
       <div style={cardBody}>
         <input

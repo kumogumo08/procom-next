@@ -1,7 +1,8 @@
 'use client';
 
-import type { MouseEvent, ReactNode, TouchEvent } from 'react';
-import { useCallback, useEffect, useId, useRef, useState } from 'react';
+import type { ReactNode } from 'react';
+import { useCallback, useEffect, useId, useLayoutEffect, useRef, useState } from 'react';
+import { createPortal } from 'react-dom';
 import { useDraggable, useDroppable } from '@dnd-kit/core';
 import { useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
@@ -58,39 +59,6 @@ export function ProfileInsertColumn({
       {children}
     </div>
   );
-}
-
-const DRAG_BLOCKED =
-  'a, button, input, textarea, select, label, iframe, [contenteditable="true"], .block-edit-menu';
-
-function eventElement(target: EventTarget | null): Element | null {
-  if (target instanceof Element) return target;
-  if (target instanceof Node) return target.parentElement;
-  return null;
-}
-
-function cardRoot(frame: HTMLElement): Element | null {
-  for (const child of frame.children) {
-    if (child.classList.contains('block-edit-menu')) continue;
-    if (child.classList.contains('block-drag-keyboard')) continue;
-    return child;
-  }
-  return null;
-}
-
-/** 見出し、明示した開始面、カード余白だけ。入力・リンク・メニューは通さない */
-function isPlacedBlockDragStart(
-  event: { target: EventTarget | null },
-  frame: HTMLElement | null
-): boolean {
-  const target = eventElement(event.target);
-  if (!target || !frame || !frame.contains(target)) return false;
-  if (target.closest(DRAG_BLOCKED)) return false;
-  const surface = target.closest('h2, [data-block-drag-surface]');
-  if (surface && frame.contains(surface) && !surface.closest('[role="dialog"], .calendar-modal')) {
-    return true;
-  }
-  return target === cardRoot(frame);
 }
 
 function PaletteAddOption({
@@ -372,6 +340,19 @@ export function BlockAddControl({
   );
 }
 
+function GripIcon() {
+  return (
+    <svg width="20" height="20" viewBox="0 0 24 24" aria-hidden="true">
+      <circle cx="9" cy="5" r="1.6" fill="currentColor" />
+      <circle cx="15" cy="5" r="1.6" fill="currentColor" />
+      <circle cx="9" cy="12" r="1.6" fill="currentColor" />
+      <circle cx="15" cy="12" r="1.6" fill="currentColor" />
+      <circle cx="9" cy="19" r="1.6" fill="currentColor" />
+      <circle cx="15" cy="19" r="1.6" fill="currentColor" />
+    </svg>
+  );
+}
+
 export function SortableProfileBlock({
   id,
   label,
@@ -390,6 +371,8 @@ export function SortableProfileBlock({
   const { attributes, listeners, setNodeRef, setActivatorNodeRef, transform, transition, isDragging } =
     useSortable({ id });
   const frameRef = useRef<HTMLDivElement | null>(null);
+  const [titleNode, setTitleNode] = useState<HTMLElement | null>(null);
+  const [placed, setPlaced] = useState(false);
   const insertClass =
     insertEdge === 'before'
       ? ' block-edit-frame--insert-before'
@@ -402,35 +385,48 @@ export function SortableProfileBlock({
     setNodeRef(node);
   };
 
-  const startDrag = (event: MouseEvent<HTMLDivElement> | TouchEvent<HTMLDivElement>) => {
-    const listener = event.type === 'touchstart' ? listeners?.onTouchStart : listeners?.onMouseDown;
-    if (!isPlacedBlockDragStart(event, frameRef.current)) return;
-    listener?.(event);
-  };
+  useLayoutEffect(() => {
+    const next = frameRef.current?.querySelector<HTMLElement>('[data-block-title]') ?? null;
+    setTitleNode((current) => (current === next ? current : next));
+    setPlaced(true);
+  });
+
+  const handle = (
+    <button
+      type="button"
+      className={`block-drag-handle${isDragging ? ' block-drag-handle--active' : ''}`}
+      data-block-drag-handle
+      ref={setActivatorNodeRef}
+      {...attributes}
+      {...listeners}
+      aria-label={`${label}を並び替える`}
+      onContextMenu={(event) => event.preventDefault()}
+    >
+      <GripIcon />
+    </button>
+  );
 
   return (
     <div
       ref={setFrameRef}
       data-block-id={id}
       className={`block-edit-frame${isDragging ? ' block-edit-frame--dragging' : ''}${justAdded ? ' block-edit-frame--just-added' : ''}${insertClass}`}
-      onMouseDown={startDrag}
-      onTouchStart={startDrag}
       style={{
         // Overlay がある間、掴んでいる本体には移動 transform を載せない
         transform: isDragging ? undefined : CSS.Transform.toString(transform),
         transition: isDragging ? undefined : transition,
       }}
     >
-      <button
-        type="button"
-        className="block-drag-keyboard"
-        ref={setActivatorNodeRef}
-        {...attributes}
-        aria-label={`${label}を移動`}
-        onKeyDown={(event) => listeners?.onKeyDown?.(event)}
-      >
-        {label}を移動
-      </button>
+      {placed ? (
+        titleNode ? (
+          createPortal(handle, titleNode)
+        ) : (
+          <div className="block-drag-fallback">
+            {handle}
+            <span className="block-drag-fallback__label">{label}</span>
+          </div>
+        )
+      ) : null}
       <BlockDetachControl label={label} onDetach={onDetach} />
       {children}
     </div>
@@ -443,6 +439,7 @@ const BLOCK_DRAG_MARK: Record<BlockType, string> = {
   Instagram: 'IG',
   TikTok: 'TT',
   Facebook: 'f',
+  Bio: '紹',
   BannerLinks: 'URL',
   AppProjects: 'App',
   SNSButtons: 'SNS',

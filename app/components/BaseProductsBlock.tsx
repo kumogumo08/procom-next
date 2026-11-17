@@ -439,7 +439,7 @@ export default function BaseProductsBlock({
 
   return (
     <section className={styles.block} style={{ ...cardBase, width: '100%' }} aria-label="BASE SHOP">
-      <h2 style={cardTitle}>BASE SHOP</h2>
+      <h2 style={cardTitle} data-block-title="">BASE SHOP</h2>
       <div className={styles.stage} data-many={widgets.length > 1 ? 'true' : undefined}>
       {!isEditable && trimmedDescription ? (
         <div className={styles.lead}>

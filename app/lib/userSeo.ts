@@ -31,6 +31,22 @@ export function buildProfileDocumentTitle(nameRaw: unknown, jobTitleRaw: unknown
   return `${name}｜${job}｜Procom`;
 }
 
+const PROFILE_DESCRIPTION_FALLBACK = 'SNSプロフィールとリンク集をまとめたページ';
+
+/** 検索・OGP用。肩書が空なら従来の自己紹介文。配置や解除状態は見ない。 */
+export function buildProfileMetaDescription(nameRaw: unknown, jobTitleRaw: unknown, bioRaw: unknown): string {
+  const name = typeof nameRaw === 'string' ? nameRaw.trim() : '';
+  const job = typeof jobTitleRaw === 'string' ? jobTitleRaw.trim() : '';
+  const bio = typeof bioRaw === 'string' ? bioRaw.trim() : '';
+  if (!job) return bio || PROFILE_DESCRIPTION_FALLBACK;
+
+  const displayName = name || 'Procomユーザー';
+  const lead = `${displayName}（${job}）`;
+  if (!bio) return `${lead}のプロフィール`;
+  if (bio.startsWith(lead) || (name !== '' && bio.includes(name) && bio.includes(job))) return bio;
+  return `${lead}。${bio}`;
+}
+
 /** 一覧カード用: 先頭1枚のみ（過剰なプロフィール露出を抑える） */
 export function slimProfileForList(profile: Record<string, unknown>): {
   name: string;

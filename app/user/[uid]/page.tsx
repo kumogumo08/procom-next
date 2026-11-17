@@ -30,7 +30,7 @@ import UserPageSectionsClient from '@/components/UserPageSectionsClient';
 import { clampPhotoPositionY } from '@/lib/photoPosition';
 import { resolveSectionOrder } from '@/lib/blockLayout';
 import { isOnboardingBlocked, readOnboardingGate } from '@/lib/onboarding';
-import { buildProfileDocumentTitle, isProfilePublic } from '@/lib/userSeo';
+import { buildProfileDocumentTitle, buildProfileMetaDescription, isProfilePublic } from '@/lib/userSeo';
 import { resolveVerifiedBaseProducts, resolveVerifiedBaseShopUrl } from '@/lib/baseProductDns';
 
 export const dynamic = 'force-dynamic';
@@ -67,14 +67,14 @@ export async function generateMetadata({
   }
   const name = profile?.name || 'Procomユーザー';
   const pageTitle = buildProfileDocumentTitle(profile?.name, profile?.title);
-  const bio = profile?.bio || 'SNSプロフィールとリンク集をまとめたページ';
+  const description = buildProfileMetaDescription(profile?.name, profile?.title, profile?.bio);
   const photoUrl =
     profile?.photos?.[0]?.url || 'https://procom.jp/og-image.jpg';
   const isPublic = isProfilePublic(profile);
 
   return {
     title: pageTitle,
-    description: bio,
+    description,
     alternates: {
       canonical: `/user/${uid}`,
     },
@@ -84,7 +84,7 @@ export async function generateMetadata({
     },
     openGraph: {
       title: pageTitle,
-      description: bio,
+      description,
       url: `https://procom.jp/user/${uid}`,
       siteName: 'Procom',
       images: [
@@ -100,7 +100,7 @@ export async function generateMetadata({
     twitter: {
       card: 'summary_large_image',
       title: pageTitle,
-      description: bio,
+      description,
       images: [photoUrl],
     },
   };

@@ -6,6 +6,7 @@
 import { execFileSync, spawn, spawnSync, type ChildProcess } from 'node:child_process';
 import net from 'node:net';
 import { join } from 'node:path';
+import { buildProfileMetaDescription } from '../../app/lib/userSeo';
 import { EMULATOR, applyIsolatedEnv } from './isolate';
 
 applyIsolatedEnv();
@@ -366,7 +367,9 @@ async function main(): Promise<number> {
       '9. 公開プロフィールのSEO',
       pub.status === 200 &&
         pubTitleTag === `${pubName}｜${pubTitle}｜Procom` &&
-        meta(pub.text, 'description') === `bio-${suffix}` &&
+        meta(pub.text, 'description') === buildProfileMetaDescription(pubName, pubTitle, `bio-${suffix}`) &&
+        meta(pub.text, 'og:description') === buildProfileMetaDescription(pubName, pubTitle, `bio-${suffix}`) &&
+        meta(pub.text, 'twitter:description') === buildProfileMetaDescription(pubName, pubTitle, `bio-${suffix}`) &&
         meta(pub.text, 'og:image') === photoUrl &&
         meta(pub.text, 'og:title') === `${pubName}｜${pubTitle}｜Procom` &&
         meta(pub.text, 'og:type') === 'profile' &&

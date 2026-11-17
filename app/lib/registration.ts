@@ -74,7 +74,7 @@ export function initialNewUserProfile(name: string) {
     onboardingStatus: 'required' as const,
     settings: {
       blockLayoutVersion: BLOCK_LAYOUT_VERSION,
-      sectionOrder: [] as string[],
+      sectionOrder: ['Bio'] as string[],
       calendarLayout: 'section' as const,
     },
   };

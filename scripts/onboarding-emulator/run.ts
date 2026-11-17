@@ -281,10 +281,11 @@ async function main(): Promise<number> {
         ? (mainProfile.settings as { blockLayoutVersion?: unknown; sectionOrder?: unknown; calendarLayout?: unknown })
         : {};
     row(
-      '2b. 空のブロック配置',
+      '2b. 初期配置は自己紹介だけ',
       mainSettings.blockLayoutVersion === 1 &&
         Array.isArray(mainSettings.sectionOrder) &&
-        mainSettings.sectionOrder.length === 0 &&
+        mainSettings.sectionOrder.length === 1 &&
+        mainSettings.sectionOrder[0] === 'Bio' &&
         mainSettings.calendarLayout === 'section'
         ? 'pass'
         : 'fail',
@@ -318,10 +319,11 @@ async function main(): Promise<number> {
         ? (drafted.settings as { blockLayoutVersion?: unknown; sectionOrder?: unknown })
         : {};
     row(
-      '4b. 途中保存後も空の配置',
+      '4b. 途中保存後も自己紹介だけの配置',
       draftedSettings.blockLayoutVersion === 1 &&
         Array.isArray(draftedSettings.sectionOrder) &&
-        draftedSettings.sectionOrder.length === 0
+        draftedSettings.sectionOrder.length === 1 &&
+        draftedSettings.sectionOrder[0] === 'Bio'
         ? 'pass'
         : 'fail',
       `version=${String(draftedSettings.blockLayoutVersion)}`
@@ -430,10 +432,11 @@ async function main(): Promise<number> {
         ? (done.settings as { blockLayoutVersion?: unknown; sectionOrder?: unknown; calendarLayout?: unknown })
         : {};
     row(
-      '12b. 完了後も空の配置',
+      '12b. 完了後も自己紹介だけの配置',
       doneSettings.blockLayoutVersion === 1 &&
         Array.isArray(doneSettings.sectionOrder) &&
-        doneSettings.sectionOrder.length === 0 &&
+        doneSettings.sectionOrder.length === 1 &&
+        doneSettings.sectionOrder[0] === 'Bio' &&
         doneSettings.calendarLayout === 'section'
         ? 'pass'
         : 'fail',

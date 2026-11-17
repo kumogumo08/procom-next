@@ -13,7 +13,7 @@ import {
   MAX_APP_PROJECTS_PER_PROFILE,
 } from '@/lib/appProjects';
 import { formatStoreDescription } from '@/lib/storeDescriptionDisplay';
-import { cardActions, cardBase } from '@/components/ui/cardStyles';
+import { cardActions, cardBase, cardTitle } from '@/components/ui/cardStyles';
 import styles from './AppProjectBlock.module.css';
 
 type AppFieldErrors = {
@@ -356,9 +356,7 @@ export default function AppProjectBlock({
 
   return (
     <section className="app-project-block" style={{ ...cardBase, width: '100%' }}>
-      <h2 style={{ textAlign: 'center', fontSize: '1.25rem', marginBottom: 16, fontWeight: 800 }}>
-        アプリ
-      </h2>
+      <h2 style={cardTitle} data-block-title="">アプリ</h2>
 
       {isEditable && (
         <div style={{ textAlign: 'center', marginBottom: 16 }}>

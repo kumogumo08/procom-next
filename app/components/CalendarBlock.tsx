@@ -2,6 +2,8 @@
 
 import { useEffect, useState } from 'react';
 import { createCalendar } from '@/lib/calendar';
+import { BLOCK_LABELS } from '@/lib/blockLayout';
+import { cardTitle } from '@/components/ui/cardStyles';
 
 type CalendarEvent = { text: string };
 
@@ -54,11 +56,12 @@ export default function CalendarBlock({
 
   return (
     <div id="calendar-container">
+      <h2 style={cardTitle} data-block-title="">{BLOCK_LABELS.Calendar}</h2>
       <div id="calendar" className="calendar"></div>
 
       {isEditable && (
         <div id="event-form" className="auth-only">
-          <h3 data-block-drag-surface>予定を編集</h3>
+          <h3>予定を編集</h3>
           <label>
             日付: <input type="date" id="event-date" />
           </label>

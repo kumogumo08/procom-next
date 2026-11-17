@@ -85,11 +85,9 @@ return (
     margin: '0 auto',
   }}
 >
-    {isEditable ? (
-      <div className="block-drag-surface" data-block-drag-surface>
-        SNSボタン
-      </div>
-    ) : null}
+    <div className="block-drag-surface" data-block-title="">
+      SNSボタン
+    </div>
     {/* ✅ ボタンを中央に固定するラッパー */}
     <div className="w-full flex flex-wrap justify-center">
       <div className="max-w-[700px] w-full flex flex-wrap justify-center gap-4">

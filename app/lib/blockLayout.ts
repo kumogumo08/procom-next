@@ -14,6 +14,7 @@ export const BLOCK_TYPES = [
   'Instagram',
   'TikTok',
   'Facebook',
+  'Bio',
   'BannerLinks',
   'AppProjects',
   'SNSButtons',
@@ -31,6 +32,7 @@ export const BLOCK_LABELS: Record<BlockType, string> = {
   Instagram: 'Instagram',
   TikTok: 'TikTok',
   Facebook: 'Facebook',
+  Bio: '自己紹介（テキスト）',
   BannerLinks: 'リンクバナー',
   AppProjects: 'アプリ紹介',
   SNSButtons: 'SNSボタン',
@@ -120,6 +122,20 @@ export function resolveSectionOrder(sectionOrder: unknown, blockLayoutVersion: u
   const mode = blockLayoutMode(blockLayoutVersion);
   if (mode === 'legacy') return legacySectionOrder(sectionOrder);
   return uniqueKnownBlocks(sectionOrder);
+}
+
+/**
+ * 画面上の並び。保存値は変えない。
+ * 自己紹介は、並びにも解除記録にも無い既存データだけ先頭へ補う。
+ */
+export function resolveVisibleSectionOrder(
+  sectionOrder: unknown,
+  blockLayoutVersion: unknown,
+  bioDismissed: unknown
+): string[] {
+  const order = resolveSectionOrder(sectionOrder, blockLayoutVersion);
+  if (order.includes('Bio') || bioDismissed === true) return order;
+  return ['Bio', ...order];
 }
 
 /**
@@ -223,15 +239,18 @@ export function layoutFieldsForSave(
 export function comparableLayoutFields(settings: unknown): {
   sectionOrder: unknown;
   blockLayoutVersion?: number;
+  bioDismissed?: boolean;
 } {
   const record =
     settings && typeof settings === 'object' && !Array.isArray(settings)
-      ? (settings as { sectionOrder?: unknown; blockLayoutVersion?: unknown })
+      ? (settings as { sectionOrder?: unknown; blockLayoutVersion?: unknown; bioDismissed?: unknown })
       : {};
   const version = record.blockLayoutVersion;
+  const bioDismissed = record.bioDismissed;
   return {
     sectionOrder: record.sectionOrder,
     ...(typeof version === 'number' && Number.isFinite(version) ? { blockLayoutVersion: version } : {}),
+    ...(bioDismissed === true || bioDismissed === false ? { bioDismissed } : {}),
   };
 }
 
@@ -262,6 +281,17 @@ export function mergeProfileSettings(existing: unknown, incoming: unknown): Reco
     }
   }
 
+  if (Object.prototype.hasOwnProperty.call(next, 'bioDismissed')) {
+    const dismissed = next.bioDismissed;
+    if (dismissed === true || dismissed === false) {
+      merged.bioDismissed = dismissed;
+    } else if (base.bioDismissed === true || base.bioDismissed === false) {
+      merged.bioDismissed = base.bioDismissed;
+    } else {
+      delete merged.bioDismissed;
+    }
+  }
+
   if (merged.blockLayoutVersion === BLOCK_LAYOUT_VERSION && Array.isArray(merged.sectionOrder)) {
     merged.sectionOrder = uniqueKnownBlocks(merged.sectionOrder);
   }
@@ -286,7 +316,11 @@ export type BlockPlacementEdit =
 export function editBlockPlacement(
   settings: { sectionOrder?: unknown; blockLayoutVersion?: unknown } | undefined,
   edit: BlockPlacementEdit
-): { blockLayoutVersion: typeof BLOCK_LAYOUT_VERSION; sectionOrder: string[] } | null {
+): {
+  blockLayoutVersion: typeof BLOCK_LAYOUT_VERSION;
+  sectionOrder: string[];
+  bioDismissed?: boolean;
+} | null {
   const version = settings?.blockLayoutVersion;
   if (blockLayoutMode(version) === 'unsupported') return null;
   const base =
@@ -301,7 +335,14 @@ export function editBlockPlacement(
     edit.op === 'add'
       ? addBlock(base.sectionOrder, edit.block, edit.index)
       : removeBlock(base.sectionOrder, edit.block);
-  return { blockLayoutVersion: BLOCK_LAYOUT_VERSION, sectionOrder };
+  if (edit.block !== 'Bio') {
+    return { blockLayoutVersion: BLOCK_LAYOUT_VERSION, sectionOrder };
+  }
+  return {
+    blockLayoutVersion: BLOCK_LAYOUT_VERSION,
+    sectionOrder,
+    bioDismissed: edit.op === 'remove',
+  };
 }
 
 export function activateBlockLayout(

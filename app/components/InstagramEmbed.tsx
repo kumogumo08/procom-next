@@ -121,7 +121,7 @@ export default function InstagramEmbed({
 
   return (
     <div className="sns-item" style={snsCardBase}>
-      <h2 style={cardTitle}>Instagram</h2>
+      <h2 style={cardTitle} data-block-title="">Instagram</h2>
 
       <div style={cardBody}>
         <input

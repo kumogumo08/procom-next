@@ -20,10 +20,12 @@ export const snsCardBase: CSSProperties = {
 export const cardTitle: CSSProperties = {
   margin: 0,
   marginBottom: 12,
-  fontSize: 17,
+  fontSize: 20,
   fontWeight: 700,
+  lineHeight: 1.3,
   color: '#0f172a',
   letterSpacing: '-0.01em',
+  textAlign: 'left',
 };
 
 export const cardBody: CSSProperties = {

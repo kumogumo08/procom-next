@@ -5,7 +5,7 @@ import Cropper from 'react-easy-crop';
 import getCroppedImg from './utils/cropImage'; // 後述の関数を別ファイルに置くと良い
 import type { Area } from 'react-easy-crop';
 import SnsVisibilityToggle from './SnsVisibilityToggle';
-import { cardBase } from '@/components/ui/cardStyles';
+import { cardBase, cardTitle } from '@/components/ui/cardStyles';
 
 
 type Banner = {
@@ -240,9 +240,7 @@ export default function BannerLinksBlock({
 
   return (
     <section className="banner-section" style={{ ...cardBase, width: '100%' }}>
-      <h2 style={{ textAlign: 'center', fontSize: '1.25rem', marginBottom: 16, fontWeight: 800 }}>
-        リンク
-      </h2>
+      <h2 style={cardTitle} data-block-title="">リンク</h2>
 
       <div
         style={{

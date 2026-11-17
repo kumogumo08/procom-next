@@ -149,7 +149,7 @@ export default function FacebookEmbedBlock({
 
   return (
     <div className="sns-item" style={snsCardBase}>
-      <h2 style={cardTitle}>Facebook</h2>
+      <h2 style={cardTitle} data-block-title="">Facebook</h2>
 
       <div style={{ ...cardBody, display: 'grid', gap: 12 }}>
         <label style={{ display: 'grid', gap: 6, maxWidth: 520 }}>

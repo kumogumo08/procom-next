@@ -297,8 +297,13 @@ assert(initialNewUserProfile('新規').onboardingStatus === 'required', '2. 新�
 const freshProfile = initialNewUserProfile('新規');
 const freshOrder = resolveSectionOrder(freshProfile.settings.sectionOrder, freshProfile.settings.blockLayoutVersion);
 assert(freshProfile.settings.blockLayoutVersion === 1, '2. 新規ユーザーはblockLayoutVersion 1');
-assert(Array.isArray(freshProfile.settings.sectionOrder) && freshProfile.settings.sectionOrder.length === 0, '2. 新規ユーザーのsectionOrderは空');
-assert(freshOrder.length === 0, '2. 空配列を既定ブロックへ補完しない');
+assert(
+  Array.isArray(freshProfile.settings.sectionOrder) &&
+    freshProfile.settings.sectionOrder.length === 1 &&
+    freshProfile.settings.sectionOrder[0] === 'Bio',
+  '2. 新規ユーザーの初期配置は自己紹介だけ'
+);
+assert(freshOrder.length === 1 && freshOrder[0] === 'Bio', '2. 自己紹介以外の既定ブロックは補完しない');
 assert(showsFixedCalendar(freshProfile.settings.calendarLayout, freshOrder) === false, '2. 新規ユーザーに固定カレンダーを出さない');
 assert(repeatRegistrationAction(true) === 'reject-existing', '2. 既存文書はrequired化しない');
 assert(registrationResumeAction({ documentExists: true, claim: PENDING_REGISTRATION }) === 'keep', '2. ログインでも既存文書は作らない');

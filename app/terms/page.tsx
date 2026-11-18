@@ -1,18 +1,37 @@
-'use client';
-
+import type { Metadata } from 'next';
 import { FC } from 'react';
-import Head from 'next/head';
 import Header from '@/components/Header';
 import Footer from '@/components/Footer';
+
+const title = '利用規約 - Procom';
+const description = 'Procomの利用条件、禁止事項、投稿コンテンツの権利、退会と免責について定めています。';
+
+export const metadata: Metadata = {
+  title,
+  description,
+  alternates: { canonical: '/terms' },
+  robots: { index: true, follow: true },
+  openGraph: {
+    title,
+    description,
+    url: 'https://procom.jp/terms',
+    siteName: 'Procom（プロコム）',
+    images: [{ url: '/og-image.jpg', width: 1200, height: 630, alt: 'Procom（プロコム）OGP画像' }],
+    type: 'website',
+    locale: 'ja_JP',
+  },
+  twitter: {
+    card: 'summary_large_image',
+    title,
+    description,
+    images: ['/og-image.jpg'],
+    site: '@Procom_next',
+  },
+};
 
 const TermsPage: FC = () => {
   return (
     <>
-      <Head>
-        <title>利用規約 - Procom</title>
-        <meta name="description" content="Procomの利用規約ページです。" />
-      </Head>
-
       <Header />
 
       <main className="bg-[#f4f4f8] text-[#333] py-10 px-5 min-h-screen">

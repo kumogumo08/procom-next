@@ -1,19 +1,39 @@
-'use client';
-
-import Head from 'next/head';
+import type { Metadata } from 'next';
 import Header from '@/components/Header';
 import Footer from '@/components/Footer';
 import Link from 'next/link';
 import type { JSX } from 'react';
 
+const title = 'ヘルプ - Procom';
+const description =
+  'Procomのプロフィール作成、写真、推しボタン、バナーリンク、QRコードの使い方とお問い合わせ先です。';
+
+export const metadata: Metadata = {
+  title,
+  description,
+  alternates: { canonical: '/help' },
+  robots: { index: true, follow: true },
+  openGraph: {
+    title,
+    description,
+    url: 'https://procom.jp/help',
+    siteName: 'Procom（プロコム）',
+    images: [{ url: '/og-image.jpg', width: 1200, height: 630, alt: 'Procom（プロコム）OGP画像' }],
+    type: 'website',
+    locale: 'ja_JP',
+  },
+  twitter: {
+    card: 'summary_large_image',
+    title,
+    description,
+    images: ['/og-image.jpg'],
+    site: '@Procom_next',
+  },
+};
+
 export default function HelpPage(): JSX.Element {
   return (
     <>
-      <Head>
-        <title>ヘルプ - Procom</title>
-        <meta name="description" content="Procomに関するヘルプ・FAQページ" />
-      </Head>
-
       <Header />
 
       <main className="bg-[#f7f7f7] text-[#333] py-10 px-5 min-h-screen">

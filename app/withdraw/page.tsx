@@ -1,19 +1,39 @@
-'use client';
-
+import type { Metadata } from 'next';
 import { FC } from 'react';
-import Head from 'next/head';
 import Header from '@/components/Header';
 import Footer from '@/components/Footer';
 import Link from 'next/link';
 
+const title = '退会方法 - Procom';
+const description =
+  'Procomの退会手順と、退会後にプロフィールや写真などのデータが削除されることについての案内です。';
+
+export const metadata: Metadata = {
+  title,
+  description,
+  alternates: { canonical: '/withdraw' },
+  robots: { index: true, follow: true },
+  openGraph: {
+    title,
+    description,
+    url: 'https://procom.jp/withdraw',
+    siteName: 'Procom（プロコム）',
+    images: [{ url: '/og-image.jpg', width: 1200, height: 630, alt: 'Procom（プロコム）OGP画像' }],
+    type: 'website',
+    locale: 'ja_JP',
+  },
+  twitter: {
+    card: 'summary_large_image',
+    title,
+    description,
+    images: ['/og-image.jpg'],
+    site: '@Procom_next',
+  },
+};
+
 const WithdrawPage: FC = () => {
   return (
     <>
-      <Head>
-        <title>退会方法 - Procom</title>
-        <meta name="description" content="Procomからの退会手続きについてご案内します。" />
-      </Head>
-
       <Header />
 
       <main className="bg-[#f7f7f7] text-[#333] py-10 px-5 min-h-screen">

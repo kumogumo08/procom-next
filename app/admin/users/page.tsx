@@ -456,7 +456,7 @@ export default function AdminUsersPage() {
             NEWS管理へ
           </Link>
           <Link
-            href="/"
+            href="/top"
             onClick={confirmLeave}
             className="inline-flex min-h-11 items-center rounded border border-neutral-300 bg-white px-4 text-sm font-medium text-neutral-900 hover:bg-neutral-50"
           >

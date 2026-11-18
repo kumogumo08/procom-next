@@ -30,7 +30,12 @@ import UserPageSectionsClient from '@/components/UserPageSectionsClient';
 import { clampPhotoPositionY } from '@/lib/photoPosition';
 import { resolveSectionOrder } from '@/lib/blockLayout';
 import { isOnboardingBlocked, readOnboardingGate } from '@/lib/onboarding';
-import { buildProfileDocumentTitle, buildProfileMetaDescription, isProfilePublic } from '@/lib/userSeo';
+import {
+  buildProfileDocumentTitle,
+  buildProfileMetaDescription,
+  isProfilePublic,
+  visibleProfileBio,
+} from '@/lib/userSeo';
 import { resolveVerifiedBaseProducts, resolveVerifiedBaseShopUrl } from '@/lib/baseProductDns';
 
 export const dynamic = 'force-dynamic';
@@ -67,7 +72,7 @@ export async function generateMetadata({
   }
   const name = profile?.name || 'Procomユーザー';
   const pageTitle = buildProfileDocumentTitle(profile?.name, profile?.title);
-  const description = buildProfileMetaDescription(profile?.name, profile?.title, profile?.bio);
+  const description = buildProfileMetaDescription(profile?.name, profile?.title, visibleProfileBio(profile));
   const photoUrl =
     profile?.photos?.[0]?.url || 'https://procom.jp/og-image.jpg';
   const isPublic = isProfilePublic(profile);

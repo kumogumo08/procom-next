@@ -1,19 +1,39 @@
-'use client';
-
+import type { Metadata } from 'next';
 import { FC } from 'react';
-import Head from 'next/head';
 import Header from '@/components/Header';
 import Footer from '@/components/Footer';
 import Link from 'next/link';
 
+const title = 'プライバシーポリシー - Procom';
+const description =
+  'Procomが収集する登録情報・プロフィール・Cookieの利用目的、第三者提供、お問い合わせ先を定めています。';
+
+export const metadata: Metadata = {
+  title,
+  description,
+  alternates: { canonical: '/privacy' },
+  robots: { index: true, follow: true },
+  openGraph: {
+    title,
+    description,
+    url: 'https://procom.jp/privacy',
+    siteName: 'Procom（プロコム）',
+    images: [{ url: '/og-image.jpg', width: 1200, height: 630, alt: 'Procom（プロコム）OGP画像' }],
+    type: 'website',
+    locale: 'ja_JP',
+  },
+  twitter: {
+    card: 'summary_large_image',
+    title,
+    description,
+    images: ['/og-image.jpg'],
+    site: '@Procom_next',
+  },
+};
+
 const PrivacyPolicy: FC = () => {
   return (
     <>
-      <Head>
-        <title>プライバシーポリシー - Procom</title>
-        <meta name="description" content="Procomのプライバシーポリシーページ" />
-      </Head>
-
       <Header />
 
       <main className="bg-[#f7f7f7] text-[#333] py-10 px-5 min-h-screen">

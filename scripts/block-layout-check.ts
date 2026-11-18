@@ -38,7 +38,12 @@ import {
   showsFixedCalendar,
 } from '@/lib/blockLayout';
 import { meaningfulProfileChanged, nextContentStamp } from '@/lib/profileContent';
-import { buildProfileDocumentTitle, buildProfileMetaDescription, isProfilePublic } from '@/lib/userSeo';
+import {
+  buildProfileDocumentTitle,
+  buildProfileMetaDescription,
+  isProfilePublic,
+  visibleProfileBio,
+} from '@/lib/userSeo';
 
 function assert(condition: boolean, message: string): void {
   if (!condition) throw new Error(message);
@@ -532,12 +537,12 @@ assert(buildProfileDocumentTitle('花', '') === '花｜Procom', '肩書が空の
 assert(buildProfileDocumentTitle('花', '歌手') === '花｜歌手｜Procom', '肩書ありの title は従来どおり');
 assert(buildProfileDocumentTitle('花', '   ') === '花｜Procom', '空白だけの肩書は title に出さない');
 assert(
-  buildProfileMetaDescription('花', '', '紹介') === '紹介',
-  '肩書が空なら自己紹介文をそのまま説明にする'
+  buildProfileMetaDescription('花', '', '紹介') === '花。紹介',
+  '肩書が空でも説明に名前を含める'
 );
 assert(
-  buildProfileMetaDescription('花', '   ', '') === 'SNSプロフィールとリンク集をまとめたページ',
-  '肩書も自己紹介も空なら従来の説明'
+  buildProfileMetaDescription('花', '   ', '') === '花のプロフィール',
+  '肩書も自己紹介も空なら名前を含む説明にする'
 );
 assert(
   buildProfileMetaDescription('花', '歌手', '紹介') === '花（歌手）。紹介',
@@ -554,6 +559,29 @@ assert(
 assert(
   buildProfileMetaDescription('花', '歌手', '歌手の花です') === '歌手の花です',
   '本文へ名前と肩書が含まれるときは自己紹介文を維持する'
+);
+assert(
+  buildProfileMetaDescription('花', '歌手', '花です') === '歌手。花です',
+  '名前だけの自己紹介には肩書だけを足す'
+);
+assert(
+  buildProfileMetaDescription('花', '', '花です') === '花です',
+  '名前を含む自己紹介は重ねない'
+);
+assert(visibleProfileBio({ bio: '紹介' }) === '紹介', '旧形式は自己紹介を説明に使える');
+assert(
+  visibleProfileBio({
+    bio: '非表示',
+    settings: { blockLayoutVersion: 1, sectionOrder: ['YouTube'], bioDismissed: true },
+  }) === '',
+  '解除済みの自己紹介は説明に使わない'
+);
+assert(
+  visibleProfileBio({
+    bio: '表示',
+    settings: { blockLayoutVersion: 1, sectionOrder: ['Bio', 'YouTube'], bioDismissed: true },
+  }) === '表示',
+  '並びにある自己紹介は解除記録があっても説明に使う'
 );
 
 const savedQuestions = `前置き
@@ -606,8 +634,8 @@ assert(bioSource.includes('PROFILE'), '自己紹介ブロックの見出しはPR
 assert(!sectionSource.includes('プロフィールを編集'), '名前編集だけのカードボタンは残さない');
 assert(sectionSource.includes('CalendarBlock'), '固定カレンダーは残す');
 assert(
-  pageSource.includes('buildProfileMetaDescription(profile?.name, profile?.title, profile?.bio)'),
-  'SEOの説明は名前・肩書・自己紹介から作り、ブロック配置を見ない'
+  pageSource.includes('buildProfileMetaDescription(profile?.name, profile?.title, visibleProfileBio(profile))'),
+  'SEOの説明は名前・肩書と、表示中の自己紹介だけから作る'
 );
 assert(pageSource.includes('canonical: `/user/${uid}`'), 'canonical は変えない');
 assert(pageSource.includes('index: isPublic'), 'インデックス判定は変えない');

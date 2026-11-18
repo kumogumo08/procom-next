@@ -1,3 +1,4 @@
+import type { Metadata } from 'next';
 import type { ReactNode } from 'react';
 import { headers } from 'next/headers';
 import { redirect } from 'next/navigation';
@@ -8,6 +9,11 @@ import { db } from '@/lib/firebase-admin';
 import { getLoggedInUid } from '@/lib/session';
 
 export const dynamic = 'force-dynamic';
+
+export const metadata: Metadata = {
+  title: 'アカウント設定 - Procom',
+  robots: { index: false, follow: false },
+};
 
 export default async function AccountLayout({ children }: { children: ReactNode }) {
   const path = (await headers()).get('x-procom-path') ?? '';

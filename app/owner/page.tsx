@@ -1,20 +1,38 @@
-'use client';
-
+import type { Metadata } from 'next';
 import { FC } from 'react';
-import Head from 'next/head';
 import Header from '@/components/Header';
 import Footer from '@/components/Footer';
 import Link from 'next/link';
 
+const title = '運営者情報 - Procom';
+const description = 'Procomの運営責任者、所在地、運営開始日、お問い合わせ先を掲載しています。';
+
+export const metadata: Metadata = {
+  title,
+  description,
+  alternates: { canonical: '/owner' },
+  robots: { index: true, follow: true },
+  openGraph: {
+    title,
+    description,
+    url: 'https://procom.jp/owner',
+    siteName: 'Procom（プロコム）',
+    images: [{ url: '/og-image.jpg', width: 1200, height: 630, alt: 'Procom（プロコム）OGP画像' }],
+    type: 'website',
+    locale: 'ja_JP',
+  },
+  twitter: {
+    card: 'summary_large_image',
+    title,
+    description,
+    images: ['/og-image.jpg'],
+    site: '@Procom_next',
+  },
+};
+
 const OwnerPage: FC = () => {
   return (
     <>
-      <Head>
-        <title>運営者情報 - Procom</title>
-        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-        <meta name="description" content="Procomの運営者情報ページ" />
-      </Head>
-
       <Header />
 
       <main className="bg-[#f7f7f7] text-[#333] py-10 px-5 leading-relaxed min-h-screen">

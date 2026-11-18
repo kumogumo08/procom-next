@@ -9,8 +9,7 @@ const SITE = 'https://procom.jp';
 export default function sitemap(): MetadataRoute.Sitemap {
   const lastModified = new Date();
   return [
-    { url: `${SITE}/`, lastModified, changeFrequency: 'weekly', priority: 1 },
-    { url: `${SITE}/top`, lastModified, changeFrequency: 'weekly', priority: 0.9 },
+    { url: `${SITE}/top`, lastModified, changeFrequency: 'weekly', priority: 1 },
     { url: `${SITE}/users`, lastModified, changeFrequency: 'daily', priority: 0.8 },
   ];
 }

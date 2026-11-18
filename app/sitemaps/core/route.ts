@@ -4,5 +4,5 @@ export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
 
 export function GET() {
-  return xmlResponse(urlSetXml(['/', '/top', '/users', '/sitemaps']));
+  return xmlResponse(urlSetXml(['/top', '/users', '/sitemaps']));
 }

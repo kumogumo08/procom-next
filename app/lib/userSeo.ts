@@ -2,6 +2,7 @@
  * プロフィール SEO 用の既存公開判定・title 組み立て。
  * 公開フラグは Firestore `profile.isPublic`（未設定は公開）。新フィールドは作らない。
  */
+import { resolveVisibleSectionOrder } from '@/lib/blockLayout';
 
 const TITLE_NAME_MAX = 48;
 const TITLE_JOB_MAX = 48;
@@ -31,19 +32,45 @@ export function buildProfileDocumentTitle(nameRaw: unknown, jobTitleRaw: unknown
   return `${name}｜${job}｜Procom`;
 }
 
-const PROFILE_DESCRIPTION_FALLBACK = 'SNSプロフィールとリンク集をまとめたページ';
+/**
+ * 画面に自己紹介ブロックが出るときだけ本文を返す。
+ * 解除済みで並びにも無い自己紹介は、description に載せない。
+ */
+export function visibleProfileBio(profile: unknown): string {
+  if (!profile || typeof profile !== 'object') return '';
+  const record = profile as {
+    bio?: unknown;
+    settings?: {
+      sectionOrder?: unknown;
+      blockLayoutVersion?: unknown;
+      bioDismissed?: unknown;
+    };
+  };
+  const settings = record.settings;
+  const visible = resolveVisibleSectionOrder(
+    settings?.sectionOrder,
+    settings?.blockLayoutVersion,
+    settings?.bioDismissed
+  );
+  if (!visible.includes('Bio')) return '';
+  return typeof record.bio === 'string' ? record.bio : '';
+}
 
-/** 検索・OGP用。肩書が空なら従来の自己紹介文。配置や解除状態は見ない。 */
+/** 検索・OGP・Twitter 用。名前を必ず含め、表示中の自己紹介だけを足す。 */
 export function buildProfileMetaDescription(nameRaw: unknown, jobTitleRaw: unknown, bioRaw: unknown): string {
   const name = typeof nameRaw === 'string' ? nameRaw.trim() : '';
   const job = typeof jobTitleRaw === 'string' ? jobTitleRaw.trim() : '';
   const bio = typeof bioRaw === 'string' ? bioRaw.trim() : '';
-  if (!job) return bio || PROFILE_DESCRIPTION_FALLBACK;
-
   const displayName = name || 'Procomユーザー';
-  const lead = `${displayName}（${job}）`;
+  const lead = job ? `${displayName}（${job}）` : displayName;
   if (!bio) return `${lead}のプロフィール`;
-  if (bio.startsWith(lead) || (name !== '' && bio.includes(name) && bio.includes(job))) return bio;
+  if (bio.startsWith(lead)) return bio;
+
+  const hasName = name !== '' && bio.includes(name);
+  const hasJob = job !== '' && bio.includes(job);
+  if (hasName && (!job || hasJob)) return bio;
+  if (hasName) return `${job}。${bio}`;
+  if (hasJob) return `${displayName}。${bio}`;
   return `${lead}。${bio}`;
 }
 

@@ -1,15 +1,9 @@
 // app/deleted/page.tsx
 'use client';
 
-import Head from 'next/head';
-import { useEffect } from 'react';
 import AuthPageShell from '@/components/AuthPageShell';
 
 export default function DeletedPage() {
-  useEffect(() => {
-    document.title = '退会完了 - Procom';
-  }, []);
-
   return (
     <>
       <AuthPageShell>

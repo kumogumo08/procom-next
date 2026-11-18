@@ -1,3 +1,4 @@
+import type { Metadata } from 'next';
 import { Suspense } from 'react';
 import { unstable_noStore as noStore } from 'next/cache';
 import { redirect } from 'next/navigation';
@@ -10,6 +11,11 @@ import { getLoggedInUid } from '@/lib/session';
 
 /** Cookie を読むため静的化しない（RSC でセッションと一致させる） */
 export const dynamic = 'force-dynamic';
+
+export const metadata: Metadata = {
+  title: '新規登録 - Procom',
+  robots: { index: false, follow: false },
+};
 
 export default async function RegisterPage() {
   noStore();

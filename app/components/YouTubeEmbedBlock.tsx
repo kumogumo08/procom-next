@@ -135,7 +135,7 @@ export default function YouTubeEmbedBlock({
 
   return (
     <div className="sns-item" id="youtube-section" style={snsCardBase}>
-      <h2 style={cardTitle} data-block-title="">YouTube</h2>
+      <h2 style={cardTitle} data-block-title=""><span>YouTube</span></h2>
 
       {/* 🔘 表示モード切替 */}
       {isEditable && (

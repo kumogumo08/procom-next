@@ -85,9 +85,7 @@ return (
     margin: '0 auto',
   }}
 >
-    <div className="block-drag-surface" data-block-title="">
-      SNSボタン
-    </div>
+    <div className="block-drag-surface" data-block-title=""><span>SNSボタン</span></div>
     {/* ✅ ボタンを中央に固定するラッパー */}
     <div className="w-full flex flex-wrap justify-center">
       <div className="max-w-[700px] w-full flex flex-wrap justify-center gap-4">

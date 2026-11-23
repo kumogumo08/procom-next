@@ -268,7 +268,7 @@ export default function StoresProductsBlock({
 
   return (
     <section className={styles.block} style={{ ...cardBase, width: '100%' }} aria-label="STORES SHOP">
-      <h2 style={cardTitle} data-block-title="">STORES SHOP</h2>
+      <h2 style={cardTitle} data-block-title=""><span>STORES SHOP</span></h2>
       <div className={styles.stage} data-many={products.length > 1 ? 'true' : undefined}>
         {!isEditable && trimmedDescription ? (
           <div className={styles.lead}>

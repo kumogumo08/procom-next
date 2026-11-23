@@ -56,7 +56,7 @@ export default function CalendarBlock({
 
   return (
     <div id="calendar-container">
-      <h2 style={cardTitle} data-block-title="">{BLOCK_LABELS.Calendar}</h2>
+      <h2 style={cardTitle} data-block-title=""><span>{BLOCK_LABELS.Calendar}</span></h2>
       <div id="calendar" className="calendar"></div>
 
       {isEditable && (

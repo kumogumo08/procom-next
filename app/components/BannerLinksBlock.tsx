@@ -240,7 +240,7 @@ export default function BannerLinksBlock({
 
   return (
     <section className="banner-section" style={{ ...cardBase, width: '100%' }}>
-      <h2 style={cardTitle} data-block-title="">リンク</h2>
+      <h2 style={cardTitle} data-block-title=""><span>リンク</span></h2>
 
       <div
         style={{

@@ -356,7 +356,7 @@ export default function AppProjectBlock({
 
   return (
     <section className="app-project-block" style={{ ...cardBase, width: '100%' }}>
-      <h2 style={cardTitle} data-block-title="">アプリ</h2>
+      <h2 style={cardTitle} data-block-title=""><span>アプリ</span></h2>
 
       {isEditable && (
         <div style={{ textAlign: 'center', marginBottom: 16 }}>

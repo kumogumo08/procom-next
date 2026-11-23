@@ -120,7 +120,7 @@ export default function TikTokEmbed({
   return (
     <div className="sns-bottom-row">
       <div className="sns-item" id="tiktok-section" style={snsCardBase}>
-        <h2 style={cardTitle} data-block-title="">TikTok</h2>
+        <h2 style={cardTitle} data-block-title=""><span>TikTok</span></h2>
 
         {isEditable && (
           <div className="sns-section" style={cardBody}>

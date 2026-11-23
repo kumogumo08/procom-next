@@ -735,7 +735,7 @@ async function main(): Promise<number> {
       const registered = await request('/api/register', jar, {
         method: 'POST',
         headers: { 'content-type': 'application/json' },
-        body: JSON.stringify({ username, email, password: PASSWORD }),
+        body: JSON.stringify({ username, email, password: PASSWORD, accountKind: 'creator' }),
       });
       const registeredJson = registered.status === 200 ? (JSON.parse(registered.text) as { redirectTo?: string }) : {};
       const first = await admin.auth().getUserByEmail(email);
@@ -827,7 +827,7 @@ async function main(): Promise<number> {
       const again = await request('/api/register', new Map(), {
         method: 'POST',
         headers: { 'content-type': 'application/json' },
-        body: JSON.stringify({ username: `Next${suffix}`, email, password: PASSWORD }),
+        body: JSON.stringify({ username: `Next${suffix}`, email, password: PASSWORD, accountKind: 'creator' }),
       });
       const againJson = again.status === 200 ? (JSON.parse(again.text) as { redirectTo?: string }) : {};
       const second = again.status === 200 ? await admin.auth().getUserByEmail(email) : null;

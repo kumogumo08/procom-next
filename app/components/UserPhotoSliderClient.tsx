@@ -9,12 +9,15 @@ type Props = {
   initialPhotos: Photo[];
   /** false: 下部カルーセル非表示（上部ギャラリー直下の編集 UI のみ） */
   showPhotoCarousel?: boolean;
+  /** 本人の公開プロフィールだけ。カルーセル直下の切り替え */
+  showProfileActivityTabs?: boolean;
 };
 
 export default function UserPhotoSliderClient({
   uid,
   initialPhotos,
   showPhotoCarousel = true,
+  showProfileActivityTabs = false,
 }: Props) {
   const [photos, setPhotos] = useState<Photo[]>(initialPhotos);
   const router = useRouter();
@@ -33,6 +36,7 @@ export default function UserPhotoSliderClient({
         router.refresh();
       }}
       showPhotoCarousel={showPhotoCarousel}
+      showProfileActivityTabs={showProfileActivityTabs}
     />
   );
 }

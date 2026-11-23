@@ -70,8 +70,12 @@ export function isOnboardingBlocked(profile: unknown): boolean {
   return gate === 'required' || gate === 'unknown';
 }
 
-/** ログイン後の遷移。required だけ初期設定。それ以外は従来のプロフィール。 */
-export function profileLoginPath(uid: string, profile: unknown): string {
+/**
+ * ログイン後の遷移。ファンはマイページ。required のクリエイターだけ初期設定。
+ * 種別が無い既存会員は従来のプロフィール。
+ */
+export function profileLoginPath(uid: string, profile: unknown, accountKind?: unknown): string {
+  if (accountKind === 'fan') return '/mypage';
   if (readOnboardingGate(profile) === 'required') return '/profile/setup';
   return `/user/${uid}`;
 }
@@ -80,6 +84,7 @@ export function profileLoginPath(uid: string, profile: unknown): string {
 export function safeLoginRedirect(uid: string, redirectTo: unknown): string {
   if (redirectTo === '/profile/setup') return '/profile/setup';
   if (redirectTo === '/account/suspended') return '/account/suspended';
+  if (redirectTo === '/mypage') return '/mypage';
   return `/user/${uid}`;
 }
 

@@ -1,0 +1,64 @@
+.shell {
+  width: 100%;
+  max-width: 1100px;
+  margin: 16px auto 12px;
+  padding: 0 16px;
+  box-sizing: border-box;
+}
+
+.shellContained {
+  width: 100%;
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+.bar {
+  display: flex;
+  width: 100%;
+  background: #fff;
+  border: 1px solid #e5e7eb;
+  border-radius: 16px;
+  box-shadow: 0 4px 12px rgba(15, 23, 42, 0.06);
+  overflow: hidden;
+}
+
+.link,
+.current {
+  flex: 1;
+  min-width: 0;
+  min-height: 48px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 10px 8px;
+  box-sizing: border-box;
+  font-size: clamp(0.8rem, 3.2vw, 0.95rem);
+  font-weight: 700;
+  line-height: 1.3;
+  text-decoration: none;
+  white-space: nowrap;
+}
+
+.link {
+  background: #fff;
+  color: #64748b;
+}
+
+.current {
+  background: #eff6ff;
+  color: #1d4ed8;
+  box-shadow: inset 0 -3px 0 #2563eb;
+}
+
+.icon {
+  width: 18px;
+  height: 18px;
+  flex-shrink: 0;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}

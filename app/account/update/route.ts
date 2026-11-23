@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import bcrypt from 'bcryptjs';
+import { readFanName, readUserAccountKind } from '@/lib/accountKind';
 import { db } from '@/lib/firebase';
 import { noteUserListing } from '@/lib/listing/firestoreListing';
 import { nextContentStamp } from '@/lib/profileContent';
@@ -30,9 +31,19 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'ユーザーが見つかりませんでした' }, { status: 404 });
     }
 
-    const currentProfile = userDoc.data()?.profile;
+    const currentData = userDoc.data();
+    const currentProfile = currentData?.profile;
+    const isFan = readUserAccountKind(currentData) === 'fan';
     const updates: Record<string, any> = {};
-    if (newUsername) updates['profile.name'] = newUsername;
+    if (newUsername && isFan) {
+      const fanName = readFanName(newUsername);
+      if (!fanName.ok) {
+        return NextResponse.json({ error: fanName.error }, { status: 400 });
+      }
+      updates.fanName = fanName.value;
+    } else if (newUsername) {
+      updates['profile.name'] = newUsername;
+    }
     const isValidEmail = (email: string) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
 
     if (newEmail) {
@@ -64,7 +75,7 @@ export async function POST(req: NextRequest) {
         currentProfile && typeof currentProfile === 'object' && typeof currentProfile.name === 'string'
           ? currentProfile.name
           : '';
-      if (typeof newUsername === 'string' && newUsername.trim() && newUsername !== currentName) {
+      if (!isFan && typeof newUsername === 'string' && newUsername.trim() && newUsername !== currentName) {
         const stamp = nextContentStamp(currentProfile, {
           ...(currentProfile && typeof currentProfile === 'object' ? currentProfile : {}),
           name: newUsername,
@@ -72,7 +83,7 @@ export async function POST(req: NextRequest) {
         if (stamp != null) updates['profile.contentUpdatedAtMs'] = stamp;
       }
       await userDocRef.update(updates);
-      if (newUsername) await noteUserListing(uid);
+      if (newUsername && !isFan) await noteUserListing(uid);
     }
 
     // 🔽 セッションを更新して保存
@@ -80,7 +91,7 @@ export async function POST(req: NextRequest) {
     const session = await getIronSession<SessionData>(req, res, sessionOptions);
     session.user = session.user || {};
     if (newEmail) session.user.email = newEmail;
-    if (newUsername) session.user.name = newUsername;
+    if (newUsername) session.user.name = typeof updates.fanName === 'string' ? updates.fanName : newUsername;
     await session.save();
 
     return new NextResponse(

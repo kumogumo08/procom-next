@@ -2,7 +2,7 @@ export const runtime = 'nodejs';
 
 import React from 'react';
 import { ACCOUNT_SUSPENDED_PATH } from '@/lib/accountSuspension';
-import { getProfileFromFirestore, isSuspendedProfile, isWithdrawingProfile } from '@/lib/getProfile';
+import { getAccountKindFromFirestore, getProfileFromFirestore, isPublicFanActivityPage, isSuspendedProfile, isWithdrawingProfile } from '@/lib/getProfile';
 import { isAuthUnavailable } from '@/lib/activeSession';
 import { getLoggedInUid } from '@/lib/session';
 import Header from '@/components/Headerlogin';
@@ -29,6 +29,7 @@ import { notFound, redirect } from 'next/navigation';
 import UserPageSectionsClient from '@/components/UserPageSectionsClient';
 import { clampPhotoPositionY } from '@/lib/photoPosition';
 import { resolveSectionOrder } from '@/lib/blockLayout';
+import { FAN_ACCOUNT_KIND } from '@/lib/accountKind';
 import { isOnboardingBlocked, readOnboardingGate } from '@/lib/onboarding';
 import {
   buildProfileDocumentTitle,
@@ -145,6 +146,11 @@ export default async function UserPage({
     );
   }
 
+  if (isEditable) {
+    const accountKind = await getAccountKindFromFirestore(uid);
+    if (accountKind === FAN_ACCOUNT_KIND) redirect('/mypage');
+  }
+
   if (isWithdrawingProfile(profile) || isOnboardingBlocked(profile)) {
     if (!isWithdrawingProfile(profile) && readOnboardingGate(profile) === 'required' && isEditable) {
       redirect('/profile/setup');
@@ -183,6 +189,10 @@ export default async function UserPage({
     resolveVerifiedBaseProducts(profile?.baseProducts),
     resolveVerifiedBaseShopUrl(profile?.baseProductsSettings),
   ]);
+  const showProfileActivityTabs =
+    isEditable && (await getAccountKindFromFirestore(uid)) !== FAN_ACCOUNT_KIND;
+  const visitorActivityHref =
+    !isEditable && (await isPublicFanActivityPage(uid)) ? `/user/${uid}/activity` : undefined;
 
   return (
     <>
@@ -191,6 +201,8 @@ export default async function UserPage({
         showPhotoEditor={isEditable}
         photoEditorUid={uid}
         photoEditorPhotos={photos}
+        showProfileActivityTabs={showProfileActivityTabs}
+        visitorActivityHref={visitorActivityHref}
       />
 
       <UserPageSectionsClient

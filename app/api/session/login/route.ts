@@ -1,13 +1,14 @@
 export const runtime = "nodejs";
 
 import { NextRequest, NextResponse } from "next/server";
+import { pendingAccountKind, sessionDisplayName } from "@/lib/accountKind";
 import { admin } from "@/lib/firebase";
 import { ACCOUNT_SUSPENDED_PATH, readUserSuspended } from "@/lib/accountSuspension";
 import { profileLoginPath } from "@/lib/onboarding";
 import {
   claimsToPersist,
-  initialNewUserProfile,
   isFirestoreAlreadyExists,
+  newUserRecord,
   registrationResumeAction,
 } from "@/lib/registration";
 import { setSessionCookie } from "@/lib/session";
@@ -58,11 +59,14 @@ export async function POST(req: NextRequest) {
           : "ユーザー";
       try {
         await userRef.create({
-          uid,
-          email: userRecord.email ?? decoded.email ?? "",
-          password: "",
+          ...newUserRecord({
+            uid,
+            email: userRecord.email ?? decoded.email ?? "",
+            password: "",
+            kind: pendingAccountKind(userRecord.customClaims),
+            name,
+          }),
           createdAt: admin.firestore.FieldValue.serverTimestamp(),
-          profile: initialNewUserProfile(name),
         });
       } catch (resumeErr: unknown) {
         const code = (resumeErr as { code?: unknown }).code;
@@ -75,11 +79,10 @@ export async function POST(req: NextRequest) {
       await admin.auth().setCustomUserClaims(uid, claimUpdate.next);
     }
     const profile = saved.exists ? saved.get("profile") : undefined;
-
-    const username = profile?.name ?? "ユーザー";
+    const username = sessionDisplayName(profile, saved.exists ? saved.get("fanName") : undefined);
     const redirectTo = readUserSuspended(saved.data())
       ? ACCOUNT_SUSPENDED_PATH
-      : profileLoginPath(uid, profile);
+      : profileLoginPath(uid, profile, saved.exists ? saved.get("accountKind") : undefined);
 
     const res = NextResponse.json({ ok: true, uid, redirectTo });
 

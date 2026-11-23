@@ -31,7 +31,7 @@ export default async function Page() {
     const snap = await db.collection('users').doc(uid).get();
     if (readUserSuspended(snap.data())) redirect(ACCOUNT_SUSPENDED_PATH);
     const profile = snap.exists ? snap.get('profile') : undefined;
-    redirect(profileLoginPath(uid, profile));
+    redirect(profileLoginPath(uid, profile, snap.get('accountKind')));
   }
 
   return (

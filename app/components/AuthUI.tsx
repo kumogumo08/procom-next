@@ -71,7 +71,7 @@ const handleLogout = async () => {
     <>
       {isMobile ? (
         <ul ref={navRef} className="nav-links">
-          <li><Link href={`/user/${session.uid}`} className="mypage-btn">マイページ</Link></li>
+          <li><Link href="/mypage" className="mypage-btn">マイページ</Link></li>
           <li><button onClick={handleLogout}>ログアウト</button></li>
           <li><Link href="/account">⚙ アカウント設定</Link></li>
         </ul>
@@ -79,7 +79,7 @@ const handleLogout = async () => {
         <div className="auth-forms show" style={{ textAlign: 'right', marginTop: 10 }}>
           <p>ようこそ、{session.name ?? session.username}さん！</p>
           <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 10 }}>
-            <Link href={`/user/${session.uid}`} className="mypage-btn">マイページ</Link>
+            <Link href="/mypage" className="mypage-btn">マイページ</Link>
             <button onClick={handleLogout} className="mypage-btn">ログアウト</button>
           </div>
           <div style={{ marginTop: 5 }}>

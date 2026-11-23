@@ -79,7 +79,7 @@ export default function TopLandingHero() {
                   {accountMenuOpen && (
                     <div className={styles.topNavDropdown} role="menu">
                       <Link
-                        href={`/user/${session.uid}`}
+                        href="/mypage"
                         className={styles.topNavDropdownItem}
                         role="menuitem"
                         onClick={() => setAccountMenuOpen(false)}
@@ -220,7 +220,7 @@ export default function TopLandingHero() {
             {session.loggedIn ? (
               <>
                 <p className={styles.greeting}>ようこそ、{session.name ?? session.username}さん！</p>
-                <Link href={`/user/${session.uid}`} className={styles.menuLink}>
+                <Link href="/mypage" className={styles.menuLink}>
                   マイページ
                 </Link>
                 {session.isAdmin && (

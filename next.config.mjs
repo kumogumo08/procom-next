@@ -18,6 +18,7 @@ const nextConfig = {
   experimental: {
     // 必要があればここに書く
   },
+  serverExternalPackages: ['sharp'],
   // revalidate が60秒のページは s-maxage=60, stale-while-revalidate=60 になる。
   expireTime: 120,
   /**

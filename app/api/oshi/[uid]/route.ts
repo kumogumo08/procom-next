@@ -42,8 +42,11 @@ export async function POST(
   try {
     const actor = await resolveOshiActor(req);
     issueVisitorId = actor.issueVisitorId;
-    const result = await commitOshi(uid, actor.actorKey);
+    const result = await commitOshi(uid, actor);
     if (!result.ok) {
+      if (result.reason === 'self') {
+        return oshiJson({ success: false, error: 'self' }, 400, issueVisitorId);
+      }
       if (result.reason === 'daily_limit') {
         return oshiJson(
           { success: false, reason: result.reason, todayCount: result.todayCount },

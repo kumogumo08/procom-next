@@ -2,6 +2,7 @@
 
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import PhotoSlider from '@/components/PhotoSlider';
+import ProfileActivityTabs from '@/components/ProfileActivityTabs';
 import UserPageTopGallery from '@/components/UserPageTopGallery';
 import { clampPhotoPositionY } from '@/lib/photoPosition';
 import {
@@ -26,6 +27,8 @@ type Props = {
   onSavedPhotos?: (photos: Photo[]) => void;
   /** false のとき下部カルーセル非表示（上部ギャラリーと併用時） */
   showPhotoCarousel?: boolean;
+  /** 本人の公開プロフィールだけ。カルーセル直下の切り替え */
+  showProfileActivityTabs?: boolean;
 };
 
 function resizeImage(file: File, maxWidth = 800): Promise<Blob> {
@@ -60,6 +63,7 @@ export default function PhotoSliderBlock({
   setPhotos,
   onSavedPhotos,
   showPhotoCarousel = true,
+  showProfileActivityTabs = false,
 }: Props) {
   const [current, setCurrent] = useState(0);
   const [dragOver, setDragOver] = useState(false);
@@ -263,6 +267,9 @@ export default function PhotoSliderBlock({
             enableDragPosition
             onDragPositionY={setPositionY}
           />
+          {showProfileActivityTabs ? (
+            <ProfileActivityTabs current="profile" profileUid={uid} />
+          ) : null}
           <div className={styles.positionStrip}>
             <p className={styles.positionTitle}>
               表示の調整
@@ -313,6 +320,10 @@ export default function PhotoSliderBlock({
             <p className={styles.positionHint}>上のプレビューにすぐ反映されます。「写真を保存」で確定してください。</p>
           </div>
         </>
+      ) : null}
+
+      {showProfileActivityTabs && !showPhotoCarousel && setPhotos && photos.length === 0 ? (
+        <ProfileActivityTabs current="profile" profileUid={uid} />
       ) : null}
 
       {setPhotos && (

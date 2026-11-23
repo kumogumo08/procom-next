@@ -259,7 +259,7 @@ async function main(): Promise<number> {
     const registered = await request('/api/register', mainJar, {
       method: 'POST',
       headers: { 'content-type': 'application/json' },
-      body: JSON.stringify({ username: mainName, email: mainEmail, password: PASSWORD }),
+      body: JSON.stringify({ username: mainName, email: mainEmail, password: PASSWORD, accountKind: 'creator' }),
     });
     const registeredJson = registered.status === 200 ? (JSON.parse(registered.text) as { redirectTo?: string }) : {};
     const mainUser = await admin.auth().getUserByEmail(mainEmail);
@@ -465,7 +465,7 @@ async function main(): Promise<number> {
     await request('/api/register', hiddenJar, {
       method: 'POST',
       headers: { 'content-type': 'application/json' },
-      body: JSON.stringify({ username: hiddenName, email: hiddenEmail, password: PASSWORD }),
+      body: JSON.stringify({ username: hiddenName, email: hiddenEmail, password: PASSWORD, accountKind: 'creator' }),
     });
     const hiddenUser = await admin.auth().getUserByEmail(hiddenEmail);
     const sync = await request('/api/internal/listing-sync', new Map(), {
@@ -595,7 +595,7 @@ async function main(): Promise<number> {
     const pendingRetry = await request('/api/register', new Map(), {
       method: 'POST',
       headers: { 'content-type': 'application/json' },
-      body: JSON.stringify({ username: `EmuPending${suffix}`, email: pendingEmail, password: PASSWORD }),
+      body: JSON.stringify({ username: `EmuPending${suffix}`, email: pendingEmail, password: PASSWORD, accountKind: 'creator' }),
     });
     const pendingStill = await admin.auth().getUser(pendingAuth.uid);
     const pendingDoc = await db.collection('users').doc(pendingAuth.uid).get();
@@ -605,13 +605,13 @@ async function main(): Promise<number> {
     const bareRetry = await request('/api/register', new Map(), {
       method: 'POST',
       headers: { 'content-type': 'application/json' },
-      body: JSON.stringify({ username: `EmuBare${suffix}`, email: bareEmail, password: PASSWORD }),
+      body: JSON.stringify({ username: `EmuBare${suffix}`, email: bareEmail, password: PASSWORD, accountKind: 'creator' }),
     });
     const bareStill = await admin.auth().getUser(bareAuth.uid).then(() => true).catch(() => false);
     const bareDoc = await db.collection('users').doc(bareAuth.uid).get();
 
     const raceEmail = `race-${suffix}@demo.local`;
-    const raceBody = JSON.stringify({ username: `EmuRace${suffix}`, email: raceEmail, password: PASSWORD });
+    const raceBody = JSON.stringify({ username: `EmuRace${suffix}`, email: raceEmail, password: PASSWORD, accountKind: 'creator' });
     const raced = await Promise.all([
       request('/api/register', new Map(), { method: 'POST', headers: { 'content-type': 'application/json' }, body: raceBody }),
       request('/api/register', new Map(), { method: 'POST', headers: { 'content-type': 'application/json' }, body: raceBody }),
@@ -660,7 +660,7 @@ async function main(): Promise<number> {
     await request('/api/register', otherJar, {
       method: 'POST',
       headers: { 'content-type': 'application/json' },
-      body: JSON.stringify({ username: `EmuOther${suffix}`, email: otherEmail, password: PASSWORD }),
+      body: JSON.stringify({ username: `EmuOther${suffix}`, email: otherEmail, password: PASSWORD, accountKind: 'creator' }),
     });
     const beforeCross = profileOf((await db.collection('users').doc(mainUser.uid).get()).data());
     const crossSetup = await request('/api/profile/setup', otherJar, {

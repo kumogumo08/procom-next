@@ -2,6 +2,7 @@ import { NextRequest } from 'next/server';
 import { v4 as uuidv4 } from 'uuid';
 import { bucket, db } from '@/lib/firebase';
 import { readUserSuspended } from '@/lib/accountSuspension';
+import { FAN_ACCOUNT_KIND, publicNameTakenByOther } from '@/lib/accountKind';
 import { readOnboardingGate } from '@/lib/onboarding';
 import { AUTH_REJECTED_MESSAGE, AUTH_UNAVAILABLE_MESSAGE, isAuthRejected, isAuthUnavailable } from '@/lib/activeSession';
 import { getSessionUID } from '@/lib/session';
@@ -107,11 +108,22 @@ export async function commitSetup(uid: string, planFrom: (profile: unknown) => S
     const plan = planFrom(profile);
     if (!plan.ok) failPlan(plan);
     const update: Record<string, unknown> = {};
-    if (plan.writes.name !== undefined) update['profile.name'] = plan.writes.name;
+    if (plan.writes.name !== undefined) {
+      if (snap.get('accountKind') === FAN_ACCOUNT_KIND) {
+        const taken = await tx.get(db.collection('users').where('profile.name', '==', plan.writes.name).limit(2));
+        if (publicNameTakenByOther(uid, taken.docs.map((doc) => doc.id))) {
+          failPlan({ ok: false, status: 409, error: 'ユーザー名は既に使用されています', field: 'name' });
+        }
+      }
+      update['profile.name'] = plan.writes.name;
+    }
     if (plan.writes.title !== undefined) update['profile.title'] = plan.writes.title;
     if (plan.writes.photos !== undefined) update['profile.photos'] = plan.writes.photos;
     if (plan.writes.onboardingStatus !== undefined) {
       update['profile.onboardingStatus'] = plan.writes.onboardingStatus;
+    }
+    if (plan.writes.onboardingStatus === 'complete' && snap.get('accountKind') === FAN_ACCOUNT_KIND) {
+      update.accountKind = 'creator';
     }
     if (Object.keys(update).length === 0) return;
     tx.update(ref, update);

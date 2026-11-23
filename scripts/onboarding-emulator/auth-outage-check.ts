@@ -473,7 +473,7 @@ async function main(): Promise<number> {
     const reg = await request('/api/register', new Map(), {
       method: 'POST',
       headers: { 'content-type': 'application/json' },
-      body: JSON.stringify({ username: `Reg${suffix}`, email: regEmail, password: PASSWORD }),
+      body: JSON.stringify({ username: `Reg${suffix}`, email: regEmail, password: PASSWORD, accountKind: 'creator' }),
     });
     let regCreated = true;
     try {

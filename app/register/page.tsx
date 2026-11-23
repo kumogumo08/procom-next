@@ -7,6 +7,7 @@ import LoginClient from '@/login/LoginClient';
 import { ACCOUNT_SUSPENDED_PATH, readUserSuspended } from '@/lib/accountSuspension';
 import { db } from '@/lib/firebase';
 import { isAuthUnavailable } from '@/lib/activeSession';
+import { profileLoginPath } from '@/lib/onboarding';
 import { getLoggedInUid } from '@/lib/session';
 
 /** Cookie を読むため静的化しない（RSC でセッションと一致させる） */
@@ -28,7 +29,8 @@ export default async function RegisterPage() {
   if (uid) {
     const snap = await db.collection('users').doc(uid).get();
     if (readUserSuspended(snap.data())) redirect(ACCOUNT_SUSPENDED_PATH);
-    redirect(`/user/${uid}`);
+    const profile = snap.exists ? snap.get('profile') : undefined;
+    redirect(profileLoginPath(uid, profile, snap.get('accountKind')));
   }
 
   return (

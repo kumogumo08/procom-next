@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
+import { FAN_ACCOUNT_KIND, readAccountKind } from '@/lib/accountKind';
 import styles from './UserPageNavHeader.module.css';
 
 type SessionData = {
@@ -9,6 +10,7 @@ type SessionData = {
   uid?: string;
   username?: string;
   name?: string;
+  accountKind?: unknown;
 };
 
 export default function UserPageNavHeader() {
@@ -52,8 +54,9 @@ export default function UserPageNavHeader() {
     };
   }, [dropdownOpen]);
 
-  const loggedIn = Boolean(session.loggedIn && session.uid);
-  const mypageHref = session.uid ? `/user/${session.uid}` : '/top';
+  const uid = typeof session.uid === 'string' ? session.uid : '';
+  const loggedIn = Boolean(session.loggedIn && uid);
+  const isFan = readAccountKind(session.accountKind) === FAN_ACCOUNT_KIND;
 
   return (
     <header className={styles.bar} aria-label="ユーザーページナビゲーション">
@@ -90,20 +93,49 @@ export default function UserPageNavHeader() {
               {dropdownOpen && (
                 <div className={styles.dropdown} role="menu">
                   <Link
-                    href={mypageHref}
+                    href="/mypage"
                     className={styles.dropdownItem}
                     role="menuitem"
                     onClick={() => setDropdownOpen(false)}
                   >
-                    マイページへ
+                    ファン活動（マイページ）
                   </Link>
+                  {isFan ? (
+                    <Link
+                      href="/profile/setup"
+                      className={styles.dropdownItem}
+                      role="menuitem"
+                      onClick={() => setDropdownOpen(false)}
+                    >
+                      クリエイターとして登録
+                    </Link>
+                  ) : (
+                    <>
+                      <Link
+                        href={`/user/${uid}`}
+                        className={styles.dropdownItem}
+                        role="menuitem"
+                        onClick={() => setDropdownOpen(false)}
+                      >
+                        公開プロフィールを編集
+                      </Link>
+                      <Link
+                        href="/mypage/fans"
+                        className={styles.dropdownItem}
+                        role="menuitem"
+                        onClick={() => setDropdownOpen(false)}
+                      >
+                        ファン管理
+                      </Link>
+                    </>
+                  )}
                   <Link
                     href="/account"
                     className={styles.dropdownItem}
                     role="menuitem"
                     onClick={() => setDropdownOpen(false)}
                   >
-                    設定
+                    アカウント設定
                   </Link>
                   <form action="/api/logout" method="GET" className={styles.dropdownItemForm}>
                     <button type="submit" className={styles.dropdownItem}>

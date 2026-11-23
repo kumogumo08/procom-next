@@ -7,6 +7,11 @@ import { getSessionUID } from '@/lib/session';
 
 export const MAX_OSHI_PER_DAY = 5;
 export const OSHI_DAILY_COLLECTION = 'oshiDaily';
+export const SUPPORT_LINKS_COLLECTION = 'supportLinks';
+export const SUPPORT_EVENTS_COLLECTION = 'supportEvents';
+export const SUPPORT_EVENT_TYPE = 'oshi';
+/** 個別イベントの保持目安。累計は supportLinks に残す。TTL の有効化は運用側。 */
+export const SUPPORT_EVENT_RETENTION_MS = 400 * 24 * 60 * 60 * 1000;
 export const VISITOR_COOKIE_NAME = 'procom_visitor';
 
 const VISITOR_COOKIE_MAX_AGE = 60 * 60 * 24 * 400;
@@ -16,6 +21,8 @@ const VISITOR_ID_PATTERN =
 
 export type OshiActor = {
   actorKey: string;
+  /** セッションで確認できた UID だけ。リクエスト本文からは入れない。 */
+  uid: string | null;
   /** 新規発行したときだけ返す。既存Cookieはそのまま使う。 */
   issueVisitorId: string | null;
 };
@@ -23,7 +30,10 @@ export type OshiActor = {
 export type OshiCommitResult =
   | { ok: true; todayCount: number; totalCount: number }
   | { ok: false; reason: 'daily_limit'; todayCount: number }
-  | { ok: false; reason: 'unavailable' };
+  | { ok: false; reason: 'unavailable' }
+  | { ok: false; reason: 'self' };
+
+export type SupportRecordPlan = 'record' | 'anonymous' | 'self';
 
 function canReceiveOshi(snap: admin.firestore.DocumentSnapshot): boolean {
   if (!snap.exists) return false;
@@ -34,6 +44,28 @@ function canReceiveOshi(snap: admin.firestore.DocumentSnapshot): boolean {
 
 export function isSafeProfileUid(uid: string): boolean {
   return UID_PATTERN.test(uid);
+}
+
+/** ログイン済みかつ本人以外だけ個人履歴を書く。UID はセッション由来だけを渡す。 */
+export function supportRecordPlan(actorUid: string | null, targetUid: string): SupportRecordPlan {
+  if (actorUid && actorUid === targetUid) return 'self';
+  if (!actorUid || !isSafeProfileUid(actorUid) || !isSafeProfileUid(targetUid)) return 'anonymous';
+  return 'record';
+}
+
+export function supportLinkDocId(fanUid: string, creatorUid: string): string {
+  if (!isSafeProfileUid(fanUid) || !isSafeProfileUid(creatorUid) || fanUid === creatorUid) {
+    throw new Error('応援の組み合わせを確認できません');
+  }
+  return `${fanUid}_${creatorUid}`;
+}
+
+export function nextSupportCount(current: unknown): number {
+  return readNonNegative(current) + 1;
+}
+
+export function supportEventExpiresAt(now = new Date()): Date {
+  return new Date(now.getTime() + SUPPORT_EVENT_RETENTION_MS);
 }
 
 export function getTokyoDateString(now = new Date()): string {
@@ -103,16 +135,16 @@ export async function resolveOshiActor(req: NextRequest): Promise<OshiActor> {
   if (sessionUid && isSafeProfileUid(sessionUid)) {
     const actorSnap = await db.collection('users').doc(sessionUid).get();
     if (readUserSuspended(actorSnap.data())) throw new AccountSuspendedError();
-    return { actorKey: `user:${sessionUid}`, issueVisitorId: null };
+    return { actorKey: `user:${sessionUid}`, uid: sessionUid, issueVisitorId: null };
   }
 
   const current = req.cookies.get(VISITOR_COOKIE_NAME)?.value ?? '';
   if (VISITOR_ID_PATTERN.test(current)) {
-    return { actorKey: `visitor:${current}`, issueVisitorId: null };
+    return { actorKey: `visitor:${current}`, uid: null, issueVisitorId: null };
   }
 
   const visitorId = randomUUID();
-  return { actorKey: `visitor:${visitorId}`, issueVisitorId: visitorId };
+  return { actorKey: `visitor:${visitorId}`, uid: null, issueVisitorId: visitorId };
 }
 
 export async function readOshiState(targetUid: string, actorKey: string, now = new Date()) {
@@ -131,13 +163,20 @@ export async function readOshiState(targetUid: string, actorKey: string, now = n
 
 export async function commitOshi(
   targetUid: string,
-  actorKey: string,
+  actor: OshiActor,
   now = new Date()
 ): Promise<OshiCommitResult> {
+  const plan = supportRecordPlan(actor.uid, targetUid);
+  if (plan === 'self') return { ok: false, reason: 'self' };
+
   const date = getTokyoDateString(now);
-  const dailyRef = db.collection(OSHI_DAILY_COLLECTION).doc(dailyDocId(date, actorKey));
+  const dailyRef = db.collection(OSHI_DAILY_COLLECTION).doc(dailyDocId(date, actor.actorKey));
   const userRef = db.collection('users').doc(targetUid);
   const expiresAt = admin.firestore.Timestamp.fromDate(getOshiDailyExpiresAt(date));
+  const linkRef =
+    plan === 'record' && actor.uid
+      ? db.collection(SUPPORT_LINKS_COLLECTION).doc(supportLinkDocId(actor.uid, targetUid))
+      : null;
 
   try {
     return await db.runTransaction(async (tx) => {
@@ -152,6 +191,7 @@ export async function commitOshi(
         return { ok: false as const, reason: 'daily_limit' as const, todayCount };
       }
 
+      const linkSnap = linkRef ? await tx.get(linkRef) : null;
       const targets = readTargets(dailySnap.exists ? dailySnap.data()?.targets : {});
       targets[targetUid] = (targets[targetUid] ?? 0) + 1;
       const nextToday = todayCount + 1;
@@ -170,6 +210,25 @@ export async function commitOshi(
         { merge: true }
       );
       tx.update(userRef, { oshiCount: nextTotal });
+      if (linkRef && linkSnap && actor.uid) {
+        const linkWrite: Record<string, unknown> = {
+          fanUid: actor.uid,
+          creatorUid: targetUid,
+          count: nextSupportCount(linkSnap.exists ? linkSnap.get('count') : 0),
+          lastAt: admin.firestore.FieldValue.serverTimestamp(),
+        };
+        if (!linkSnap.exists || linkSnap.get('firstAt') == null) {
+          linkWrite.firstAt = admin.firestore.FieldValue.serverTimestamp();
+        }
+        tx.set(linkRef, linkWrite, { merge: true });
+        tx.set(db.collection(SUPPORT_EVENTS_COLLECTION).doc(), {
+          fanUid: actor.uid,
+          creatorUid: targetUid,
+          type: SUPPORT_EVENT_TYPE,
+          createdAt: admin.firestore.FieldValue.serverTimestamp(),
+          expiresAt: admin.firestore.Timestamp.fromDate(supportEventExpiresAt(now)),
+        });
+      }
 
       return { ok: true as const, todayCount: nextToday, totalCount: nextTotal };
     });
@@ -179,5 +238,35 @@ export async function commitOshi(
       return { ok: false, reason: 'unavailable' };
     }
     throw error;
+  }
+}
+
+const SUPPORT_DELETE_PAGE = 400;
+const SUPPORT_DELETE_MAX_PAGES = 20;
+
+async function deleteSupportQuery(collectionName: string, field: 'fanUid' | 'creatorUid', uid: string): Promise<void> {
+  for (let page = 0; page < SUPPORT_DELETE_MAX_PAGES; page += 1) {
+    const snap = await db.collection(collectionName).where(field, '==', uid).limit(SUPPORT_DELETE_PAGE).get();
+    if (snap.empty) return;
+    const batch = db.batch();
+    let deletes = 0;
+    for (const doc of snap.docs) {
+      if (doc.get(field) !== uid) continue;
+      batch.delete(doc.ref);
+      deletes += 1;
+    }
+    if (deletes === 0) return;
+    await batch.commit();
+    if (snap.size < SUPPORT_DELETE_PAGE) return;
+  }
+  throw new Error('応援履歴が残っています');
+}
+
+/** 退会者の応援リンクとイベント。相手の users.oshiCount は変えない。 */
+export async function deleteSupportHistory(uid: string): Promise<void> {
+  if (!isSafeProfileUid(uid)) return;
+  for (const collectionName of [SUPPORT_LINKS_COLLECTION, SUPPORT_EVENTS_COLLECTION]) {
+    await deleteSupportQuery(collectionName, 'fanUid', uid);
+    await deleteSupportQuery(collectionName, 'creatorUid', uid);
   }
 }

@@ -3,6 +3,7 @@ import { classifyGetUserError, loadAuthUser } from '@/lib/activeSession';
 import { admin, bucket, db } from '@/lib/firebase';
 import { assertDeletionSealConfigured, classifyDeletionMarker, signDeletionMarker } from '@/lib/accountDeletionSeal';
 import { enqueueUserListing, listingOutboxPending, runListingWorker } from '@/lib/listing/firestoreListing';
+import { deleteSupportHistory } from '@/lib/oshiDaily';
 import { invalidateListingAfterUnpublish, invalidateListingPages } from '@/lib/listing/listingCache';
 
 const MARKER = 'accountDeletions';
@@ -13,10 +14,10 @@ export function isDeletionUid(uid: string): boolean {
   return /^[A-Za-z0-9_-]{1,128}$/.test(uid);
 }
 
-/** 退会UIDの photos、banners、product-gallery 直下だけ。クライアントのパスは受け取らない。 */
+/** 退会UIDの photos、banners、product-gallery、fan-icons 直下だけ。クライアントのパスは受け取らない。 */
 export async function deleteOwnedStoragePrefix(
   uid: string,
-  folder: 'photos' | 'banners' | 'product-gallery'
+  folder: 'photos' | 'banners' | 'product-gallery' | 'fan-icons'
 ): Promise<void> {
   if (!isDeletionUid(uid)) {
     throw new Error('退会対象を確認できません');
@@ -308,8 +309,10 @@ export function firebaseDeletionPorts(): AccountDeletionPorts {
       await deleteOwnedStoragePrefix(uid, 'photos');
       await deleteOwnedStoragePrefix(uid, 'banners');
       await deleteOwnedStoragePrefix(uid, 'product-gallery');
+      await deleteOwnedStoragePrefix(uid, 'fan-icons');
     },
     async deleteUserDoc(uid) {
+      await deleteSupportHistory(uid);
       await db.collection('users').doc(uid).delete();
     },
     async syncListing(uid) {

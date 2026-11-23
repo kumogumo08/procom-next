@@ -15,6 +15,22 @@
         { "fieldPath": "categorySlugs", "arrayConfig": "CONTAINS" },
         { "fieldPath": "sortAtMs", "order": "DESCENDING" }
       ]
+    },
+    {
+      "collectionGroup": "supportLinks",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "fanUid", "order": "ASCENDING" },
+        { "fieldPath": "lastAt", "order": "DESCENDING" }
+      ]
+    },
+    {
+      "collectionGroup": "supportLinks",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "creatorUid", "order": "ASCENDING" },
+        { "fieldPath": "lastAt", "order": "DESCENDING" }
+      ]
     }
   ],
   "fieldOverrides": []

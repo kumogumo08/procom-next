@@ -8,6 +8,7 @@ import Link from 'next/link'
 import { FirebaseError } from 'firebase/app';
 import { getAuth, signInWithEmailAndPassword } from 'firebase/auth';
 import { firebaseApp } from '@/lib/firebaseClient';
+import { readFanName, type AccountKind } from '@/lib/accountKind';
 import { safeLoginRedirect } from '@/lib/onboarding';
 
 /** ユーザー向け（Firebase の code / 英語メッセージは出さない） */
@@ -37,6 +38,7 @@ export default function LoginPage({ initialMode }: LoginPageProps) {
   const [showRegisterPassword, setShowRegisterPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [loginError, setLoginError] = useState<{ title: string; detail: string } | null>(null);
+  const [accountKind, setAccountKind] = useState<AccountKind | null>(null);
 
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -68,6 +70,15 @@ export default function LoginPage({ initialMode }: LoginPageProps) {
     const username = (form.username as HTMLInputElement).value.trim();
     const email = (form.email as HTMLInputElement).value.trim();
     const password = (form.password as HTMLInputElement).value;
+    if (accountKind !== 'fan' && accountKind !== 'creator') {
+      return alert('ファンまたはクリエイターを選択してください');
+    }
+    if (accountKind === 'fan') {
+      const fanName = readFanName(username);
+      if (!fanName.ok) return alert(fanName.error);
+    } else if (!username) {
+      return alert('ユーザー名を入力してください');
+    }
     const error = validatePassword(password);
     if (error) return alert(error);
 
@@ -75,7 +86,7 @@ export default function LoginPage({ initialMode }: LoginPageProps) {
       const res = await fetch('/api/register', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ username, email, password }),
+        body: JSON.stringify({ username, email, password, accountKind }),
         credentials: 'include',
       });
       if (res.ok) {
@@ -277,13 +288,56 @@ export default function LoginPage({ initialMode }: LoginPageProps) {
                 className="space-y-4"
                 onSubmit={handleRegister}
               >
+                <fieldset className="space-y-2">
+                  <legend className="text-sm font-bold text-gray-800">登録種別</legend>
+                  <label className="flex min-h-11 cursor-pointer items-start gap-3 rounded border border-gray-200 p-3">
+                    <input
+                      type="radio"
+                      name="accountKind"
+                      value="fan"
+                      checked={accountKind === 'fan'}
+                      onChange={() => setAccountKind('fan')}
+                      className="mt-1"
+                      required
+                    />
+                    <span>
+                      <span className="block font-bold">ファン</span>
+                      <span className="block text-xs leading-5 text-gray-600">
+                        表示名で登録します。公開プロフィールは不要です。
+                      </span>
+                    </span>
+                  </label>
+                  <label className="flex min-h-11 cursor-pointer items-start gap-3 rounded border border-gray-200 p-3">
+                    <input
+                      type="radio"
+                      name="accountKind"
+                      value="creator"
+                      checked={accountKind === 'creator'}
+                      onChange={() => setAccountKind('creator')}
+                      className="mt-1"
+                      required
+                    />
+                    <span>
+                      <span className="block font-bold">クリエイター</span>
+                      <span className="block text-xs leading-5 text-gray-600">
+                        登録後にプロフィールを作成します。
+                      </span>
+                    </span>
+                  </label>
+                </fieldset>
                 <input
                   type="text"
                   name="username"
-                  placeholder="ユーザー名"
+                  placeholder={accountKind === 'fan' ? '表示名' : 'ユーザー名'}
                   required
+                  maxLength={accountKind === 'fan' ? 48 : undefined}
                   className="w-full p-2 border rounded"
                 />
+                {accountKind === 'fan' ? (
+                  <small className="block text-xs leading-5 text-gray-600">
+                    表示名は他の人と重複できます。公開プロフィールはあとから作れます。
+                  </small>
+                ) : null}
                 <input
                   type="email"
                   name="email"

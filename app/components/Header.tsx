@@ -56,7 +56,7 @@ export default function Header() {
           <div className={styles.authUI}>
             <p className={styles.authGreeting}>ようこそ、{session.name ?? session.username}さん！</p>
             <div className={styles.authButtons}>
-              <Link href={`/user/${session.uid}`} className="mypage-btn">
+              <Link href="/mypage" className="mypage-btn">
                 マイページ
               </Link>
               {session.isAdmin && (
@@ -164,7 +164,7 @@ export default function Header() {
             {session.loggedIn ? (
               <>
                 <p className={styles.greeting}>ようこそ、{session.name ?? session.username}さん！</p>
-                <Link href={`/user/${session.uid}`} className={styles.menuLink}>
+                <Link href="/mypage" className={styles.menuLink}>
                   マイページ
                 </Link>
                 {session.isAdmin && (

@@ -1,4 +1,5 @@
 /** 新規登録の成否判断。秘密情報は持たない。Firestore には書かない。 */
+import { ACCOUNT_KIND_CLAIM, type AccountKind } from '@/lib/accountKind';
 import { BLOCK_LAYOUT_VERSION } from '@/lib/blockLayout';
 
 export const PENDING_REGISTRATION = 'pending';
@@ -56,8 +57,106 @@ export function claimsToPersist(
     delete source.procomRegistration;
     changed = true;
   }
+  if (documentExists && Object.prototype.hasOwnProperty.call(source, ACCOUNT_KIND_CLAIM)) {
+    delete source[ACCOUNT_KIND_CLAIM];
+    changed = true;
+  }
   if (!changed) return { changed: false, next: null };
   return { changed: true, next: Object.keys(source).length > 0 ? source : null };
+}
+
+type NewUserProfile = ReturnType<typeof initialNewUserProfile>;
+
+type FanUserRecord = {
+  uid: string;
+  email: string;
+  password: string;
+  accountKind: 'fan';
+  fanName: string;
+  profile: NewUserProfile;
+};
+
+type CreatorUserRecord = {
+  uid: string;
+  email: string;
+  password: string;
+  accountKind: 'creator';
+  profile: NewUserProfile;
+};
+
+type LegacyUserRecord = {
+  uid: string;
+  email: string;
+  password: string;
+  profile: NewUserProfile;
+};
+
+/**
+ * 新規文書の中身。createdAt は呼び出し側が足す。
+ * kind が null の復旧は、種別フィールドを足さない従来の形。
+ * ファンの公開名は空。表示名は fanName だけに置く。
+ */
+export function newUserRecord(input: {
+  uid: string;
+  email: string;
+  password: string;
+  kind: 'fan';
+  name: string;
+}): FanUserRecord;
+export function newUserRecord(input: {
+  uid: string;
+  email: string;
+  password: string;
+  kind: 'creator';
+  name: string;
+}): CreatorUserRecord;
+export function newUserRecord(input: {
+  uid: string;
+  email: string;
+  password: string;
+  kind: null;
+  name: string;
+}): LegacyUserRecord;
+export function newUserRecord(input: {
+  uid: string;
+  email: string;
+  password: string;
+  kind: AccountKind | null;
+  name: string;
+}): FanUserRecord | CreatorUserRecord | LegacyUserRecord;
+export function newUserRecord(input: {
+  uid: string;
+  email: string;
+  password: string;
+  kind: AccountKind | null;
+  name: string;
+}) {
+  const profile = initialNewUserProfile(input.kind === 'fan' ? '' : input.name);
+  if (input.kind === 'fan') {
+    return {
+      uid: input.uid,
+      email: input.email,
+      password: input.password,
+      accountKind: 'fan' as const,
+      fanName: input.name,
+      profile,
+    };
+  }
+  if (input.kind === 'creator') {
+    return {
+      uid: input.uid,
+      email: input.email,
+      password: input.password,
+      accountKind: 'creator' as const,
+      profile,
+    };
+  }
+  return {
+    uid: input.uid,
+    email: input.email,
+    password: input.password,
+    profile,
+  };
 }
 
 export function initialNewUserProfile(name: string) {

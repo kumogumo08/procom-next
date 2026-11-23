@@ -250,6 +250,9 @@ export async function POST(req: NextRequest, props: { params: Promise<{ uid: str
     }
     if (readUserSuspended(existing)) return suspendedWriteResponse();
     const existingProfile = existing.profile || {};
+    if (isOnboardingBlocked(existingProfile)) {
+      return NextResponse.json({ error: '初期設定の完了前はプロフィールを保存できません' }, { status: 403 });
+    }
     const beforePhotos = existingProfile.photos;
     const emailError = rejectContactEmail(profile);
     if (emailError) {
@@ -690,6 +693,9 @@ export async function PATCH(req: NextRequest) {
       existingSnap.exists && existingSnap.data()?.profile && typeof existingSnap.data()?.profile === 'object'
         ? (existingSnap.data()?.profile as Record<string, unknown>)
         : {};
+    if (isOnboardingBlocked(existingProfile)) {
+      return NextResponse.json({ error: '初期設定の完了前はプロフィールを保存できません' }, { status: 403 });
+    }
     const afterProfile: Record<string, unknown> = { ...existingProfile, ...updates.profile };
     const stamp = nextContentStamp(existingProfile, afterProfile);
     if (stamp != null) updates.profile.contentUpdatedAtMs = stamp;

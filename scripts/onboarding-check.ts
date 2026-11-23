@@ -12,10 +12,18 @@ import {
   safeLoginRedirect,
 } from '@/lib/onboarding';
 import {
+  parseRegistrationAccountKind,
+  pendingAccountKind,
+  publicNameTakenByOther,
+  readFanName,
+  sessionDisplayName,
+} from '@/lib/accountKind';
+import {
   PENDING_REGISTRATION,
   authCleanupDecision,
   claimsToPersist,
   initialNewUserProfile,
+  newUserRecord,
   registrationResumeAction,
   repeatRegistrationAction,
 } from '@/lib/registration';
@@ -275,7 +283,13 @@ const setupServer = readFileSync(join(root, 'app/lib/onboardingSetupServer.ts'),
 const photoRoute = readFileSync(join(root, 'app/api/profile/setup/photo/route.ts'), 'utf8');
 assert(!userRoute.includes('onboardingStatus'), '通常のプロフィール保存はonboardingStatusを扱わない');
 assert(userRoute.includes('isOnboardingBlocked'), '公開APIは未完了プロフィールを隠す');
-assert(registerRoute.includes("redirectTo: '/profile/setup'"), '新規登録後は初期設定へ進む');
+assert(
+  userRoute.includes('isOnboardingBlocked(existingProfile)'),
+  '未完了プロフィールは通常保存で置き換えない'
+);
+assert(registerRoute.includes("'/profile/setup'"), 'クリエイター登録後は初期設定へ進む');
+assert(registerRoute.includes("accountKind === 'fan'"), 'ファン登録は初期設定へ強制しない');
+assert(registerRoute.includes('fanName'), 'ファン表示名は公開名と分けて保存する');
 assert(registerRoute.includes('.create('), '新規文書は上書きせず作成する');
 assert(loginClient.includes('safeLoginRedirect'), '再ログインはサーバーの遷移先を使う');
 assert(setupServer.includes('.exists('), '画像の実在を確認する');
@@ -320,6 +334,11 @@ assert(isOnboardingBlocked(privateComplete) === false, '10. completeかつisPubl
 assert(isProfilePublicWithOnboarding(privateComplete) === false, '10. completeかつisPublic:falseは従来どおり非掲載');
 assert(isProfilePublicWithOnboarding(legacyProfile) === isProfilePublic(legacyProfile), '11. legacyは従来どおり');
 assert(profileLoginPath('userA1234', requiredProfile) === '/profile/setup', '12. ログアウト後もrequiredなら初期設定に戻る');
+assert(profileLoginPath('userA1234', requiredProfile, 'creator') === '/profile/setup', '12. クリエイターのrequiredは初期設定へ戻る');
+assert(profileLoginPath('userA1234', requiredProfile, 'fan') === '/mypage', '12. ファンのrequiredはマイページへ');
+assert(profileLoginPath('userA1234', finishedProfile, 'fan') === '/mypage', '12. ファンは公開状態に関わらずマイページへ');
+assert(safeLoginRedirect('userA1234', '/mypage') === '/mypage', '12. ファンのログイン先を許可する');
+assert(safeLoginRedirect('userA1234', '/mypage/fans') === '/user/userA1234', '12. マイページ配下は許可しない');
 assert(safeLoginRedirect('userA1234', '/profile/setup') === '/profile/setup', '12. 初期設定への遷移を受け付ける');
 assert(safeLoginRedirect('userA1234', 'https://evil.example') === '/user/userA1234', '12. 外部への遷移先は捨てる');
 assert(safeLoginRedirect('userA1234', '/account/suspended') === '/account/suspended', '12. 停止中は停止画面へ直行する');
@@ -387,6 +406,47 @@ assert(
 const staleClaims = claimsToPersist({ procomPasswordCheck: 'hash', procomRegistration: 'pending', role: 'x' }, true);
 assert(staleClaims.changed && staleClaims.next?.procomPasswordCheck === undefined, '17. パスワード由来のclaimは残さない');
 assert(staleClaims.next?.role === 'x', '17. 無関係なclaimは残す');
+const fanClaims = claimsToPersist({ procomRegistration: 'pending', procomAccountKind: 'fan', role: 'x' }, true);
+assert(fanClaims.changed && fanClaims.next?.procomAccountKind === undefined && fanClaims.next?.role === 'x', '17. 文書がある種別claimは消す');
+assert(claimsToPersist({ procomAccountKind: 'fan' }, false).changed === false, '17. 文書が無い種別claimは復旧まで残す');
+assert(!parseRegistrationAccountKind({}).ok, '18. 種別未選択は拒否');
+assert(parseRegistrationAccountKind({ accountKind: 'member' }).ok === false, '18. 不明な種別は拒否');
+assert(parseRegistrationAccountKind({ accountKind: 'fan' }).ok === true, '18. ファンを受け付ける');
+assert(parseRegistrationAccountKind({ accountKind: 'creator' }).ok === true, '18. クリエイターを受け付ける');
+assert(!readFanName('').ok && !readFanName('   ').ok, '18. 空の表示名は拒否');
+assert(readFanName('a'.repeat(49)).ok === false, '18. 長すぎる表示名は拒否');
+const trimmedFan = readFanName(' 同じ名前 ');
+assert(trimmedFan.ok && trimmedFan.value === '同じ名前', '18. 表示名の前後空白は除く');
+const fanRecord = newUserRecord({ uid: 'fanUser123', email: 'fan@example.com', password: 'x', kind: 'fan', name: '同じ名前' });
+assert(
+  fanRecord.accountKind === 'fan' &&
+    fanRecord.fanName === '同じ名前' &&
+    fanRecord.profile.name === '' &&
+    fanRecord.profile.onboardingStatus === 'required',
+  '18. ファンは公開名を空にする'
+);
+const creatorRecord = newUserRecord({ uid: 'creator123', email: 'creator@example.com', password: 'x', kind: 'creator', name: '公開名' });
+assert(
+  creatorRecord.accountKind === 'creator' && creatorRecord.profile.name === '公開名' && !('fanName' in creatorRecord),
+  '18. クリエイターは公開名を維持'
+);
+const legacyRecord = newUserRecord({ uid: 'legacy1234', email: 'legacy@example.com', password: 'x', kind: null, name: '既存' });
+assert(
+  !('accountKind' in legacyRecord) &&
+    !('fanName' in legacyRecord) &&
+    legacyRecord.profile.name === '既存' &&
+    legacyRecord.profile.onboardingStatus === 'required',
+  '18. 種別なしの復旧は公開名を残す'
+);
+assert(pendingAccountKind({ procomAccountKind: 'fan' }) === 'fan', '18. 中断登録のファン種別を復旧する');
+assert(pendingAccountKind({ procomRegistration: 'pending' }) === null, '18. 古い中断登録には種別を足さない');
+assert(publicNameTakenByOther('self', ['self']) === false, '18. 自分の公開名は重複にしない');
+assert(publicNameTakenByOther('self', ['other']) === true, '18. 他人の公開名は重複');
+assert(sessionDisplayName({ name: '公開名' }, '表示名') === '公開名', '18. 公開名があれば表示名より優先');
+assert(sessionDisplayName({ name: '' }, '表示名') === '表示名', '18. 公開名が空のファンは表示名');
+assert(sessionDisplayName({ name: '既存' }, undefined) === '既存', '18. 既存ユーザーの表示は公開名');
+assert(setupServer.includes('FAN_ACCOUNT_KIND'), '18. ファンの公開名だけ一意確認する');
+assert(setupServer.includes("update.accountKind = 'creator'"), '18. 公開完了したファンはクリエイターになる');
 assert(!registerRoute.includes('procomPasswordCheck'), '17. 登録処理はパスワードハッシュをclaimへ書かない');
 assert(resolveSetupUid(owner, other).ok === false, '18. ユーザーAはユーザーBの初期設定を操作できない');
 const hiddenTitle = 'Procom';

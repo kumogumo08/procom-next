@@ -45,6 +45,7 @@ import AppProjectBlock from '@/components/AppProjectBlock';
 import ProductGalleryBlock from '@/components/ProductGalleryBlock';
 import BaseProductsBlock from '@/components/BaseProductsBlock';
 import StoresProductsBlock from '@/components/StoresProductsBlock';
+import PhotoBoardBlock from '@/components/PhotoBoardBlock';
 import CalendarBlock from '@/components/CalendarBlock';
 import UnsavedChangesLeaveGuard from '@/components/UnsavedChangesLeaveGuard';
 import {
@@ -80,6 +81,13 @@ import {
   type StoresProduct,
   type StoresProductsSettings,
 } from '@/lib/storesProducts';
+import {
+  coercePhotoBoard,
+  samePhotoBoardItems,
+  type PhotoBoard,
+  type PhotoBoardItem,
+  type PhotoBoardTheme,
+} from '@/lib/photoBoard';
 import {
   availableBlocks,
   BLOCK_LABELS,
@@ -123,6 +131,7 @@ type Profile = {
   baseProductsSettings?: BaseProductsSettings;
   storesProducts?: StoresProduct[];
   storesProductsSettings?: StoresProductsSettings;
+  photoBoard?: PhotoBoard;
   bannerLinks?: BannerLink[];
   customLinks?: CustomLink[];
   settings?: {
@@ -189,10 +198,16 @@ function withStoresProducts(profile: Profile): Profile {
   return next;
 }
 
+function withPhotoBoard(profile: Profile, uid: string): Profile {
+  if (!Object.prototype.hasOwnProperty.call(profile, 'photoBoard')) return profile;
+  return { ...profile, photoBoard: coercePhotoBoard(profile.photoBoard, uid, browserStorageBucket()) };
+}
+
 /** photos / calendarEvents は含めない。data URL のバナーは除外する */
 function buildDraftSavePayload(
   draft: Profile,
-  fallbacks: { apps: AppProject[]; sectionOrder: string[] }
+  fallbacks: { apps: AppProject[]; sectionOrder: string[] },
+  includePhotoBoard: boolean
 ) {
   const settings = draft.settings ?? {};
   const payload: Record<string, unknown> = {
@@ -246,6 +261,9 @@ function buildDraftSavePayload(
   }
   if (Object.prototype.hasOwnProperty.call(draft, 'storesProductsSettings')) {
     payload.storesProductsSettings = draft.storesProductsSettings ?? { description: '', shopUrl: '' };
+  }
+  if (includePhotoBoard && Object.prototype.hasOwnProperty.call(draft, 'photoBoard')) {
+    payload.photoBoard = draft.photoBoard ?? { items: [] };
   }
 
   return payload;
@@ -555,22 +573,31 @@ function normalizePayloadForCompare(payload: Record<string, unknown>) {
 function isDraftDirty(
   saved: Profile,
   draft: Profile,
-  fallbacks: { apps: AppProject[]; sectionOrder: string[] }
+  fallbacks: { apps: AppProject[]; sectionOrder: string[] },
+  includePhotoBoard: boolean
 ) {
   const savedPayload = normalizePayloadForCompare(
-    buildDraftSavePayload(saved, {
-      apps: fallbacks.apps,
-      sectionOrder: resolveSectionOrder(
-        saved.settings?.sectionOrder,
-        saved.settings?.blockLayoutVersion
-      ),
-    })
+    buildDraftSavePayload(
+      saved,
+      {
+        apps: fallbacks.apps,
+        sectionOrder: resolveSectionOrder(
+          saved.settings?.sectionOrder,
+          saved.settings?.blockLayoutVersion
+        ),
+      },
+      includePhotoBoard
+    )
   );
   const draftPayload = normalizePayloadForCompare(
-    buildDraftSavePayload(draft, {
-      apps: fallbacks.apps,
-      sectionOrder: fallbacks.sectionOrder,
-    })
+    buildDraftSavePayload(
+      draft,
+      {
+        apps: fallbacks.apps,
+        sectionOrder: fallbacks.sectionOrder,
+      },
+      includePhotoBoard
+    )
   );
   return JSON.stringify(savedPayload) !== JSON.stringify(draftPayload);
 }
@@ -583,9 +610,11 @@ export default function UserPageSectionsClient({
   initialApps,
   verifiedBaseProducts = [],
   verifiedBaseShopUrl = null,
+  photoBoardEnabled,
 }: {
   uid: string;
   isEditable: boolean;
+  photoBoardEnabled: boolean;
   initialProfile: Profile;
   initialSectionOrder: string[];
   initialApps: AppProject[];
@@ -594,11 +623,11 @@ export default function UserPageSectionsClient({
 }) {
   /** 最後に保存成功した状態（savedProfile） */
   const [profile, setProfile] = useState<Profile>(() =>
-    withStoresProducts(withBaseProducts(withProductGallery({ ...initialProfile, apps: initialApps }, uid)))
+    withPhotoBoard(withStoresProducts(withBaseProducts(withProductGallery({ ...initialProfile, apps: initialApps }, uid))), uid)
   );
   /** 編集途中状態 */
   const [draftProfile, setDraftProfile] = useState<Profile>(() =>
-    withStoresProducts(withBaseProducts(withProductGallery({ ...initialProfile, apps: initialApps }, uid)))
+    withPhotoBoard(withStoresProducts(withBaseProducts(withProductGallery({ ...initialProfile, apps: initialApps }, uid))), uid)
   );
   const draftProfileRef = useRef(draftProfile);
   draftProfileRef.current = draftProfile;
@@ -646,6 +675,7 @@ export default function UserPageSectionsClient({
 
   const applyBlockEdit = useCallback(
     (edit: BlockPlacementEdit) => {
+      if (!photoBoardEnabled && edit.op === 'add' && edit.block === 'PhotoBoard') return false;
       const current = draftProfileRef.current.settings;
       const version = current?.blockLayoutVersion;
       const savedOrder = resolveSectionOrder(current?.sectionOrder, version);
@@ -669,7 +699,7 @@ export default function UserPageSectionsClient({
       if (edit.op === 'add') setJustAddedBlockId(edit.block);
       return true;
     },
-    [updateDraftSettings]
+    [photoBoardEnabled, updateDraftSettings]
   );
 
   useEffect(() => {
@@ -864,6 +894,21 @@ export default function UserPageSectionsClient({
     });
   }, []);
 
+  const onPhotoBoardDraftChange = useCallback((items: PhotoBoardItem[], theme: PhotoBoardTheme) => {
+    setDraftProfile((prev) => {
+      const prevItems = prev.photoBoard?.items ?? [];
+      const prevTheme = prev.photoBoard?.theme ?? 'simple';
+      if (
+        Object.prototype.hasOwnProperty.call(prev, 'photoBoard') &&
+        samePhotoBoardItems(prevItems, items) &&
+        prevTheme === theme
+      ) {
+        return prev;
+      }
+      return { ...prev, photoBoard: { items, theme } };
+    });
+  }, []);
+
   const onBaseProductsDraftChange = useCallback((baseProducts: string[]) => {
     setDraftProfile((prev) => {
       const prevUrls = Array.isArray(prev.baseProducts) ? prev.baseProducts : [];
@@ -902,7 +947,7 @@ export default function UserPageSectionsClient({
     setSaveMessage(null);
     try {
       const draft = draftProfileRef.current;
-      const profilePayload = buildDraftSavePayload(draft, { apps, sectionOrder });
+      const profilePayload = buildDraftSavePayload(draft, { apps, sectionOrder }, photoBoardEnabled);
       const rawEmail = typeof profilePayload.emailForContact === 'string' ? profilePayload.emailForContact : '';
       const normalizedEmail = normalizeContactEmail(rawEmail);
       if (normalizedEmail == null) {
@@ -930,6 +975,7 @@ export default function UserPageSectionsClient({
         baseProductsSettings?: BaseProductsSettings;
         storesProducts?: StoresProduct[];
         storesProductsSettings?: StoresProductsSettings;
+        photoBoard?: PhotoBoard;
       };
       if (!res.ok) {
         throw new Error(typeof data.error === 'string' ? data.error : '保存に失敗しました');
@@ -991,6 +1037,11 @@ export default function UserPageSectionsClient({
         savedProfile.storesProductsSettings =
           data.storesProductsSettings ?? (profilePayload.storesProductsSettings as StoresProductsSettings);
       }
+      if (Object.prototype.hasOwnProperty.call(profilePayload, 'photoBoard')) {
+        const returned = data.photoBoard;
+        savedProfile.photoBoard =
+          returned && Array.isArray(returned.items) ? returned : (profilePayload.photoBoard as PhotoBoard);
+      }
 
       setProfile(savedProfile);
       setDraftProfile(savedProfile);
@@ -1014,7 +1065,7 @@ export default function UserPageSectionsClient({
       savingLockRef.current = false;
       setIsSaving(false);
     }
-  }, [apps, profile, sectionOrder, uid]);
+  }, [apps, photoBoardEnabled, profile, sectionOrder, uid]);
 
   const payloadFallbacks = useMemo(
     () => ({ apps, sectionOrder }),
@@ -1022,8 +1073,8 @@ export default function UserPageSectionsClient({
   );
 
   const isDirty = useMemo(
-    () => (isEditable ? isDraftDirty(profile, draftProfile, payloadFallbacks) : false),
-    [draftProfile, isEditable, payloadFallbacks, profile]
+    () => (isEditable ? isDraftDirty(profile, draftProfile, payloadFallbacks, photoBoardEnabled) : false),
+    [draftProfile, isEditable, payloadFallbacks, photoBoardEnabled, profile]
   );
 
   useEffect(() => {
@@ -1043,7 +1094,7 @@ export default function UserPageSectionsClient({
 
   const showSaveBar = isEditable && (isDirty || isSaving || Boolean(saveMessage));
 
-  const sectionMap: Record<string, JSX.Element> = useMemo(
+  const sectionMap: Record<string, JSX.Element | null> = useMemo(
     () => ({
       YouTube: (
         <YouTubeEmbedBlock
@@ -1169,6 +1220,14 @@ export default function UserPageSectionsClient({
           onSettingsChange={isEditable ? onStoresProductsSettingsChange : undefined}
         />
       ),
+      PhotoBoard: photoBoardEnabled ? (
+        <PhotoBoardBlock
+          isEditable={isEditable}
+          initialItems={draftProfile.photoBoard?.items}
+          initialTheme={draftProfile.photoBoard?.theme}
+          onDraftChange={onPhotoBoardDraftChange}
+        />
+      ) : null,
     }),
     [
       apps,
@@ -1185,6 +1244,8 @@ export default function UserPageSectionsClient({
       onBaseProductsSettingsChange,
       onStoresProductsDraftChange,
       onStoresProductsSettingsChange,
+      onPhotoBoardDraftChange,
+      photoBoardEnabled,
       verifiedBaseProducts,
       verifiedBaseShopUrl,
       onTikTokDraftChange,
@@ -1436,7 +1497,9 @@ export default function UserPageSectionsClient({
               {draggingBlockId ? <BlockDragPreview id={draggingBlockId} /> : null}
             </DragOverlay>
             <BlockAddControl
-              available={availableBlocks(visibleOrder)}
+              available={availableBlocks(visibleOrder).filter(
+                (block) => photoBoardEnabled || block !== 'PhotoBoard'
+              )}
               closeTick={addPanelCloseTick}
               dragActive={paletteDrag}
               onAdd={(block) => applyBlockEdit({ op: 'add', block })}

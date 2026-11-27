@@ -38,6 +38,14 @@ import {
   visibleProfileBio,
 } from '@/lib/userSeo';
 import { resolveVerifiedBaseProducts, resolveVerifiedBaseShopUrl } from '@/lib/baseProductDns';
+import { canUsePhotoBoard } from '@/lib/photoBoardAccess';
+
+function hidePhotoBoard<T extends object>(profile: T): T {
+  if (!Object.prototype.hasOwnProperty.call(profile, 'photoBoard')) return profile;
+  const next = { ...profile };
+  delete (next as { photoBoard?: unknown }).photoBoard;
+  return next;
+}
 
 export const dynamic = 'force-dynamic';
 
@@ -193,6 +201,8 @@ export default async function UserPage({
     isEditable && (await getAccountKindFromFirestore(uid)) !== FAN_ACCOUNT_KIND;
   const visitorActivityHref =
     !isEditable && (await isPublicFanActivityPage(uid)) ? `/user/${uid}/activity` : undefined;
+  const photoBoardEnabled = isEditable && canUsePhotoBoard(loggedInUid);
+  const clientProfile = photoBoardEnabled ? profile : hidePhotoBoard(profile);
 
   return (
     <>
@@ -208,7 +218,8 @@ export default async function UserPage({
       <UserPageSectionsClient
         uid={uid}
         isEditable={isEditable}
-        initialProfile={profile}
+        photoBoardEnabled={photoBoardEnabled}
+        initialProfile={clientProfile}
         initialSectionOrder={sectionOrder}
         initialApps={appProjectsInitial}
         verifiedBaseProducts={verifiedBaseProducts}

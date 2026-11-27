@@ -30,6 +30,12 @@ export const BLOCK_ADD_CATEGORIES = [
     // Shopify は実装したときにこの配列へ足す。未実装の間は選択画面に出さない。
     blocks: ['ProductGallery', 'BaseProducts', 'StoresProducts'],
   },
+  {
+    id: 'works',
+    label: '画像・作品',
+    description: '写真をボードに並べて表示',
+    blocks: ['PhotoBoard'],
+  },
 ] as const satisfies readonly {
   id: string;
   label: string;

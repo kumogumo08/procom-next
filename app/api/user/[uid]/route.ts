@@ -36,6 +36,14 @@ import {
   type ProductGallerySettings,
 } from '@/lib/productGallery';
 import {
+  coercePhotoBoard,
+  isSafePhotoBoardObject,
+  MISSING_PHOTO_BOARD_IMAGE_MESSAGE,
+  photoBoardImagePaths,
+  removedPhotoBoardImagePaths,
+  sanitizePhotoBoard,
+} from '@/lib/photoBoard';
+import {
   coerceBaseProducts,
   coerceBaseProductsSettings,
   sanitizeBaseProducts,
@@ -56,6 +64,7 @@ import { readUserSuspended } from '@/lib/accountSuspension';
 import { suspendedWriteResponse } from '@/lib/accountSuspensionGuard';
 import { isOnboardingBlocked } from '@/lib/onboarding';
 import { resolveSessionUid } from '@/lib/session';
+import { canUsePhotoBoard } from '@/lib/photoBoardAccess';
 import { rejectContactEmail } from '@/lib/contactEmail';
 
 initializeFirebaseAdmin();
@@ -66,6 +75,13 @@ const bucket = getStorage().bucket();
 
 function hasOwn(obj: Record<string, unknown>, key: string): boolean {
   return Object.prototype.hasOwnProperty.call(obj, key);
+}
+
+/** 本人かつ PHOTO BOARD を使えるときだけ、取得結果にボードを載せる。 */
+async function includePhotoBoardForViewer(req: NextRequest, uid: string): Promise<boolean> {
+  const sessionUid = await resolveSessionUid(req);
+  if (sessionUid instanceof NextResponse || sessionUid !== uid) return false;
+  return canUsePhotoBoard(sessionUid);
 }
 
 /**
@@ -200,6 +216,10 @@ export async function GET(
             coerceStoresProductsSettings(rawProfile.storesProductsSettings) ?? emptyStoresShopSettings(),
         };
       })(),
+      ...(await includePhotoBoardForViewer(req, uid) &&
+      Object.prototype.hasOwnProperty.call(rawProfile, 'photoBoard')
+        ? { photoBoard: coercePhotoBoard(rawProfile.photoBoard, uid, bucket.name) }
+        : {}),
     };
 
     return NextResponse.json({
@@ -549,6 +569,38 @@ export async function POST(req: NextRequest, props: { params: Promise<{ uid: str
       }
     }
 
+    const photoBoardTouched =
+      hasOwn(incomingProfileForGallery, 'photoBoard') || hasOwn(existingProfile, 'photoBoard');
+    let photoBoardForSave: unknown;
+    let prunePhotoBoardImages = false;
+    if (!canUsePhotoBoard(sessionUid)) {
+      if (hasOwn(existingProfile, 'photoBoard')) photoBoardForSave = existingProfile.photoBoard;
+    } else if (photoBoardTouched) {
+      const fromClient = hasOwn(incomingProfileForGallery, 'photoBoard');
+      const rawBoard = fromClient ? incomingProfileForGallery.photoBoard : existingProfile.photoBoard;
+      const sanitizedBoard = sanitizePhotoBoard(rawBoard, uid, bucket.name, existingProfile.photoBoard);
+      if (fromClient && !sanitizedBoard.ok) {
+        return NextResponse.json({ error: sanitizedBoard.error }, { status: 400 });
+      }
+      if (sanitizedBoard.ok) {
+        const previousPaths = new Set(photoBoardImagePaths(existingProfile.photoBoard, uid, bucket.name));
+        for (const objectPath of photoBoardImagePaths(sanitizedBoard.photoBoard, uid, bucket.name)) {
+          if (previousPaths.has(objectPath)) continue;
+          if (!isSafePhotoBoardObject(uid, objectPath)) {
+            return NextResponse.json({ error: '写真の画像を確認できません' }, { status: 400 });
+          }
+          const [found] = await bucket.file(objectPath).exists();
+          if (!found) {
+            return NextResponse.json({ error: MISSING_PHOTO_BOARD_IMAGE_MESSAGE }, { status: 400 });
+          }
+        }
+        photoBoardForSave = sanitizedBoard.photoBoard;
+        prunePhotoBoardImages = true;
+      } else {
+        photoBoardForSave = existingProfile.photoBoard;
+      }
+    }
+
     // 🔄 プロフィール保存
     // undefined = 未更新（既存維持）。"" / [] / null = 明示的な空。false は settings に残す。
     // photos は上の既存処理どおり（空配列は既存維持）。apps は sanitize 済みを後付け。
@@ -581,6 +633,7 @@ export async function POST(req: NextRequest, props: { params: Promise<{ uid: str
       baseProductsSettings: baseProductsSettingsForSave,
       storesProducts: storesProductsForSave,
       storesProductsSettings: storesProductsSettingsForSave,
+      photoBoard: photoBoardForSave,
     });
 
     cleanedProfile.apps = appsForSave;
@@ -618,6 +671,33 @@ export async function POST(req: NextRequest, props: { params: Promise<{ uid: str
         })
       );
     }
+    if (prunePhotoBoardImages) {
+      const removedBoardImages = removedPhotoBoardImagePaths(
+        existingProfile.photoBoard,
+        photoBoardForSave,
+        uid,
+        bucket.name
+      );
+      if (removedBoardImages.length > 0) {
+        try {
+          const fresh = await userRef.get();
+          const stillUsed = new Set(photoBoardImagePaths(fresh.get('profile.photoBoard'), uid, bucket.name));
+          await Promise.all(
+            removedBoardImages.map(async (objectPath) => {
+              if (!isSafePhotoBoardObject(uid, objectPath) || stillUsed.has(objectPath)) return;
+              await bucket.file(objectPath).delete({ ignoreNotFound: true }).catch((deleteErr: unknown) => {
+                console.error(
+                  'photo board image delete failed:',
+                  deleteErr instanceof Error ? deleteErr.name : 'error'
+                );
+              });
+            })
+          );
+        } catch (deleteErr: unknown) {
+          console.error('photo board image delete failed:', deleteErr instanceof Error ? deleteErr.name : 'error');
+        }
+      }
+    }
     const listed = await noteUserListing(uid);
     if (listed && listingPhotoChanged(beforePhotos, cleanedProfile.photos)) {
       invalidateListingAfterPhotoChange();
@@ -632,6 +712,7 @@ export async function POST(req: NextRequest, props: { params: Promise<{ uid: str
       ...(baseProductsSettingsForSave ? { baseProductsSettings: baseProductsSettingsForSave } : {}),
       ...(storesProductsForSave ? { storesProducts: storesProductsForSave } : {}),
       ...(storesProductsSettingsForSave ? { storesProductsSettings: storesProductsSettingsForSave } : {}),
+      ...(prunePhotoBoardImages ? { photoBoard: photoBoardForSave } : {}),
     });
   } catch (err) {
     const message = err instanceof Error ? err.message : String(err);

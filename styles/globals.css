@@ -1383,6 +1383,10 @@ body {
   border-left-color: #64748b;
 }
 
+.block-add-category[data-category='works'] {
+  border-left-color: #a16207;
+}
+
 .block-add-category:focus-visible {
   outline: 2px solid #2563eb;
   outline-offset: 2px;
@@ -1408,6 +1412,10 @@ body {
 
   .block-add-category[data-category='events']:not(:disabled):hover {
     border-left-color: #64748b;
+  }
+
+  .block-add-category[data-category='works']:not(:disabled):hover {
+    border-left-color: #a16207;
   }
 }
 

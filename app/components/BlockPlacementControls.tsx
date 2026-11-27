@@ -447,6 +447,7 @@ const BLOCK_DRAG_MARK: Record<BlockType, string> = {
   ProductGallery: '品',
   BaseProducts: 'B',
   StoresProducts: 'S',
+  PhotoBoard: '📌',
 };
 
 export function BlockDragPreview({ id }: { id: string }) {

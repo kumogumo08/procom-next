@@ -184,12 +184,12 @@ assert(!isBlockPlaced(['YouTube'], 'X'), '未配置を判定できる');
 assert(!isBlockPlaced(['YouTube', 'Foo'], 'Foo'), '不明なキーは配置済みにしない');
 same(
   availableBlocks(['YouTube', 'X']),
-  ['Instagram', 'TikTok', 'Facebook', 'Bio', 'BannerLinks', 'AppProjects', 'SNSButtons', 'Calendar', 'ProductGallery', 'BaseProducts', 'StoresProducts'],
+  ['Instagram', 'TikTok', 'Facebook', 'Bio', 'BannerLinks', 'AppProjects', 'SNSButtons', 'Calendar', 'ProductGallery', 'BaseProducts', 'StoresProducts', 'PhotoBoard'],
   '未配置の種類だけを返す'
 );
 same(
   availableBlocks(HISTORICAL_DEFAULT),
-  ['Bio', 'Calendar', 'ProductGallery', 'BaseProducts', 'StoresProducts'],
+  ['Bio', 'Calendar', 'ProductGallery', 'BaseProducts', 'StoresProducts', 'PhotoBoard'],
   '従来の8件が配置済みでも自己紹介とカレンダーと商品系は明示追加できる'
 );
 
@@ -202,8 +202,8 @@ assert(
 );
 same(
   BLOCK_ADD_CATEGORIES.map((category) => category.label),
-  ['SNS', 'リンク・紹介', 'イベント', 'SHOP'],
-  '追加画面のカテゴリは4件'
+  ['SNS', 'リンク・紹介', 'イベント', 'SHOP', '画像・作品'],
+  '追加画面のカテゴリ順'
 );
 assert(
   BLOCK_ADD_CATEGORIES.every((category) => category.description.length > 0),

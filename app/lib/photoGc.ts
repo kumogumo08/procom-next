@@ -9,6 +9,7 @@ import {
   removedPhotoPaths,
   samePhotoPaths,
 } from '@/lib/ownedPhotoPath';
+import { isSafePhotoBoardObject, PHOTO_BOARD_FOLDER, photoBoardGcAction } from '@/lib/photoBoard';
 
 const PHOTO_GC = 'photoGc';
 const PUBLIC_PROFILES = 'publicProfiles';
@@ -54,6 +55,22 @@ export async function schedulePhotoRetention(uid: string, objectPath: string, no
   });
 }
 
+/** アップロード直後の PHOTO BOARD 画像。期限前は消さない。参照確認は sweep 側。 */
+export async function schedulePhotoBoardRetention(
+  uid: string,
+  objectPath: string,
+  now = Date.now()
+): Promise<void> {
+  if (!isSafePhotoBoardObject(uid, objectPath)) {
+    throw new Error('photo board path rejected');
+  }
+  await db.collection(PHOTO_GC).doc(photoGcId(uid, objectPath)).set({
+    uid,
+    objectPath,
+    deleteAfterMs: now + PHOTO_RETENTION_MS,
+  });
+}
+
 /**
  * プロフィールから外れた本人の画像だけを猶予付きで記録する。
  * 参照中の画像の予約は消さない。並行保存が新しいファイルの予約を消すと、追跡できないため。
@@ -80,6 +97,7 @@ export async function retainReplacedPhotos(
 /**
  * 期限を過ぎた予約を最大20件。
  * 現在のプロフィールが参照しているオブジェクトは消さない。
+ * PHOTO BOARD は photo-board/ だけを見る。参照中、または保存内容を解釈できない画像は消さない。
  * 一覧同期から呼ぶ。失敗した1件は予約を残し、次の実行でやり直す。
  */
 export async function sweepExpiredPhotos(
@@ -89,11 +107,51 @@ export async function sweepExpiredPhotos(
   let deleted = 0;
   let kept = 0;
   const referencedCache = new Map<string, { profile: Set<string>; listing: Set<string> } | null>();
+  const boardCache = new Map<string, { board: unknown } | null>();
 
   for (const doc of snap.docs) {
     const data = doc.data();
     const uid = data.uid;
     const objectPath = data.objectPath;
+    if (typeof objectPath === 'string' && objectPath.startsWith(`${PHOTO_BOARD_FOLDER}/`)) {
+      if (!isSafePhotoBoardObject(uid, objectPath)) {
+        await doc.ref.delete().catch(() => undefined);
+        kept += 1;
+        continue;
+      }
+      let board = boardCache.get(uid);
+      if (board === undefined) {
+        try {
+          const user = await db.collection('users').doc(uid).get();
+          board = { board: user.exists ? user.get('profile.photoBoard') : undefined };
+          boardCache.set(uid, board);
+        } catch (err: unknown) {
+          console.error('photo board gc read failed:', err instanceof Error ? err.name : 'error');
+          boardCache.set(uid, null);
+          continue;
+        }
+      }
+      if (board == null) continue;
+      const action = photoBoardGcAction(uid, objectPath, board.board, bucket.name);
+      if (action === 'referenced') {
+        await doc.ref.delete().catch(() => undefined);
+        kept += 1;
+        continue;
+      }
+      if (action !== 'orphan') {
+        await doc.ref.update({ deleteAfterMs: now + PHOTO_RETENTION_MS }).catch(() => undefined);
+        kept += 1;
+        continue;
+      }
+      try {
+        await bucket.file(objectPath).delete({ ignoreNotFound: true });
+        await doc.ref.delete();
+        deleted += 1;
+      } catch (err: unknown) {
+        console.error('photo board gc delete failed:', err instanceof Error ? err.name : 'error');
+      }
+      continue;
+    }
     if (!isSafePhotoObject(uid, objectPath)) {
       await doc.ref.delete().catch(() => undefined);
       kept += 1;
